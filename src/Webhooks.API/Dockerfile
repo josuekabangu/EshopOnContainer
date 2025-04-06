@@ -2,13 +2,13 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /app
 
-COPY src/Mobile.Bff.Shopping/Mobile.Bff.Shopping.csproj ./src/Mobile.Bff.Shopping/
-RUN dotnet restore src/Mobile.Bff.Shopping/Mobile.Bff.Shopping.csproj
+COPY src/Webhooks.API/Webhooks.API.csproj ./src/Webhooks.API/
+RUN dotnet restore src/Webhooks.API/Webhooks.API.csproj
 COPY . .
 RUN curl -o /app/wait-for-it.sh https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh \
     && chmod +x /app/wait-for-it.sh
-RUN dotnet build src/Mobile.Bff.Shopping/Mobile.Bff.Shopping.csproj -c Release -o /app/build
-RUN dotnet publish src/Mobile.Bff.Shopping/Mobile.Bff.Shopping.csproj -c Release -o /app/publish
+RUN dotnet build src/Webhooks.API/Webhooks.API.csproj -c Release -o /app/build
+RUN dotnet publish src/Webhooks.API/Webhooks.API.csproj -c Release -o /app/publish
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
@@ -20,4 +20,4 @@ COPY --from=build /app/wait-for-it.sh /wait-for-it.sh
 RUN chmod +x /wait-for-it.sh
 
 EXPOSE 80
-ENTRYPOINT ["dotnet", "Mobile.Bff.Shopping.dll"]
+ENTRYPOINT ["dotnet", "Webhooks.API.dll"]
