@@ -185,6 +185,13 @@
                     {
                         "webhooks"
                     }
+                },
+                new Client
+                {
+                    ClientId = "test-cli",
+                    ClientSecrets = { new Secret("secret".Sha256())},
+                    AllowedGrantTypes = GrantTypes.ClientCredentials,
+                    AllowedScopes = {"orders" }
                 }
             };
         }
