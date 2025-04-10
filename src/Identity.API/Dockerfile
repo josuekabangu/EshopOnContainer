@@ -18,4 +18,6 @@ COPY --from=build /out .
 COPY --from=build /app/wait-for-it.sh /wait-for-it.sh
 RUN apt-get update && apt-get install -y curl
 RUN chmod +x /wait-for-it.sh
+
+EXPOSE 5105
 ENTRYPOINT ["dotnet", "Identity.API.dll"]

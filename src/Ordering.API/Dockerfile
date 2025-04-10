@@ -19,5 +19,5 @@ COPY --from=build /app/publish .
 COPY --from=build /app/wait-for-it.sh /wait-for-it.sh
 RUN chmod +x /wait-for-it.sh
 
-EXPOSE 5221
+EXPOSE 5101
 ENTRYPOINT ["dotnet", "Ordering.API.dll"]

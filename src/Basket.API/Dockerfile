@@ -18,5 +18,5 @@ COPY --from=build /out .
 COPY --from=build /app/wait-for-it.sh /wait-for-it.sh
 RUN chmod +x /wait-for-it.sh
 
-EXPOSE 80
+EXPOSE 5104
 ENTRYPOINT ["dotnet", "Basket.API.dll"]
