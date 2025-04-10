@@ -1,0 +1,11 @@
+# kubernetes-manifests/catalogdb-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalogdb
+spec:
+  selector:
+    app: catalogdb
+  ports:
+    - port: 5432
+      targetPort: 5432
