@@ -1,9 +1,10 @@
-# kubernetes-manifests/catalogdb-statefulset.yaml
+# kubernetes-manifests/catalogdb-catalogdb.yaml
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: catalogdb
 spec:
+  serviceName: catalogdb
   replicas: 1
   selector:
     matchLabels:
@@ -20,11 +21,20 @@ spec:
             - containerPort: 5432
           env:
             - name: POSTGRES_USER
-              value: postgres
+              valueFrom:
+                secretKeyRef:
+                  name: catalogdb-secrets
+                  key: POSTGRES_USER
             - name: POSTGRES_PASSWORD
-              value: password
+              valueFrom:
+                secretKeyRef:
+                  name: catalogdb-secrets
+                  key: POSTGRES_PASSWORD
             - name: POSTGRES_DB
-              value: catalogdb
+              valueFrom:
+                secretKeyRef:
+                  name: catalogdb-secrets
+                  key: POSTGRES_DB
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
@@ -35,5 +45,6 @@ spec:
           persistentVolumeClaim:
             claimName: catalogdb-pvc
         - name: init-sql
-          secret:
-            secretName: catalogdb-init-secret
+          configMap:
+            name: catalogdb-init
+            defaultMode: 0777

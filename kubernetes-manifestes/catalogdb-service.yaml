@@ -4,6 +4,7 @@ kind: Service
 metadata:
   name: catalogdb
 spec:
+  clusterIP: None  # Headless service pour StatefulSet
   selector:
     app: catalogdb
   ports:
