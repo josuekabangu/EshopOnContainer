@@ -1,0 +1,14 @@
+# kubernetes-manifests/redis/redis-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: dev
+spec:
+  clusterIP: None
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+      name: redis

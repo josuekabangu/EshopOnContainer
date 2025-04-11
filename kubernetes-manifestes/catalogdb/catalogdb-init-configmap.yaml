@@ -1,3 +1,4 @@
+# kubernetes-manifests/catalogdb-init-configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:

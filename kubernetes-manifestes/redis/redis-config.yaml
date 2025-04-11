@@ -1,0 +1,16 @@
+# kubernetes-manifests/redis/redis-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: dev
+data:
+  redis.conf: |
+    maxmemory 128mb
+    maxmemory-policy allkeys-lru
+    save 60 1
+    appendonly yes
+    appendfsync everysec
+    bind 0.0.0.0
+    protected-mode no
+  
