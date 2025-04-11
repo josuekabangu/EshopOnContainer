@@ -1,0 +1,58 @@
+# kubernetes-manifests/basket-api/basket-api-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: basket-api
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: basket-api
+  template:
+    metadata:
+      labels:
+        app: basket-api
+    spec:
+      initContainers:
+        - name: wait-for-redis
+          image: busybox:1.35
+          command: ['sh', '-c', 'until nc -z redis 6379; do echo "En attente de Redis..."; sleep 2; done;']
+        - name: wait-for-rabbitmq
+          image: busybox:1.35
+          command: ['sh', '-c', 'until nc -z rabbitmq 5672; do echo "En attente de RabbitMQ..."; sleep 2; done;']
+      containers:
+        - name: basket-api
+          image: ajkabs/basket-api:latest
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Development"
+            - name: ConnectionStrings__Redis
+              value: "redis:6379"
+            - name: ConnectionStrings__EventBus
+              value: "amqp://basketuser:basketpass@rabbitmq:5672"
+            - name: Identity__Url
+              value: "http://identity-api:5105"
+            - name: ASPNETCORE_URLS
+              value: "http://*:5104"
+          ports:
+            - containerPort: 5104
+          volumeMounts:
+            - name: dataprotection-keys
+              mountPath: /root/.aspnet/DataProtection-Keys
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5104
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5104
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: dataprotection-keys
+          persistentVolumeClaim:
+            claimName: basket-dataprotection-pvc

@@ -1,0 +1,14 @@
+# kubernetes-manifests/basket-api/basket-api-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: basket-api
+  namespace: dev
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5104
+      targetPort: 5104
+  selector:
+    app: basket-api
+

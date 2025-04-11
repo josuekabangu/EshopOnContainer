@@ -1,4 +1,4 @@
-# kubernetes-manifests/redis/redis-service.yaml
+# kubernetes-manifests/rabbitmq/redis-service.yaml
 apiVersion: v1
 kind: Service
 metadata:

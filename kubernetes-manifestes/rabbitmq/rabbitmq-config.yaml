@@ -1,4 +1,4 @@
-# kubernetes-manifests/redis/rabbitmq-config.yaml
+# kubernetes-manifests/rabbitmq/rabbitmq-config.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
