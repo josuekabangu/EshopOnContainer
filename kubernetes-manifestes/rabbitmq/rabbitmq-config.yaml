@@ -1,0 +1,9 @@
+# kubernetes-manifests/redis/rabbitmq-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-config
+  namespace: dev
+data:
+  enabled_plugins: |
+    [rabbitmq_management, rabbitmq_prometheus].
