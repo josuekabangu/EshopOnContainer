@@ -2,8 +2,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: basket-dataprotection-pvc
-  namespace: dev
+  name: basket-data-protection-pvc
 spec:
   accessModes:
     - ReadWriteOnce

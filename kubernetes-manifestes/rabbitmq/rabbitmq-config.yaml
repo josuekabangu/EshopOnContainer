@@ -5,5 +5,12 @@ metadata:
   name: rabbitmq-config
   namespace: dev
 data:
-  enabled_plugins: |
-    [rabbitmq_management, rabbitmq_prometheus].
+  rabbitmq.conf: |
+    default_user = guest
+    default_pass = guest
+    default_vhost = /
+    loopback_users = none
+    management.tcp.port = 15672
+    management.load_definitions = /etc/rabbitmq/definitions.json
+    enabled_plugins = [rabbitmq_management,rabbitmq_peer_discovery_k8s]
+    disk_free_limit.absolute = 1GB

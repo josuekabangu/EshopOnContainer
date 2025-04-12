@@ -3,12 +3,11 @@ apiVersion: v1
 kind: Service
 metadata:
   name: basket-api
-  namespace: dev
 spec:
-  type: ClusterIP
-  ports:
-    - port: 5104
-      targetPort: 5104
   selector:
     app: basket-api
+  ports:
+    - protocol: TCP
+      port: 5104
+      targetPort: 5104
 

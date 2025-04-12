@@ -1,15 +1,9 @@
+# kubernetes-manifests/basket-api/basket-api-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: basket-api
-  namespace: dev
 spec:
-  replicas: 1
-  strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-    type: RollingUpdate
   selector:
     matchLabels:
       app: basket-api
@@ -17,77 +11,47 @@ spec:
     metadata:
       labels:
         app: basket-api
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8080"
     spec:
-      initContainers:
-        - name: wait-for-dependencies
-          image: busybox:1.35
-          command: ['sh', '-c', 'until nc -z redis 6379 && nc -z rabbitmq 5672; do echo "Waiting for dependencies..."; sleep 3; done;']
       containers:
-        - name: basket-api
-          image: ajkabs/basket-api:latest
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: ASPNETCORE_ENVIRONMENT
-              value: "Development"
-            - name: ConnectionStrings__Redis
-              value: "redis:6379,abortConnect=false,connectRetry=5"
-            - name: ConnectionStrings__EventBus
-              value: "amqp://guest:guest@rabbitmq:5672"
-            - name: Identity__Url
-              value: "http://identity-api:5105"
-            - name: ASPNETCORE_URLS
-              value: "http://*:8080"
-            - name: RabbitMQ__PersistentConnection__RetryCount
-              value: "5"
-            - name: EventBus__RetryCount
-              value: "3"
-          ports:
-            - containerPort: 8080
-              name: http
-          volumeMounts:
-            - name: dataprotection-keys
-              mountPath: /root/.aspnet/DataProtection-Keys
-          resources:
-            limits:
-              memory: "512Mi"
-              cpu: "500m"
-            requests:
-              memory: "256Mi"
-              cpu: "200m"
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 8080
-              scheme: HTTP
-            initialDelaySeconds: 45
-            periodSeconds: 30
-            timeoutSeconds: 5
-            failureThreshold: 3
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 8080
-              scheme: HTTP
-            initialDelaySeconds: 20
-            periodSeconds: 15
-            timeoutSeconds: 3
-            successThreshold: 1
-            failureThreshold: 3
-          startupProbe:
-            httpGet:
-              path: /health
-              port: 8080
-              scheme: HTTP
-            failureThreshold: 10
-            periodSeconds: 10
+      - name: basket-api
+        image: ajkabs/basket-api:latest
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: Development
+        - name: ConnectionStrings__Redis
+          value: redis:6379
+        - name: ConnectionStrings__EventBus
+          value: amqp://guest:guest@rabbitmq:5672
+        - name: Identity__Url
+          value: http://identity-api:5105
+        - name: ASPNETCORE_URLS
+          value: http://*:5104
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: basket-data-protection
+          mountPath: /root/.aspnet/DataProtection-Keys
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        # You'll need to include wait-for-it.sh in your container image
+        # or use an init container to check dependencies
+        command: ["/bin/sh", "-c"]
+        args: ["/wait-for-it.sh redis:6379 -- /wait-for-it.sh rabbitmq:5672 -- dotnet Basket.API.dll"]
       volumes:
-        - name: dataprotection-keys
-          persistentVolumeClaim:
-            claimName: basket-dataprotection-pvc
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 1000
+      - name: basket-data-protection
+        persistentVolumeClaim:
+          claimName: basket-data-protection-pvc

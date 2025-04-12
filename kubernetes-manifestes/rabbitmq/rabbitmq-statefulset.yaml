@@ -3,7 +3,6 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: rabbitmq
-  namespace: dev
 spec:
   serviceName: rabbitmq
   replicas: 1
@@ -16,45 +15,44 @@ spec:
         app: rabbitmq
     spec:
       containers:
-        - name: rabbitmq
-          image: rabbitmq:3.12-management-alpine
-          ports:
-            - containerPort: 5672
-              name: amqp
-            - containerPort: 15672
-              name: management
-          env:
-            - name: RABBITMQ_DEFAULT_USER
-              value: "guest"
-            - name: RABBITMQ_DEFAULT_PASS
-              value: "guest"
-            - name: RABBITMQ_DEFAULT_VHOST
-              value: "/"
-          volumeMounts:
-            - name: rabbitmq-data
-              mountPath: /var/lib/rabbitmq
-            - name: config
-              mountPath: /etc/rabbitmq
-          livenessProbe:
-            exec:
-              command: ["rabbitmqctl", "status"]
-            initialDelaySeconds: 60
-            periodSeconds: 30
-          readinessProbe:
-            exec:
-              command: ["rabbitmqctl", "status"]
-            initialDelaySeconds: 20
-            periodSeconds: 10
-      volumes:
-        - name: config
-          configMap:
-            name: rabbitmq-config
+      - name: rabbitmq
+        image: rabbitmq:management
+        ports:
+        - containerPort: 15672
+          name: management
+        - containerPort: 5672
+          name: amqp
+        env:
+        - name: RABBITMQ_DEFAULT_USER
+          value: guest
+        - name: RABBITMQ_DEFAULT_PASS
+          value: guest
+        - name: RABBITMQ_DEFAULT_VHOST
+          value: /
+        volumeMounts:
+        - name: rabbitmq-data
+          mountPath: /var/lib/rabbitmq
+        livenessProbe:
+          exec:
+            command: ["rabbitmqctl", "status"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        readinessProbe:
+          exec:
+            command: ["rabbitmqctl", "status"]
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
   volumeClaimTemplates:
-    - metadata:
-        name: rabbitmq-data
-      spec:
-        accessModes: [ "ReadWriteOnce" ]
-        resources:
-          requests:
-            storage: 5Gi
+  - metadata:
+      name: rabbitmq-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+
 
