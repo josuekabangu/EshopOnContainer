@@ -1,0 +1,71 @@
+# kubernetes/Basket-API/basket-api-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: basket-api
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: basket-api
+  template:
+    metadata:
+      labels:
+        app: basket-api
+    spec:
+      containers:
+        - name: basket-api
+          image: ajkabs/basket-api:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Development"
+            - name: ConnectionStrings__Redis
+              value: "redis:6379"
+            - name: ConnectionStrings__EventBus
+              value: "amqp://guest:guest@rabbitmq:5672"
+            - name: Identity__Url
+              value: "http://identity-api:5001"
+            - name: ASPNETCORE_URLS
+              value: "http://*:8080"
+            - name: ASPNETCORE_HTTP_PORTS
+              value: "8080"
+          volumeMounts:
+            - name: basket-data-protection
+              mountPath: /root/.aspnet/DataProtection-Keys
+          resources:
+            limits:
+              memory: "1Gi"
+              cpu: "1"
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          command:
+            - /bin/sh
+            - -c
+            - |
+              /wait-for-it.sh redis:6379 -- /wait-for-it.sh rabbitmq:5672 -- dotnet Basket.API.dll
+      volumes:
+        - name: basket-data-protection
+          persistentVolumeClaim:
+            claimName: basket-data-protection-pvc
+      restartPolicy: Always
+

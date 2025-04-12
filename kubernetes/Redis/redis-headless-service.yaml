@@ -1,0 +1,14 @@
+# kubernetes/Redis/redis-headless-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-headless
+  namespace: dev
+spec:
+  clusterIP: None
+  ports:
+    - port: 6379
+      targetPort: 6379
+      protocol: TCP
+  selector:
+    app: redis
