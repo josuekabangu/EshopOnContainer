@@ -1,0 +1,51 @@
+# kubernetes-manifests/catalogdb-statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: catalogdb
+spec:
+  serviceName: catalogdb
+  replicas: 1
+  selector:
+    matchLabels:
+      app: catalogdb
+  template:
+    metadata:
+      labels:
+        app: catalogdb
+    spec:
+      containers:
+        - name: catalogdb
+          image: ankane/pgvector:latest
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: catalogdb-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: catalogdb-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: catalogdb-secrets
+                  key: POSTGRES_DB
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: init-sql
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: catalogdb-pvc
+        - name: init-sql
+          configMap:
+            name: catalogdb-init
+            defaultMode: 0777
+          

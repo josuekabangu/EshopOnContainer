@@ -1,0 +1,11 @@
+# kubernetes-manifests/catalogdb-init-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: catalogdb-init
+data:
+  init-db.sh: |
+    #!/bin/bash
+    set -e
+    echo "Creating vector extension..."
+    psql -U postgres -d catalogdb -c "CREATE EXTENSION IF NOT EXISTS vector;"
