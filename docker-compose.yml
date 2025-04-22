@@ -1,0 +1,346 @@
+services:
+  catalogdb:
+    image: ankane/pgvector:latest
+    container_name: catalogdb
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: catalogdb
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    command: ["postgres", "-c", "shared_buffers=512MB", "-c", "max_connections=200", "-c", "fsync=off"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d catalogdb"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eShopNetwork
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command:
+      - redis-server
+      - --save ""
+      - --appendonly no
+      - --maxmemory 256mb
+      - --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - eShopNetwork
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: rabbitmq
+    hostname: rabbitmq
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    volumes:
+      - rmq_data:/var/lib/rabbitmq
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    environment:
+      RABBITMQ_MNESIA_BASE: /var/lib/rabbitmq/mnesia
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_VHOST: /
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "+sbwt none +sbwtdcpu none +sbwtdio none +stbt db"
+      RABBITMQ_CTL_ERL_ARGS: "+P 1048576 +K true +A 128"
+      RABBITMQ_NODENAME: rabbit@rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eShopNetwork
+
+  basket-api:
+    image: basket-api
+    build:
+      context: .
+      dockerfile: src/Basket.API/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://*:5221"
+      ConnectionStrings__Redis: redis
+      ConnectionStrings__EventBus: amqp://guest:guest@rabbitmq:5672
+      Identity__Url: "http://identity-api:5001"
+      DOTNET_READYTORUN: 1
+      DOTNET_TieredPGO: 1
+    ports:
+      - "5221:5221"
+    volumes:
+      - basket-data-protection:/app/keys
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c", "./wait-for-it.sh redis:6379 -- ./wait-for-it.sh rabbitmq:5672 -- dotnet Basket.API.dll"]
+    networks:
+      - eShopNetwork
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl --http2-prior-knowledge -sf http://localhost:5221/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  catalog-api:
+    image: catalog-api
+    build:
+      context: .
+      dockerfile: src/Catalog.API/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://*:80"
+      ConnectionStrings__CatalogDB: "Host=catalogdb;Port=5432;Database=catalogdb;User Id=postgres;Password=password;"
+      ConnectionStrings__EventBus: "amqp://guest:guest@rabbitmq:5672"
+      DOTNET_READYTORUN: 1
+      DOTNET_TieredPGO: 1
+    ports:
+      - "5222:80"
+    depends_on:
+      catalogdb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c", "./wait-for-it.sh rabbitmq:5672 -- dotnet Catalog.API.dll"]
+    networks:
+      - eShopNetwork
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  identity-api:
+    image: identity-api
+    build:
+      context: .
+      dockerfile: src/Identity.API/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      MauiCallback: "http://localhost:5000/callback"
+      ASPNETCORE_URLS: "http://*:5001"
+      ConnectionStrings__IdentityDB: "Server=catalogdb;Port=5432;Database=identitydb;User Id=postgres;Password=password;"
+      ConnectionStrings__EventBus: "amqp://guest:guest@rabbitmq:5672"
+    ports:
+      - "5243:5001" # map interne 5001 vers externe 5243 (évite conflit avec catalog)
+    depends_on:
+      catalogdb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c", "./wait-for-it.sh rabbitmq:5672 -- ./wait-for-it.sh catalogdb:5432 -- dotnet Identity.API.dll"]
+    networks:
+      - eShopNetwork
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ordering-api:
+    image: ordering-api
+    build:
+      context: .
+      dockerfile: src/Ordering.API/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://*:8080"
+      ConnectionStrings__orderingdb: Host=catalogdb;Port=5432;Database=orderingdb;Username=postgres;Password=password
+      ConnectionStrings__EventBus: amqp://guest:guest@rabbitmq:5672
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Port: 5672
+      Identity__Url: http://identity-api:5001
+    ports:
+      - "5224:8080"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      catalogdb:
+        condition: service_healthy
+      identity-api:
+        condition: service_healthy
+    volumes:
+      - ordering-api-keys:/app/keys
+    entrypoint: ["/bin/sh", "-c", "./wait-for-it.sh rabbitmq:5672 -- ./wait-for-it.sh orderingdb:5432 -- ./wait-for-it.sh identity-api:5001 -- dotnet Ordering.API.dll"]
+    networks:
+      - eShopNetwork
+    restart: unless-stopped 
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  order-processor:
+    image: order-processor
+    build: 
+      context: .
+      dockerfile: src/OrderProcessor/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://*:16888"
+      ConnectionStrings__EventBus: "amqp://guest:guest@rabbitmq:5672"
+      ConnectionStrings__orderingdb: "Host=catalogdb;Port=5432;Database=orderingdb;Username=postgres;Password=password"
+    ports:
+      - "16888:16888"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      catalogdb:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c", "./wait-for-it.sh rabbitmq:5672 -- ./wait-for-it.sh catalogdb:5432 -- dotnet OrderProcessor.dll"]
+    networks:
+      - eShopNetwork
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:16888/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  payment-processor:
+    image: payment-processor
+    build: 
+      context: .
+      dockerfile: src/PaymentProcessor/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__EventBus: "amqp://guest:guest@rabbitmq:5672"
+    ports:
+      - "5226:8080"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c", "./wait-for-it.sh rabbitmq:5672 -- dotnet PaymentProcessor.dll"]
+    networks:
+      - eShopNetwork
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  webhooks-api:
+    image: webhooks-api
+    build: 
+      context: .
+      dockerfile: src/Webhooks.API/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://*:5101"
+      ConnectionStrings__WebhooksDB: "Server=catalogdb;Port=5432;Database=webhooksdb;User Id=postgres;Password=password;"
+      ConnectionStrings__EventBus: "amqp://guest:guest@rabbitmq:5672"
+    ports:
+      - "5227:5101"
+    depends_on:
+      catalogdb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c", "./wait-for-it.sh rabbitmq:5672 -- ./wait-for-it.sh catalogdb:5432 -- dotnet Webhooks.API.dll"]
+    networks:
+      - eShopNetwork
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "./wait-for-it.sh", "catalogdb:5432", "--", "curl", "-f", "http://localhost:5101/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mobile-bff:
+    image: mobile-bff
+    build:
+      context: .
+      dockerfile: src/Mobile.Bff.Shopping/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://*:11632"
+      Identity__Url: "http://identity-api:5001"
+      Catalog__Url: "http://catalog-api:80"
+      Ordering__Url: "http://ordering-api:8080"
+      Basket__Url: "http://basket-api:5221"
+    ports:
+      - "11632:11632"
+    depends_on:
+      identity-api:
+        condition: service_healthy
+      catalog-api:
+        condition: service_healthy
+      ordering-api:
+        condition: service_healthy
+      basket-api:
+        condition: service_healthy
+    networks:
+      - eShopNetwork
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11632/health"]
+      interval: 90s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+
+  webapp:
+    image: webapp
+    build:
+      context: .
+      dockerfile: src/WebApp/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://*:5004"
+      IdentityUrl: "http://identity-api:5001"
+      CallBackUrl: "http://webapp:5004"
+      Catalog__Url: "http://catalog-api:80"
+      Basket__Url: "http://basket-api:5221"
+      Ordering__Url: "http://ordering-api:8080"
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Port: 5672
+      RabbitMQ__Uri: "amqp://guest:guest@rabbitmq:5672"
+    ports:
+      - "16889:5004"
+    depends_on:
+      identity-api:
+        condition: service_healthy
+      catalog-api:
+        condition: service_healthy
+      ordering-api:
+        condition: service_healthy
+      basket-api:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c", "./wait-for-it.sh rabbitmq:5672 -- ./wait-for-it.sh catalogdb:5432 -- ./wait-for-it.sh identity-api:5001 -- dotnet WebApp.dll"]
+    networks:
+      - eShopNetwork
+    restart: unless-stopped
+
+
+networks:
+  eShopNetwork:
+    driver: bridge
+
+volumes:
+  redis_data:
+  pg_data:
+  rmq_data:
+  basket-data-protection:
+  ordering-api-keys:
