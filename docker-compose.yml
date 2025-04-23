@@ -137,12 +137,14 @@ services:
       dockerfile: src/Identity.API/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      MauiCallback: "http://localhost:5000/callback"
+      MauiCallback: "http://identity-api:5001/callback"
       ASPNETCORE_URLS: "http://*:5001"
       ConnectionStrings__IdentityDB: "Server=catalogdb;Port=5432;Database=identitydb;User Id=postgres;Password=password;"
       ConnectionStrings__EventBus: "amqp://guest:guest@rabbitmq:5672"
     ports:
       - "5243:5001" # map interne 5001 vers externe 5243 (évite conflit avec catalog)
+    volumes:
+      - ~/data-protection-keys:/root/.aspnet/data-protection-keys
     depends_on:
       catalogdb:
         condition: service_healthy
@@ -344,3 +346,4 @@ volumes:
   rmq_data:
   basket-data-protection:
   ordering-api-keys:
+  data-protection-keys:
