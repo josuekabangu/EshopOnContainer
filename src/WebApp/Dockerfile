@@ -25,9 +25,7 @@ COPY src/WebApp/appsettings.Development.json ./appsettings.Development.json
 
 # Copie les scripts depuis le dossier temporaire
 COPY --from=build /tmp/scripts/wait-for-it.sh /app/wait-for-it.sh
-
 RUN apt-get update && apt-get install -y curl
-
 RUN chmod +x /app/wait-for-it.sh
 
 EXPOSE 16888

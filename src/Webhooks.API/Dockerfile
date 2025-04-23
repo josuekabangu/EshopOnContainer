@@ -4,8 +4,7 @@ WORKDIR /app
 
 # Copie les scripts dans un dossier temporaire
 COPY scripts/ /tmp/scripts/
-RUN chmod +x /tmp/scripts/init-db.sh \
-    && chmod +x /tmp/scripts/wait-for-it.sh
+RUN chmod +x /tmp/scripts/wait-for-it.sh
 
 
 COPY . .   
@@ -22,13 +21,9 @@ COPY --from=build /out .
 
 # Copie les scripts depuis le dossier temporaire
 COPY --from=build /tmp/scripts/wait-for-it.sh /app/wait-for-it.sh
-COPY --from=build /tmp/scripts/init-db.sh /app/init-db.sh
-
 RUN apt-get update && apt-get install -y curl
-
 RUN mkdir -p /app/keys && chown 1654 /app/keys
-
-RUN chmod +x /app/wait-for-it.sh /app/init-db.sh
+RUN chmod +x /app/wait-for-it.sh
 
 EXPOSE 5227
 

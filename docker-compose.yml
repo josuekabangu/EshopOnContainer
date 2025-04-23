@@ -144,7 +144,7 @@ services:
     ports:
       - "5243:5001" # map interne 5001 vers externe 5243 (évite conflit avec catalog)
     volumes:
-      - ~/data-protection-keys:/root/.aspnet/data-protection-keys
+      - ./data-protection-keys:/root/.aspnet/data-protection-keys
     depends_on:
       catalogdb:
         condition: service_healthy
@@ -334,7 +334,6 @@ services:
     networks:
       - eShopNetwork
     restart: unless-stopped
-
 
 networks:
   eShopNetwork:
