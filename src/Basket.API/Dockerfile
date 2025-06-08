@@ -1,5 +1,5 @@
 # Étape de build
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0.203 AS build
 WORKDIR /app
 
 # 💡 Copie les scripts dans un dossier temporaire
@@ -27,3 +27,4 @@ RUN chmod +x /app/wait-for-it.sh
 EXPOSE 5221
 
 ENTRYPOINT ["dotnet", "Basket.API.dll"]
+

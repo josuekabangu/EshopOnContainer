@@ -1,6 +1,8 @@
 ﻿@page "/user/login"
 @inject NavigationManager Nav
+@inject IConfiguration Configuration
 @attribute [Authorize]
+
 @code {
     [SupplyParameterFromQuery]
     public string? ReturnUrl { get; set; }
@@ -16,6 +18,10 @@
         await base.OnInitializedAsync();
     }
 
-    public static string Url(NavigationManager nav)
-        => $"user/login?returnUrl={Uri.EscapeDataString(nav.ToBaseRelativePath(nav.Uri))}";
+    public static string Url(NavigationManager nav, IConfiguration config)
+    {
+        var returnPath = nav.ToBaseRelativePath(nav.Uri);
+        var identityBaseUrl = config["Identity:BaseUrl"] ?? "/";
+        return $"{identityBaseUrl}/account/login?returnUrl={Uri.EscapeDataString("/" + returnPath)}";
+    }
 }

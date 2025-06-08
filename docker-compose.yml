@@ -139,10 +139,11 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       MauiCallback: "http://identity-api:5001/callback"
       ASPNETCORE_URLS: "http://*:5001"
+      WebAppClient: "http://localhost:16889"
       ConnectionStrings__IdentityDB: "Server=catalogdb;Port=5432;Database=identitydb;User Id=postgres;Password=password;"
       ConnectionStrings__EventBus: "amqp://guest:guest@rabbitmq:5672"
     ports:
-      - "5243:5001" # map interne 5001 vers externe 5243 (évite conflit avec catalog)
+      - "5001:5001" # map interne 5001 vers externe 5243 (évite conflit avec catalog)
     volumes:
       - ./data-protection-keys:/root/.aspnet/data-protection-keys
     depends_on:
@@ -184,7 +185,7 @@ services:
         condition: service_healthy
     volumes:
       - ordering-api-keys:/app/keys
-    entrypoint: ["/bin/sh", "-c", "./wait-for-it.sh rabbitmq:5672 -- ./wait-for-it.sh orderingdb:5432 -- ./wait-for-it.sh identity-api:5001 -- dotnet Ordering.API.dll"]
+    entrypoint: ["/bin/sh", "-c", "./wait-for-it.sh rabbitmq:5672 -- ./wait-for-it.sh catalogdb:5432 -- ./wait-for-it.sh identity-api:5001 -- dotnet Ordering.API.dll"]
     networks:
       - eShopNetwork
     restart: unless-stopped 
@@ -316,11 +317,18 @@ services:
       Catalog__Url: "http://catalog-api:80"
       Basket__Url: "http://basket-api:5221"
       Ordering__Url: "http://ordering-api:8080"
-      RabbitMQ__Host: rabbitmq
-      RabbitMQ__Port: 5672
-      RabbitMQ__Uri: "amqp://guest:guest@rabbitmq:5672"
+
+      # Ancienne configuration pour EventBusRabbitMQ
+      EventBus__HostName: "rabbitmq"
+      EventBus__UserName: "guest"
+      EventBus__Password: "guest"
+      EventBus__RetryCount: "5"
+      EventBus__SubscriptionClientName: "Ordering.webapp"
+      ConnectionStrings__EventBus: "amqp://guest:guest@rabbitmq:5672"
     ports:
       - "16889:5004"
+    volumes:
+      - ./data-protection-keys:/root/.aspnet/data-protection-keys
     depends_on:
       identity-api:
         condition: service_healthy
@@ -330,10 +338,18 @@ services:
         condition: service_healthy
       basket-api:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     entrypoint: ["/bin/sh", "-c", "./wait-for-it.sh rabbitmq:5672 -- ./wait-for-it.sh catalogdb:5432 -- ./wait-for-it.sh identity-api:5001 -- dotnet WebApp.dll"]
     networks:
       - eShopNetwork
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
 
 networks:
   eShopNetwork:

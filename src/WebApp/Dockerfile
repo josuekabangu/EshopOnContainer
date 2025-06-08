@@ -28,6 +28,6 @@ COPY --from=build /tmp/scripts/wait-for-it.sh /app/wait-for-it.sh
 RUN apt-get update && apt-get install -y curl
 RUN chmod +x /app/wait-for-it.sh
 
-EXPOSE 16888
+EXPOSE 5004
 
 ENTRYPOINT ["dotnet", "WebApp.dll"]

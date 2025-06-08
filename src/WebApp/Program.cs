@@ -23,7 +23,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseAntiforgery();
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 

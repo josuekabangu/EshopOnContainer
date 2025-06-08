@@ -15,6 +15,12 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
         .AddEntityFrameworkStores<ApplicationDbContext>()
         .AddDefaultTokenProviders();
 
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/account/login"; // adapter à ta route
+    options.AccessDeniedPath = "/account/accessdenied";
+});
+
 builder.Services.AddIdentityServer(options =>
 {
     //options.IssuerUri = "null";

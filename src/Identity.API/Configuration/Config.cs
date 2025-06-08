@@ -1,8 +1,12 @@
-﻿namespace eShop.Identity.API.Configuration
+﻿using Duende.IdentityServer;
+using Duende.IdentityServer.Models;
+using Microsoft.Extensions.Configuration;
+using System.Collections.Generic;
+
+namespace eShop.Identity.API.Configuration
 {
     public class Config
     {
-        // ApiResources define the apis in your system
         public static IEnumerable<ApiResource> GetApis()
         {
             return new List<ApiResource>
@@ -13,8 +17,6 @@
             };
         }
 
-        // ApiScope is used to protect the API 
-        //The effect is the same as that of API resources in IdentityServer 3.x
         public static IEnumerable<ApiScope> GetApiScopes()
         {
             return new List<ApiScope>
@@ -25,8 +27,6 @@
             };
         }
 
-        // Identity resources are data like user ID, name, or email address of a user
-        // see: http://docs.identityserver.io/en/release/configuration/resources.html
         public static IEnumerable<IdentityResource> GetResources()
         {
             return new List<IdentityResource>
@@ -36,17 +36,18 @@
             };
         }
 
-        // client want to access resources (aka scopes)
         public static IEnumerable<Client> GetClients(IConfiguration configuration)
         {
+            var webAppClient = configuration["WebAppClient"]?.TrimEnd('/');
+            var webAppClientExternal = configuration["WebAppClientExternal"]?.TrimEnd('/');
+
             return new List<Client>
             {
                 new Client
                 {
                     ClientId = "maui",
                     ClientName = "eShop MAUI OpenId Client",
-                    AllowedGrantTypes = GrantTypes.Code,                    
-                    //Used to retrieve the access token on the back channel.
+                    AllowedGrantTypes = GrantTypes.Code,
                     ClientSecrets =
                     {
                         new Secret("secret".Sha256())
@@ -55,7 +56,6 @@
                     RequireConsent = false,
                     RequirePkce = true,
                     PostLogoutRedirectUris = { $"{configuration["MauiCallback"]}/Account/Redirecting" },
-                    //AllowedCorsOrigins = { "http://eshopxamarin" },
                     AllowedScopes = new List<string>
                     {
                         IdentityServerConstants.StandardScopes.OpenId,
@@ -66,13 +66,13 @@
                         "mobileshoppingagg",
                         "webhooks"
                     },
-                    //Allow requesting refresh tokens for long lived API access
                     AllowOfflineAccess = true,
                     AllowAccessTokensViaBrowser = true,
                     AlwaysIncludeUserClaimsInIdToken = true,
-                    AccessTokenLifetime = 60*60*2, // 2 hours
-                    IdentityTokenLifetime= 60*60*2 // 2 hours
+                    AccessTokenLifetime = 60*60*2,
+                    IdentityTokenLifetime = 60*60*2
                 },
+
                 new Client
                 {
                     ClientId = "webapp",
@@ -81,7 +81,7 @@
                     {
                         new Secret("secret".Sha256())
                     },
-                    ClientUri = $"{configuration["WebAppClient"]}",                             // public uri of the client
+                    ClientUri = webAppClient,
                     AllowedGrantTypes = GrantTypes.Code,
                     AllowAccessTokensViaBrowser = false,
                     RequireConsent = false,
@@ -90,11 +90,13 @@
                     RequirePkce = false,
                     RedirectUris = new List<string>
                     {
-                        $"{configuration["WebAppClient"]}/signin-oidc"
+                        $"{webAppClient}/signin-oidc",
+                        $"{webAppClientExternal}/signin-oidc"
                     },
                     PostLogoutRedirectUris = new List<string>
                     {
-                        $"{configuration["WebAppClient"]}/signout-callback-oidc"
+                        $"{webAppClient}/signout-callback-oidc",
+                        $"{webAppClientExternal}/signout-callback-oidc"
                     },
                     AllowedScopes = new List<string>
                     {
@@ -106,9 +108,10 @@
                         "webshoppingagg",
                         "webhooks"
                     },
-                    AccessTokenLifetime = 60*60*2, // 2 hours
-                    IdentityTokenLifetime= 60*60*2 // 2 hours
+                    AccessTokenLifetime = 60*60*2,
+                    IdentityTokenLifetime = 60*60*2
                 },
+
                 new Client
                 {
                     ClientId = "webhooksclient",
@@ -117,7 +120,7 @@
                     {
                         new Secret("secret".Sha256())
                     },
-                    ClientUri = $"{configuration["WebhooksWebClient"]}",                             // public uri of the client
+                    ClientUri = $"{configuration["WebhooksWebClient"]}",
                     AllowedGrantTypes = GrantTypes.Code,
                     AllowAccessTokensViaBrowser = false,
                     RequireConsent = false,
@@ -138,53 +141,41 @@
                         IdentityServerConstants.StandardScopes.OfflineAccess,
                         "webhooks"
                     },
-                    AccessTokenLifetime = 60*60*2, // 2 hours
-                    IdentityTokenLifetime= 60*60*2 // 2 hours
+                    AccessTokenLifetime = 60*60*2,
+                    IdentityTokenLifetime = 60*60*2
                 },
+
                 new Client
                 {
                     ClientId = "basketswaggerui",
                     ClientName = "Basket Swagger UI",
                     AllowedGrantTypes = GrantTypes.Implicit,
                     AllowAccessTokensViaBrowser = true,
-
                     RedirectUris = { $"{configuration["BasketApiClient"]}/swagger/oauth2-redirect.html" },
                     PostLogoutRedirectUris = { $"{configuration["BasketApiClient"]}/swagger/" },
-
-                    AllowedScopes =
-                    {
-                        "basket"
-                    }
+                    AllowedScopes = { "basket" }
                 },
+
                 new Client
                 {
                     ClientId = "orderingswaggerui",
                     ClientName = "Ordering Swagger UI",
                     AllowedGrantTypes = GrantTypes.Implicit,
                     AllowAccessTokensViaBrowser = true,
-
                     RedirectUris = { $"{configuration["OrderingApiClient"]}/swagger/oauth2-redirect.html" },
                     PostLogoutRedirectUris = { $"{configuration["OrderingApiClient"]}/swagger/" },
-
-                    AllowedScopes =
-                    {
-                        "orders"
-                    }
+                    AllowedScopes = { "orders" }
                 },
+
                 new Client
                 {
                     ClientId = "webhooksswaggerui",
                     ClientName = "WebHooks Service Swagger UI",
                     AllowedGrantTypes = GrantTypes.Implicit,
                     AllowAccessTokensViaBrowser = true,
-
                     RedirectUris = { $"{configuration["WebhooksApiClient"]}/swagger/oauth2-redirect.html" },
                     PostLogoutRedirectUris = { $"{configuration["WebhooksApiClient"]}/swagger/" },
-
-                    AllowedScopes =
-                    {
-                        "webhooks"
-                    }
+                    AllowedScopes = { "webhooks" }
                 }
             };
         }
