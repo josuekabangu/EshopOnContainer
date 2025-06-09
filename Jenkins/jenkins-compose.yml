@@ -1,0 +1,28 @@
+services:
+  jenkins:
+    build:
+      context: ../        
+      dockerfile: Jenkins/Dockerfile  
+    container_name: jenkins
+    user: root
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+      - JENKINS_ADMIN_ID=admin
+      - JENKINS_ADMIN_PASSWORD=admin
+    entrypoint: ["/bin/bash", "-c", "/usr/local/bin/init-jenkins.sh"]
+    networks:
+      - jenkins-net
+
+volumes:
+  jenkins_home:
+    driver: local
+
+networks:
+  jenkins-net:
+    driver: bridge
