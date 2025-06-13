@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: catalogdb
+  namespace: dev
+  labels:
+    app: catalogdb
+spec:
+  serviceName: catalogdb-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: catalogdb
+  template:
+    metadata:
+      labels:
+        app: catalogdb
+    spec:
+      containers:
+      - name: catalogdb
+        image: ankane/pgvector:latest
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: catalogdb-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: catalogdb-secrets
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          value: catalogdb
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        - name: POSTGRES_HOST_AUTH_METHOD
+          value: trust
+        volumeMounts:
+        - name: pg-data
+          mountPath: /var/lib/postgresql/data
+        - name: init-db
+          mountPath: /docker-entrypoint-initdb.d/init-db.sh
+          subPath: init-db.sh
+        command: ["postgres", "-c", "shared_buffers=512MB", "-c", "max_connections=200", "-c", "fsync=off"]
+        livenessProbe:
+          exec:
+            command: ["pg_isready", "-U", "postgres", "-d", "catalogdb"]
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 5
+        readinessProbe:
+          exec:
+            command: ["pg_isready", "-U", "postgres", "-d", "catalogdb"]
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+      volumes:
+      - name: pg-data
+        persistentVolumeClaim:
+          claimName: catalogdb-pvc
+      - name: init-db
+        configMap:
+          name: catalogdb-config
+          items:
+          - key: init-db.sh
+            path: init-db.sh
+

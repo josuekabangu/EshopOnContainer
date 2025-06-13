@@ -2,18 +2,18 @@ FROM jenkins/jenkins:lts
 
 USER root
 
-# Installer les dépendances nécessaires pour Docker + K3s
 RUN apt-get update && apt-get install -y \
-    apt-transport-https \
-    ca-certificates \
     curl \
-    gnupg \
-    lsb-release \
     bash \
-    sudo
+    sudo \
+    iproute2 \
+    socat \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copier le script d'installation
 COPY scripts/init-jenkins.sh /usr/local/bin/init-jenkins.sh
-RUN chmod +x /usr/local/bin/init-jenkins.sh
+COPY scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/init-jenkins.sh /usr/local/bin/entrypoint.sh
 
 USER jenkins
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

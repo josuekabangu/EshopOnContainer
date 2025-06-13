@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: catalogdb-config
+  namespace: dev
+data:
+  init-db.sh: |
+    #!/bin/bash
+    # Remplace ceci par le contenu réel de ./scripts/init-db.sh
+    echo "Initialisation de la base de données..."
