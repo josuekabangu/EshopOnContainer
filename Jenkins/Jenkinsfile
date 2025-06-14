@@ -1,0 +1,68 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_REGISTRY = 'docker.io/ajkabs'  // ← à modifier avec ton Docker Hub
+        DOCKER_TAG = '' // sera défini dynamiquement
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                script {
+                    DOCKER_TAG = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                }
+            }
+        }
+
+        stage('Build Docker Images') {
+            steps {
+                sh 'docker compose build'
+            }
+        }
+
+        stage('Login to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                    sh 'echo $PASSWORD | docker login -u $USERNAME --password-stdin'
+                }
+            }
+        }
+
+        stage('Push Docker Images') {
+            steps {
+                script {
+                    // Liste des images locales (définies dans le compose avec `build:`)
+                    def images = [
+                        'basket-api',
+                        'catalog-api',
+                        'identity-api',
+                        'ordering-api',
+                        'order-processor',
+                        'payment-processor',
+                        'webhooks-api',
+                        'mobile-bff',
+                        'webapp'
+                    ]
+
+                    for (img in images) {
+                        def tagged = "${DOCKER_REGISTRY}/${img}:${DOCKER_TAG}"
+                        sh """
+                            echo "Tagging image ${img} as ${tagged}"
+                            docker tag ${img} ${tagged}
+                            docker push ${tagged}
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Cleanup') {
+            steps {
+                sh 'docker logout'
+                sh 'docker image prune -f'
+            }
+        }
+    }
+}
