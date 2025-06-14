@@ -12,7 +12,7 @@ pipeline {
     stages {
         stage('Checkout Repository') {
             steps {
-                // Cloner le dépôt GitHub avec les credentials
+                echo "Clonage du dépôt depuis ${REPO_URL}..."
                 git url: "${REPO_URL}", credentialsId: "${GIT_CREDENTIALS_ID}", branch: 'main'
             }
         }
@@ -21,20 +21,23 @@ pipeline {
             steps {
                 script {
                     def services = [
-                        ['name': 'basket-api', 'path': 'Basket.API'],
-                        ['name': 'catalog-api', 'path': 'Catalog.API'],
-                        ['name': 'identity-api', 'path': 'Identity.API'],
-                        ['name': 'ordering-api', 'path': 'Ordering.API'],
-                        ['name': 'order-processor', 'path': 'OrderProcessor'],
-                        ['name': 'payment-processor', 'path': 'PaymentProcessor'],
-                        ['name': 'webhooks-api', 'path': 'Webhooks.API'],
-                        ['name': 'mobile-bff', 'path': 'Mobile.Bff.Shopping'],
-                        ['name': 'webapp', 'path': 'WebApp']
+                        [name: 'basket-api', path: 'Basket.API'],
+                        [name: 'catalog-api', path: 'Catalog.API'],
+                        [name: 'identity-api', path: 'Identity.API'],
+                        [name: 'ordering-api', path: 'Ordering.API'],
+                        [name: 'order-processor', path: 'OrderProcessor'],
+                        [name: 'payment-processor', path: 'PaymentProcessor'],
+                        [name: 'webhooks-api', path: 'Webhooks.API'],
+                        [name: 'mobile-bff', path: 'Mobile.Bff.Shopping'],
+                        [name: 'webapp', path: 'WebApp']
                     ]
 
-                    // Construire chaque image Docker personnalisée
                     for (service in services) {
-                        sh "docker build -t ${DOCKER_ID}/${service.name}:${DOCKER_TAG} -f src/${service.path}/Dockerfile ."
+                        echo "Build de l'image Docker pour ${service.name}"
+                        sh """
+                            docker build -t ${DOCKER_ID}/${service.name}:${DOCKER_TAG} \
+                            -f src/${service.path}/Dockerfile .
+                        """
                     }
                 }
             }
@@ -42,8 +45,14 @@ pipeline {
 
         stage('Login to DockerHub') {
             steps {
-                // Connexion sécurisée à DockerHub
-                withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                echo "Connexion à DockerHub..."
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: "${DOCKER_CREDENTIALS_ID}",
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
                     sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
                 }
             }
@@ -52,14 +61,15 @@ pipeline {
         stage('Push Docker Images') {
             steps {
                 script {
-                    def services = [
+                    def imageNames = [
                         'basket-api', 'catalog-api', 'identity-api',
                         'ordering-api', 'order-processor', 'payment-processor',
                         'webhooks-api', 'mobile-bff', 'webapp'
                     ]
-                    // Pousser les images taguées vers DockerHub
-                    for (service in services) {
-                        sh "docker push ${DOCKER_ID}/${service}:${DOCKER_TAG}"
+
+                    for (name in imageNames) {
+                        echo "Push de ${name} vers DockerHub..."
+                        sh "docker push ${DOCKER_ID}/${name}:${DOCKER_TAG}"
                     }
                 }
             }
@@ -67,8 +77,14 @@ pipeline {
     }
 
     post {
+        success {
+            echo "Pipeline terminé avec succès. Images taguées : ${DOCKER_TAG}"
+        }
+        failure {
+            echo "Échec du pipeline. Vérifie les étapes précédentes."
+        }
         always {
-            echo "Pipeline terminé. Images taguées : ${DOCKER_TAG}"
+            echo "Pipeline terminé. (Succès ou Échec)"
         }
     }
 }
