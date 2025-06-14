@@ -27,7 +27,8 @@ pipeline {
                     ]
                     // Construction de chaque image Docker personnalisée
                     for (service in services) {
-                        sh "docker build -t ${DOCKER_ID}/${service}:${DOCKER_TAG} -f src/${service.replace('-', '.')}/Dockerfile ."
+                        // Utilisation directe du nom de service avec tirets dans le chemin
+                        sh "docker build -t ${DOCKER_ID}/${service}:${DOCKER_TAG} -f src/${service}/Dockerfile ."
                     }
                 }
             }
