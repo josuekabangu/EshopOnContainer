@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity-api
+  namespace: dev 
+  labels:
+    app: identity-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: identity-api
+  template:
+    metadata:
+      labels:
+        app: identity-api
+    spec:
+      containers:
+      - name: identity-api
+        image: identity-api:latest
+        ports:
+        - containerPort: 5001
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: Development
+        - name: MauiCallback
+          value: http://identity-api:5001/callback
+        - name: ASPNETCORE_URLS
+          value: http://*:5001
+        - name: WebAppClient
+          value: http://localhost:16889
+        - name: ConnectionStrings__IdentityDB
+          valueFrom:
+            secretKeyRef:
+              name: identity-api-secrets
+              key: IDENTITYDB_CONNECTION
+        - name: ConnectionStrings__EventBus
+          valueFrom:
+            secretKeyRef:
+              name: identity-api-secrets
+              key: EVENTBUS_CONNECTION
+        volumeMounts:
+        - name: data-protection-keys
+          mountPath: /root/.aspnet/data-protection-keys
+        command: ["/bin/sh", "-c", "./wait-for-it.sh rabbitmq:5672 -- ./wait-for-it.sh catalogdb:5432 -- dotnet Identity.API.dll"]
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5001
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5001
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+      volumes:
+      - name: data-protection-keys
+        persistentVolumeClaim:
+          claimName: data-protection-keys-pvc

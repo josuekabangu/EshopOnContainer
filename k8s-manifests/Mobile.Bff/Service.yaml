@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mobile-bff
+  namespace: dev 
+spec:
+  selector:
+    app: mobile-bff
+  ports:
+  - protocol: TCP
+    port: 11632
+    targetPort: 11632
+    nodePort: 31632
+  type: NodePort

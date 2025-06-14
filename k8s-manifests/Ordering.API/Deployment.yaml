@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ordering-api
+  namespace: dev 
+  labels:
+    app: ordering-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ordering-api
+  template:
+    metadata:
+      labels:
+        app: ordering-api
+    spec:
+      containers:
+      - name: ordering-api
+        image: ordering-api:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: Development
+        - name: ASPNETCORE_URLS
+          value: http://*:8080
+        - name: ConnectionStrings__orderingdb
+          valueFrom:
+            secretKeyRef:
+              name: ordering-api-secrets
+              key: ORDERINGDB_CONNECTION
+        - name: ConnectionStrings__EventBus
+          valueFrom:
+            secretKeyRef:
+              name: ordering-api-secrets
+              key: EVENTBUS_CONNECTION
+        - name: RabbitMQ__Host
+          value: rabbitmq
+        - name: RabbitMQ__Port
+          value: "5672"
+        - name: Identity__Url
+          value: http://identity-api:5001
+        volumeMounts:
+        - name: ordering-api-keys
+          mountPath: /app/keys
+        command: ["/bin/sh", "-c", "./wait-for-it.sh rabbitmq:5672 -- ./wait-for-it.sh catalogdb:5432 -- ./wait-for-it.sh identity-api:5001 -- dotnet Ordering.API.dll"]
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+          limits:
+            cpu: "600m"
+            memory: "512Mi"
+      volumes:
+      - name: ordering-api-keys
+        persistentVolumeClaim:
+          claimName: ordering-api-keys-pvc

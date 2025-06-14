@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-api
+  namespace: dev 
+  labels:
+    app: catalog-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: catalog-api
+  template:
+    metadata:
+      labels:
+        app: catalog-api
+    spec:
+      containers:
+      - name: catalog-api
+        image: catalog-api:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: Development
+        - name: ASPNETCORE_URLS
+          value: http://*:80
+        - name: ConnectionStrings__CatalogDB
+          valueFrom:
+            secretKeyRef:
+              name: catalog-api-secrets
+              key: CATALOGDB_CONNECTION
+        - name: ConnectionStrings__EventBus
+          valueFrom:
+            secretKeyRef:
+              name: catalog-api-secrets
+              key: EVENTBUS_CONNECTION
+        - name: DOTNET_READYTORUN
+          value: "1"
+        - name: DOTNET_TieredPGO
+          value: "1"
+        command: ["/bin/sh", "-c", "./wait-for-it.sh rabbitmq:5672 -- dotnet Catalog.API.dll"]
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"

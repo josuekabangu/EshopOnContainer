@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: basket-api-config
+  namespace: dev 
+data:
+  ASPNETCORE_ENVIRONMENT: Development
+  DOTNET_READYTORUN: "1"
+  DOTNET_TieredPGO: "1"

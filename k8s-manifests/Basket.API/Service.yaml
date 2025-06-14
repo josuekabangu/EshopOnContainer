@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: basket-api
+  namespace: dev 
+spec:
+  selector:
+    app: basket-api
+  ports:
+  - protocol: TCP
+    port: 5221
+    targetPort: 5221
+    nodePort: 30221
+  type: NodePort

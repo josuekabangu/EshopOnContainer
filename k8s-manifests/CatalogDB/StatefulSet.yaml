@@ -16,6 +16,8 @@ spec:
       labels:
         app: catalogdb
     spec:
+      securityContext:
+        fsGroup: 999  # Permet d'accéder au volume avec le bon groupe
       containers:
       - name: catalogdb
         image: ankane/pgvector:latest
@@ -38,13 +40,14 @@ spec:
           value: /var/lib/postgresql/data/pgdata
         - name: POSTGRES_HOST_AUTH_METHOD
           value: trust
+        securityContext:
+          runAsUser: 999  # Exécute PostgreSQL avec UID 999
         volumeMounts:
         - name: pg-data
           mountPath: /var/lib/postgresql/data
         - name: init-db
           mountPath: /docker-entrypoint-initdb.d/init-db.sh
           subPath: init-db.sh
-        command: ["postgres", "-c", "shared_buffers=512MB", "-c", "max_connections=200", "-c", "fsync=off"]
         livenessProbe:
           exec:
             command: ["pg_isready", "-U", "postgres", "-d", "catalogdb"]
@@ -69,4 +72,3 @@ spec:
           items:
           - key: init-db.sh
             path: init-db.sh
-

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: order-processor-config
+  namespace: dev 
+data:
+  ASPNETCORE_ENVIRONMENT: Development

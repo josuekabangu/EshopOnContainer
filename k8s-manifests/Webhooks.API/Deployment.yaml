@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhooks-api
+  namespace: dev 
+  labels:
+    app: webhooks-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webhooks-api
+  template:
+    metadata:
+      labels:
+        app: webhooks-api
+    spec:
+      containers:
+      - name: webhooks-api
+        image: webhooks-api:latest
+        ports:
+        - containerPort: 5101
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: Development
+        - name: ASPNETCORE_URLS
+          value: http://*:5101
+        - name: ConnectionStrings__WebhooksDB
+          valueFrom:
+            secretKeyRef:
+              name: webhooks-api-secrets
+              key: WEBHOOKSDB_CONNECTION
+        - name: ConnectionStrings__EventBus
+          valueFrom:
+            secretKeyRef:
+              name: webhooks-api-secrets
+              key: EVENTBUS_CONNECTION
+        command: ["/bin/sh", "-c", "./wait-for-it.sh rabbitmq:5672 -- ./wait-for-it.sh catalogdb:5432 -- dotnet Webhooks.API.dll"]
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5101
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5101
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "400m"
+            memory: "512Mi"

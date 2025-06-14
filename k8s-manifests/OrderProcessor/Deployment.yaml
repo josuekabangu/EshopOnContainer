@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-processor
+  namespace: dev 
+  labels:
+    app: order-processor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-processor
+  template:
+    metadata:
+      labels:
+        app: order-processor
+    spec:
+      containers:
+      - name: order-processor
+        image: order-processor:latest
+        ports:
+        - containerPort: 16888
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: Development
+        - name: ASPNETCORE_URLS
+          value: http://*:16888
+        - name: ConnectionStrings__EventBus
+          valueFrom:
+            secretKeyRef:
+              name: order-processor-secrets
+              key: EVENTBUS_CONNECTION
+        - name: ConnectionStrings__orderingdb
+          valueFrom:
+            secretKeyRef:
+              name: order-processor-secrets
+              key: ORDERINGDB_CONNECTION
+        command: ["/bin/sh", "-c", "./wait-for-it.sh rabbitmq:5672 -- ./wait-for-it.sh catalogdb:5432 -- dotnet OrderProcessor.dll"]
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 16888
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 16888
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "400m"
+            memory: "512Mi"

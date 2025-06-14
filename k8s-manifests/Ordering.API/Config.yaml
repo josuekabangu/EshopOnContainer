@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ordering-api-config
+  namespace: dev 
+data:
+  ASPNETCORE_ENVIRONMENT: Development

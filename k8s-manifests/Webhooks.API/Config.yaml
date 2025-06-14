@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webhooks-api-config
+  namespace: dev 
+data:
+  ASPNETCORE_ENVIRONMENT: Development

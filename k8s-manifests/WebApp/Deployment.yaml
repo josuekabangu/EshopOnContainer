@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp
+  namespace: dev 
+  labels:
+    app: webapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      containers:
+      - name: webapp
+        image: webapp:latest
+        ports:
+        - containerPort: 5004
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: Development
+        - name: ASPNETCORE_URLS
+          value: http://*:5004
+        - name: IdentityUrl
+          value: http://identity-api:5001
+        - name: CallBackUrl
+          value: http://webapp:5004
+        - name: Catalog__Url
+          value: http://catalog-api:80
+        - name: Basket__Url
+          value: http://basket-api:5221
+        - name: Ordering__Url
+          value: http://ordering-api:8080
+        - name: EventBus__HostName
+          value: rabbitmq
+        - name: EventBus__UserName
+          valueFrom:
+            secretKeyRef:
+              name: webapp-secrets
+              key: EVENTBUS_USERNAME
+        - name: EventBus__Password
+          valueFrom:
+            secretKeyRef:
+              name: webapp-secrets
+              key: EVENTBUS_PASSWORD
+        - name: EventBus__RetryCount
+          value: "5"
+        - name: EventBus__SubscriptionClientName
+          value: Ordering.webapp
+        - name: ConnectionStrings__EventBus
+          valueFrom:
+            secretKeyRef:
+              name: webapp-secrets
+              key: EVENTBUS_CONNECTION
+        volumeMounts:
+        - name: data-protection-keys
+          mountPath: /root/.aspnet/data-protection-keys
+        command: ["/bin/sh", "-c", "./wait-for-it.sh rabbitmq:5672 -- ./wait-for-it.sh catalogdb:5432 -- ./wait-for-it.sh identity-api:5001 -- dotnet WebApp.dll"]
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5004
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5004
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+      volumes:
+      - name: data-protection-keys
+        persistentVolumeClaim:
+          claimName: data-protection-keys-pvc

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhooks-api
+  namespace: dev 
+spec:
+  selector:
+    app: webhooks-api
+  ports:
+  - protocol: TCP
+    port: 5101
+    targetPort: 5101
+    nodePort: 30227
+  type: NodePort
+

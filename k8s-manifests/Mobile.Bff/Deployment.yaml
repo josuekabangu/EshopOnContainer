@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mobile-bff
+  namespace: dev 
+  labels:
+    app: mobile-bff
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mobile-bff
+  template:
+    metadata:
+      labels:
+        app: mobile-bff
+    spec:
+      containers:
+      - name: mobile-bff
+        image: mobile-bff:latest
+        ports:
+        - containerPort: 11632
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: Development
+        - name: ASPNETCORE_URLS
+          value: http://*:11632
+        - name: Identity__Url
+          value: http://identity-api:5001
+        - name: Catalog__Url
+          value: http://catalog-api:80
+        - name: Ordering__Url
+          value: http://ordering-api:8080
+        - name: Basket__Url
+          value: http://basket-api:5221
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 11632
+          initialDelaySeconds: 90
+          periodSeconds: 90
+          timeoutSeconds: 30
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 11632
+          initialDelaySeconds: 30
+          periodSeconds: 90
+          timeoutSeconds: 30
+          failureThreshold: 5
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "400m"
+            memory: "512Mi"
