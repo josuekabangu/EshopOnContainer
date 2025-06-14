@@ -13,7 +13,7 @@ pipeline {
         stage('Checkout Repository') {
             steps {
                 echo "Clonage du dépôt depuis ${REPO_URL}..."
-                git url: "${REPO_URL}", credentialsId: "${GIT_CREDENTIALS_ID}", branch: 'main'
+                git url: "${REPO_URL}", credentialsId: "${GIT_CREDENTIALS_ID}", branch: "${env.BRANCH_NAME}"
             }
         }
 
