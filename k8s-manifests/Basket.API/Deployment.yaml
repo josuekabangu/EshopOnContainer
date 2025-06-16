@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: basket-api
-  namespace: dev 
+  namespace: dev
   labels:
     app: basket-api
 spec:
@@ -16,58 +16,61 @@ spec:
         app: basket-api
     spec:
       containers:
-      - name: basket-api
-        image: basket-api:latest
-        ports:
-        - containerPort: 5221
-        env:
-        - name: ASPNETCORE_ENVIRONMENT
-          value: Development
-        - name: ASPNETCORE_URLS
-          value: http://*:5221
-        - name: ConnectionStrings__Redis
-          value: redis
-        - name: ConnectionStrings__EventBus
-          valueFrom:
-            secretKeyRef:
-              name: basket-api-secrets
-              key: EVENTBUS_CONNECTION
-        - name: Identity__Url
-          value: http://identity-api:5001
-        - name: DOTNET_READYTORUN
-          value: "1"
-        - name: DOTNET_TieredPGO
-          value: "1"
-        volumeMounts:
-        - name: basket-data-protection
-          mountPath: /app/keys
-        command: ["/bin/sh", "-c", "./wait-for-it.sh redis:6379 -- ./wait-for-it.sh rabbitmq:5672 -- dotnet Basket.API.dll"]
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 5221
-            scheme: HTTP
-          initialDelaySeconds: 30
-          periodSeconds: 30
-          timeoutSeconds: 5
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 5221
-            scheme: HTTP
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-        resources:
-          requests:
-            cpu: "200m"
-            memory: "256Mi"
-          limits:
-            cpu: "500m"
-            memory: "512Mi"
+        - name: basket-api
+          image: ajkabs/basket-api:latest
+          ports:
+            - containerPort: 5221
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Development
+            - name: ASPNETCORE_URLS
+              value: http://*:5221
+            - name: ConnectionStrings__Redis
+              value: redis
+            - name: ConnectionStrings__EventBus
+              valueFrom:
+                secretKeyRef:
+                  name: basket-api-secrets
+                  key: EVENTBUS_CONNECTION
+            - name: Identity__Url
+              value: http://identity-api:5001
+            - name: DOTNET_READYTORUN
+              value: "1"
+            - name: DOTNET_TieredPGO
+              value: "1"
+            - name: DataProtection__Path
+              value: /app/keys
+          volumeMounts:
+            - name: basket-data-protection
+              mountPath: /app/keys
+          command:
+            ["/bin/sh", "-c", "./wait-for-it.sh redis:6379 -- ./wait-for-it.sh rabbitmq:5672 -- dotnet Basket.API.dll"]
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5221
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5221
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
       volumes:
-      - name: basket-data-protection
-        persistentVolumeClaim:
-          claimName: basket-data-protection-pvc
+        - name: basket-data-protection
+          persistentVolumeClaim:
+            claimName: basket-data-protection-pvc

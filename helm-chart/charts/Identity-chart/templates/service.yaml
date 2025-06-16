@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "Identity-chart.fullname" . }}
+  namespace: {{ .Values.global.namespace | default "dev" }}
+  labels:
+    {{- include "Identity-chart.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.servicePort }}
+      targetPort: {{ .Values.containerPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "Identity-chart.selectorLabels" . | nindent 4 }}

@@ -1,0 +1,44 @@
+apiVersion: v2
+name: eshop
+description: A Helm chart for deploying eShopOnContainer
+version: 0.1.0
+appVersion: "1.0.0"
+dependencies:
+  - name: Basket-chart
+    version: 0.1.0
+    condition: Basket-chart.enabled
+  - name: Catalog-chart
+    version: 0.1.0
+    condition: Catalog-chart.enabled
+  - name: Identity-chart
+    version: 0.1.0
+    condition: Identity-chart.enabled
+  - name: Ordering-chart
+    version: 0.1.0
+    condition: Ordering-chart.enabled
+  - name: OrderProcessor-chart
+    version: 0.1.0
+    condition: OrderProcessor-chart.enabled
+  - name: PaymentProcessor-chart
+    version: 0.1.0
+    condition: PaymentProcessor-chart.enabled
+  - name: Webhooks-chart
+    version: 0.1.0
+    condition: Webhooks-chart.enabled
+  - name: MobileBff-chart
+    version: 0.1.0
+    condition: MobileBff-chart.enabled
+  - name: Webapp-chart
+    version: 0.1.0
+    condition: Webapp-chart.enabled
+
+  # StatefulSet
+  - name: CatalogDb-chart
+    version: 0.1.0
+    condition: CatalogDb-chart.enabled
+  - name: Redis-chart
+    version: 0.1.0
+    condition: Redis-chart.enabled
+  - name: RabbitMQ-chart
+    version: 0.1.0
+    condition: RabbitMQ-chart.enabled

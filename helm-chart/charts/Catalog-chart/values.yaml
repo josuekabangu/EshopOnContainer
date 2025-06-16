@@ -1,0 +1,35 @@
+# Configurations spécifiques pour Catalog-chart
+enabled: true
+replicas: 1
+image: ajkabs/catalog-api:latest
+containerPort: 80
+servicePort: 80
+env:
+  ASPNETCORE_ENVIRONMENT: Development
+  ASPNETCORE_URLS: http://*:80
+  DOTNET_READYTORUN: "1"
+  DOTNET_TieredPGO: "1"
+secret:
+  CATALOGDB_CONNECTION: "" # Fournir en base64 lors du déploiement
+  EVENTBUS_CONNECTION: "" # Fournir en base64 lors du déploiement
+livenessProbe:
+  path: /health
+  port: 80
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 5
+readinessProbe:
+  path: /health
+  port: 80
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 5
+resources:
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"

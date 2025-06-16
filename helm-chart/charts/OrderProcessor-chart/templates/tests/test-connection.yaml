@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "OrderProcessor-chart.fullname" . }}-test-connection"
+  labels:
+    {{- include "OrderProcessor-chart.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['{{ include "OrderProcessor-chart.fullname" . }}:{{ .Values.servicePort }}']
+  restartPolicy: Never

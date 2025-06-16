@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: catalog-api
-        image: catalog-api:latest
+        image: ajkabs/catalog-api:latest
         ports:
         - containerPort: 80
         env:

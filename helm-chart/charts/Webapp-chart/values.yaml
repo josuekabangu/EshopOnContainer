@@ -1,0 +1,50 @@
+# Configurations spécifiques pour Webapp-chart
+enabled: true
+replicas: 1
+image: ajkabs/webapp:latest
+containerPort: 5004
+servicePort: 80
+
+env:
+  ASPNETCORE_ENVIRONMENT: Development
+  ASPNETCORE_URLS: http://*:5004
+  IdentityUrl: http://identity-api:5001
+  CallBackUrl: http://webapp:5004
+  Catalog__Url: http://catalog-api:80
+  Basket__Url: http://basket-api:5221
+  Ordering__Url: http://ordering-api:8080
+  EventBus__HostName: rabbitmq
+  EventBus__RetryCount: "5"
+  EventBus__SubscriptionClientName: Ordering.webapp
+
+secret:
+  EVENTBUS_USERNAME: "" # Fournir en base64 lors du déploiement
+  EVENTBUS_PASSWORD: "" # Fournir en base64 lors du déploiement
+  EVENTBUS_CONNECTION: "" # Fournir en base64 lors du déploiement
+
+pvc:
+  storage: 1Gi
+
+livenessProbe:
+  path: /health
+  port: 5004
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 5
+
+readinessProbe:
+  path: /health
+  port: 5004
+  initialDelaySeconds: 10
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 5
+  
+resources:
+  requests:
+    cpu: "250m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"

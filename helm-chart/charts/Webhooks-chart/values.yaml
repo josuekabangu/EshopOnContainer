@@ -1,0 +1,38 @@
+# Configurations spécifiques pour Webhooks-chart
+enabled: true
+replicas: 1
+image: ajkabs/webhooks-api:latest
+containerPort: 5101
+servicePort: 80
+
+env:
+  ASPNETCORE_ENVIRONMENT: Development
+  ASPNETCORE_URLS: http://*:5101
+
+secret:
+  WEBHOOKSDB_CONNECTION: "" # Fournir en base64 lors du déploiement
+  EVENTBUS_CONNECTION: "" # Fournir en base64 lors du déploiement
+
+livenessProbe:
+  path: /health
+  port: 5101
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 5
+
+readinessProbe:
+  path: /health
+  port: 5101
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 5
+  
+resources:
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+  limits:
+    cpu: "400m"
+    memory: "512Mi"

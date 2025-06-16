@@ -1,0 +1,36 @@
+# Configurations spécifiques pour PaymentProcessor-chart
+enabled: true
+replicas: 1
+image: ajkabs/payment-processor:latest
+containerPort: 8080
+servicePort: 80
+
+env:
+  ASPNETCORE_ENVIRONMENT: Development
+
+secret:
+  EVENTBUS_CONNECTION: "" # Fournir en base64 lors du déploiement
+
+livenessProbe:
+  path: /health
+  port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 5
+
+readinessProbe:
+  path: /health
+  port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 5
+  
+resources:
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+  limits:
+    cpu: "400m"
+    memory: "512Mi"

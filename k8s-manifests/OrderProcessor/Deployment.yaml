@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: order-processor
-        image: order-processor:latest
+        image: ajkabs/order-processor:latest
         ports:
         - containerPort: 16888
         env:

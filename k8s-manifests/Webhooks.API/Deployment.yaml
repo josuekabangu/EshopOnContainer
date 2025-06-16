@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: webhooks-api
-        image: webhooks-api:latest
+        image: ajkabs/webhooks-api:latest
         ports:
         - containerPort: 5101
         env:

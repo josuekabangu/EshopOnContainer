@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: identity-api
-        image: identity-api:latest
+        image: ajkabs/identity-api:latest
         ports:
         - containerPort: 5001
         env:

@@ -1,0 +1,38 @@
+# Configurations spécifiques pour MobileBff-chart
+enabled: true
+replicas: 1
+image: ajkabs/mobile-bff:latest
+containerPort: 11632
+servicePort: 80
+
+env:
+  ASPNETCORE_ENVIRONMENT: Development
+  ASPNETCORE_URLS: http://*:11632
+  Identity__Url: http://identity-api:5001
+  Catalog__Url: http://catalog-api:80
+  Ordering__Url: http://ordering-api:8080
+  Basket__Url: http://basket-api:5221
+
+livenessProbe:
+  path: /health
+  port: 11632
+  initialDelaySeconds: 90
+  periodSeconds: 90
+  timeoutSeconds: 30
+  failureThreshold: 5
+
+readinessProbe:
+  path: /health
+  port: 11632
+  initialDelaySeconds: 30
+  periodSeconds: 90
+  timeoutSeconds: 30
+  failureThreshold: 5
+  
+resources:
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+  limits:
+    cpu: "400m"
+    memory: "512Mi"

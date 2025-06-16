@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "RabbitMQ-chart.fullname" . }}-headless
+  namespace: {{ .Values.global.namespace | default "dev" }}
+  labels:
+    {{- include "RabbitMQ-chart.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  ports:
+    - port: {{ .Values.servicePort }}
+      targetPort: 5672
+      protocol: TCP
+      name: amqp
+    - port: {{ .Values.managementPort }}
+      targetPort: 8080
+      protocol: TCP
+      name: management
+  selector:
+    {{- include "RabbitMQ-chart.selectorLabels" . | nindent 4 }}

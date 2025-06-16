@@ -1,0 +1,44 @@
+# Configurations spécifiques pour Basket-chart
+enabled: true
+replicas: 1
+image: ajkabs/basket-api:latest
+containerPort: 5221
+servicePort: 80
+
+env:
+  ASPNETCORE_ENVIRONMENT: Development
+  ASPNETCORE_URLS: http://*:5221
+  ConnectionStrings__Redis: redis
+  Identity__Url: http://identity-api:5001
+  DOTNET_READYTORUN: "1"
+  DOTNET_TieredPGO: "1"
+
+secret:
+  EVENTBUS_CONNECTION: "" # Fournir en base64 lors du déploiement
+
+pvc:
+  storage: 1Gi
+
+livenessProbe:
+  path: /health
+  port: 5221
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  path: /health
+  port: 5221
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  
+resources:
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"

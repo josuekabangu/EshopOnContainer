@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: payment-processor
-        image: payment-processor:latest
+        image: ajkabs/payment-processor:latest
         ports:
         - containerPort: 8080
         env:
