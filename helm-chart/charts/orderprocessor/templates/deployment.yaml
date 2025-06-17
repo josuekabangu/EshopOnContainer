@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "eshop.fullname" . }}
+  namespace: {{ .Values.globalnamespaceName | default "app" }}
+  labels:
+    {{- include "eshop.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      {{- include "eshop.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "eshop.selectorLabels" . | nindent 8 }}
+    spec:
+      initContainers:
+        {{- toYaml .Values.initContainers | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.image }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.containerPort }}
+              name: http
+          env:
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            - name: ConnectionStrings__EventBus
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "eshop.fullname" . }}-secrets
+                  key: EVENTBUS_CONNECTION
+            - name: ConnectionStrings__orderingdb
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "eshop.fullname" . }}-secrets
+                  key: ORDERINGDB_CONNECTION
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: paymentprocessor
+description: A Helm chart for deploying Payment Processor for eShopOnContainers
+type: application
+version: 0.1.0
+appVersion: "1.0"

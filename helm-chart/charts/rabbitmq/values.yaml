@@ -1,0 +1,54 @@
+enabled: true
+replicas: 1
+image: rabbitmq:3.12-management-alpine
+imagePullPolicy: IfNotPresent
+containerPorts:
+  - port: 5672
+    name: amqp
+  - port: 15672
+    name: management
+servicePorts:
+  - port: 5672
+    targetPort: 5672
+    name: amqp
+  - port: 15672
+    targetPort: 15672
+    name: management
+serviceType: ClusterIP
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+livenessProbe:
+  exec:
+    command: ["rabbitmq-diagnostics", "-q", "ping"]
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 5
+readinessProbe:
+  exec:
+    command: ["rabbitmq-diagnostics", "-q", "ping"]
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 5
+persistence:
+  enabled: true
+  storageClass: standard
+  size: 1Gi
+env:
+  RABBITMQ_MNESIA_BASE: /var/lib/rabbitmq/mnesia
+  RABBITMQ_DEFAULT_USER: guest
+  RABBITMQ_DEFAULT_VHOST: /
+  RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "+sbwt none +sbwtdcpu none +sbwtdio none +stbt db"
+  RABBITMQ_CTL_ERL_ARGS: "+P 1048576 +K true +A 128"
+  RABBITMQ_NODENAME: rabbit@rabbitmq
+secret:
+  RABBITMQ_DEFAULT_PASS: ""
+global:
+  namespace: "app"
+  imagePullPolicy: IfNotPresent

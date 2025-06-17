@@ -1,5 +1,0 @@
-apiVersion: v2
-name: Ordering-chart
-description: Ordering service Helm chart for eShopOnContainer
-version: 0.1.0
-appVersion: "1.0.0"

@@ -1,5 +1,0 @@
-apiVersion: v2
-name: OrderProcessor-chart
-description: OrderProcessor service Helm chart for eShopOnContainer
-version: 0.1.0
-appVersion: "1.0.0"

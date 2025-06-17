@@ -1,0 +1,65 @@
+enabled: true
+replicas: 1
+image: basket-api:latest
+imagePullPolicy: IfNotPresent
+containerPort: 5221
+servicePort: 5221
+serviceType: ClusterIP
+
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5221
+    scheme: HTTP
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5221
+    scheme: HTTP
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+persistence:
+  enabled: true
+  storageClass: standard
+  size: 100Mi
+
+env:
+  ASPNETCORE_ENVIRONMENT: Development
+  ASPNETCORE_URLS: "http://*:5221"
+  DOTNET_READYTORUN: "1"
+  DOTNET_TieredPGO: "1"
+
+initContainers:
+  - name: wait-for-dependencies
+    image: busybox:latest
+    command:
+      - "/bin/sh"
+      - "-c"
+      - >
+        until nslookup eshop-redis && nslookup eshop-rabbitmq;
+        do echo "waiting for redis and rabbitmq"; sleep 2; done;
+
+secret:
+  REDIS_CONNECTION: ""
+  EVENTBUS_CONNECTION: ""
+  IDENTITY_URL: ""
+
+global:
+  namespace: "app"
+  imagePullPolicy: IfNotPresent

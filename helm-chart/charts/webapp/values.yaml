@@ -1,0 +1,74 @@
+enabled: true
+replicas: 1
+image: webapp:latest
+imagePullPolicy: IfNotPresent
+containerPort: 5004
+servicePort: 5004
+serviceType: ClusterIP
+
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5004
+    scheme: HTTP
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 5
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5004
+    scheme: HTTP
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 5
+
+persistence:
+  enabled: true
+  storageClass: standard
+  size: 100Mi
+
+env:
+  ASPNETCORE_ENVIRONMENT: Development
+  ASPNETCORE_URLS: "http://*:5004"
+  CallBackUrl: "http://webapp:5004"
+  EventBus__HostName: rabbitmq
+  EventBus__UserName: guest
+  EventBus__RetryCount: "5"
+  EventBus__SubscriptionClientName: Ordering.webapp
+
+initContainers:
+  - name: wait-for-dependencies
+    image: busybox:latest
+    command:
+      - "/bin/sh"
+      - "-c"
+      - >
+        until nslookup eshop-identity && 
+              nslookup eshop-catalog && 
+              nslookup eshop-ordering && 
+              nslookup eshop-basket && 
+              nslookup eshop-rabbitmq;
+        do echo "waiting for dependencies"; sleep 2; done;
+
+secret:
+  IDENTITY_URL: ""
+  CATALOG_URL: ""
+  BASKET_URL: ""
+  ORDERING_URL: ""
+  EVENTBUS_CONNECTION: ""
+
+global:
+  namespace: "app"
+  imagePullPolicy: IfNotPresent

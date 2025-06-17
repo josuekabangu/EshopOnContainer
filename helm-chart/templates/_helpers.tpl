@@ -1,25 +1,13 @@
-{{/*
-Expand the name of the helm-chart chart.
-*/}}
-{{- define "helm-chart.fullname" -}}
+{{- define "eshop.fullname" -}}
 {{- printf "%s-%s" .Release.Name .Chart.Name | trunc 63 | trimSuffix "-" -}}
-{{- end }}
+{{- end -}}
 
-{{/*
-Common labels
-*/}}
-{{- define "helm-chart.labels" -}}
-helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+{{- define "eshop.labels" -}}
 app.kubernetes.io/name: {{ .Chart.Name }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/version: {{ .Chart.AppVersion }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
-{{- end }}
+{{- end -}}
 
-{{/*
-Selector labels
-*/}}
-{{- define "helm-chart.selectorLabels" -}}
+{{- define "eshop.selectorLabels" -}}
 app.kubernetes.io/name: {{ .Chart.Name }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-{{- end }}
+{{- end -}}
