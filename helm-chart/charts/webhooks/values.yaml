@@ -53,5 +53,5 @@ secret:
   EVENTBUS_CONNECTION: ""
 
 global:
-  namespace: "app"
+  namespace: "dev"
   imagePullPolicy: IfNotPresent

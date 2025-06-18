@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: {{ include "eshop.fullname" . }}
-  namespace: {{ .Values.global.namespace | default "app" }}
+  namespace: {{ .Values.global.namespace | default "dev" }}
   labels:
     {{- include "eshop.labels" . | nindent 4 }}
 spec:

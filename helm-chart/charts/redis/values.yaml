@@ -28,7 +28,6 @@ readinessProbe:
   failureThreshold: 3
 persistence:
   enabled: true
-  storageClass: standard
   size: 1Gi
 command:
   - redis-server
@@ -39,5 +38,5 @@ command:
 secret:
   REDIS_PASSWORD: ""
 global:
-  namespace: "app"
+  namespace: "dev"
   imagePullPolicy: IfNotPresent

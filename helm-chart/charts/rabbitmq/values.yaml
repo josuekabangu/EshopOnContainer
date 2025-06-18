@@ -50,5 +50,5 @@ env:
 secret:
   RABBITMQ_DEFAULT_PASS: ""
 global:
-  namespace: "app"
+  namespace: "dev"
   imagePullPolicy: IfNotPresent

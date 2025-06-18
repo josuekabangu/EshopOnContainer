@@ -63,5 +63,5 @@ secret:
   IDENTITY_URL: ""
 
 global:
-  namespace: "app"
+  namespace: "dev"
   imagePullPolicy: IfNotPresent

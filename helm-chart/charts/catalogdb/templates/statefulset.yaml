@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: {{ include "eshop.fullname" . }}
-  namespace: {{ .Values.globalnamespaceName | default "app" }}
+  namespace: {{ .Values.global.namespace | default "dev" }}
   labels:
     {{- include "eshop.labels" . | nindent 4 }}
 spec:
@@ -59,7 +59,7 @@ spec:
         name: pg-data
       spec:
         accessModes: ["ReadWriteOnce"]
-        storageClassName: {{ .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.global.storageClassName }}
         resources:
           requests:
             storage: {{ .Values.persistence.size }}

@@ -1,6 +1,8 @@
 global:
   namespace: dev
   imagePullPolicy: IfNotPresent
+  storageClassName: local-path     
+  createStorageClass: falseb       
 
 serviceAccount:
   create: true
@@ -55,7 +57,7 @@ Webhooks-chart:
   containerPort: 5101
   servicePort: 80
 
-MobileBff-chart:
+MobileBff-chart: 
   enabled: true
   replicas: 1
   image: ajkabs/mobile-bff:latest

@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "eshop.fullname" . }}
-  namespace: {{ .Values.globalnamespaceName | default "app" }}
+  namespace: {{ .Values.globalnamespaceName | default "dev" }}
   labels:
     {{- include "eshop.labels" . | nindent 4 }}
 spec:
@@ -57,7 +57,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ include "eshop.fullname" . }}-pvc
-  namespace: {{ .Values.globalnamespaceName | default "app" }}
+  namespace: {{ .Values.globalnamespaceName | default "dev" }}
   labels:
     {{- include "eshop.labels" . | nindent 4 }}
 spec:

@@ -56,5 +56,5 @@ secret:
   BASKET_URL: ""
 
 global:
-  namespace: "app"
+  namespace: "dev"
   imagePullPolicy: IfNotPresent

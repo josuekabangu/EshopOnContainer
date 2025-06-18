@@ -28,7 +28,6 @@ readinessProbe:
   failureThreshold: 5
 persistence:
   enabled: true
-  storageClass: standard
   size: 1Gi
 env:
   POSTGRES_USER: postgres
@@ -46,5 +45,6 @@ command:
 secret:
   POSTGRES_PASSWORD: ""
 global:
-  namespace: "app"
+  namespace: "dev"
   imagePullPolicy: IfNotPresent
+  storageClassName: local-path
