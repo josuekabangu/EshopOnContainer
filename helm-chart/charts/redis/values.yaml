@@ -1,18 +1,17 @@
-replicas: 2
-
 image:
-  repository: eshop/basket
-  tag: latest
+  repository: redis
+  tag: alpine
   pullPolicy: IfNotPresent
-
 service:
   type: ClusterIP
-  port: 80
-
-redis:
-  host: "{{ .Release.Name }}-redis"
   port: 6379
-
+password: "default-redis-password"
+persistence:
+  enabled: true
+  storageClassName: "standard"
+  accessModes:
+    - ReadWriteOnce
+  storageSize: "8Gi"
 resources:
   limits:
     cpu: "500m"

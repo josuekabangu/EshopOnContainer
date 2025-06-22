@@ -15,30 +15,10 @@ dependencies:
   - name: catalogdb
     version: "0.1.0"
     repository: "file://charts/catalogdb"
-  - name: identity
-    version: "0.1.0"
-    repository: "file://charts/identity"
-  - name: mobilebff
-    version: "0.1.0"
-    repository: "file://charts/mobilebff"
-  - name: ordering
-    version: "0.1.0"
-    repository: "file://charts/ordering"
-  - name: orderprocessor
-    version: "0.1.0"
-    repository: "file://charts/orderprocessor"
-  - name: paymentprocessor
-    version: "0.1.0"
-    repository: "file://charts/paymentprocessor"
   - name: rabbitmq
     version: "0.1.0"
     repository: "file://charts/rabbitmq"
   - name: redis
     version: "0.1.0"
     repository: "file://charts/redis"
-  - name: webapp
-    version: "0.1.0"
-    repository: "file://charts/webapp"
-  - name: webhooks
-    version: "0.1.0"
-    repository: "file://charts/webhooks"
+ 

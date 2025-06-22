@@ -1,7 +1,7 @@
 replicas: 2
 
 image:
-  repository: eshop/basket
+  repository: eshop/catalog
   tag: latest
   pullPolicy: IfNotPresent
 
@@ -9,9 +9,11 @@ service:
   type: ClusterIP
   port: 80
 
-redis:
-  host: "{{ .Release.Name }}-redis"
-  port: 6379
+database:
+  host: "{{ .Release.Name }}-catalogdb-postgresql-ha"
+  name: catalogdb
+  username: postgres
+  password: postgres
 
 resources:
   limits:

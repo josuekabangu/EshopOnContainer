@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "eshop.basket.fullname" . }}-config
+  name: {{ include "basket.fullname" . }}-config
   namespace: {{ .Values.global.namespace }}
   labels:
-    {{- include "eshop.basket.labels" . | nindent 4 }}
+    {{- include "basket.labels" . | nindent 4 }}
 data:
   appsettings.json: |
     {

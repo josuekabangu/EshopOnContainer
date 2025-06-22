@@ -1,0 +1,40 @@
+postgresql-ha:
+  service:
+    port: 5432
+
+  global:
+    postgresql:
+      username: postgres
+      password: postgres
+      database: catalogdb
+
+  postgresql:
+    replicaCount: 2
+
+  pgpool:
+    replicaCount: 2
+
+service:
+  type: ClusterIP
+  port: 5432
+
+persistence:
+  enabled: true
+  storageClassName: "standard"
+  accessModes:
+    - ReadWriteOnce
+  storageSize: "8Gi"
+
+resources:
+  limits:
+    cpu: "1000m"
+    memory: "1024Mi"
+  requests:
+    cpu: "500m"
+    memory: "512Mi"
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+  automount: true

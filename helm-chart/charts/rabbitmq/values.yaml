@@ -1,0 +1,27 @@
+rabbitmq:
+  auth:
+    username: guest
+    password: guest
+  replicaCount: 1
+service:
+  type: ClusterIP
+  port: 5672
+persistence:
+  enabled: true
+  storageClassName: "standard"
+  accessModes:
+    - ReadWriteOnce
+  storageSize: "8Gi"
+resources:
+  limits:
+    cpu: "1000m"
+    memory: "1024Mi"
+  requests:
+    cpu: "500m"
+    memory: "512Mi"
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+  automount: true
