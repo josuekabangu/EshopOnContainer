@@ -1,6 +1,0 @@
-apiVersion: v2
-name: mobilebff
-description: A Helm chart for deploying Mobile BFF for eShopOnContainers
-type: application
-version: 0.1.0
-appVersion: "1.0"
