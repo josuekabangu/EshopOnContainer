@@ -1,40 +1,31 @@
-postgresql-ha:
-  service:
-    port: 5432
+namespace: dev
 
-  global:
-    postgresql:
-      username: postgres
-      password: postgres
-      database: catalogdb
+image:
+  repository: ankane/pgvector
+  tag: latest
+  pullPolicy: IfNotPresent
 
-  postgresql:
-    replicaCount: 2
-
-  pgpool:
-    replicaCount: 2
+replicaCount: 1
 
 service:
-  type: ClusterIP
+  type: NodePort
   port: 5432
+  nodePort: 30433
+  headlessName: catalogdb-headless
 
-persistence:
-  enabled: true
-  storageClassName: "standard"
-  accessModes:
-    - ReadWriteOnce
-  storageSize: "8Gi"
+pvc:
+  name: catalogdb-pvc
+  size: 1Gi
+
+postgres:
+  user: postgres
+  password: password
+  db: catalogdb
 
 resources:
-  limits:
-    cpu: "1000m"
-    memory: "1024Mi"
   requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
     cpu: "500m"
     memory: "512Mi"
-
-serviceAccount:
-  create: true
-  name: ""
-  annotations: {}
-  automount: true

@@ -1,62 +1,78 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "catalog.fullname" . }}
-  namespace: {{ .Values.global.namespace }}
+  name: catalog-api
+  namespace: {{ .Values.namespace | default .Values.global.namespace }}
   labels:
-    {{- include "catalog.labels" . | nindent 4 }}
+    app: catalog-api
 spec:
-  replicas: {{ .Values.replicas }}
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "catalog.selectorLabels" . | nindent 6 }}
+      app: catalog-api
   template:
     metadata:
       labels:
-        {{- include "catalog.selectorLabels" . | nindent 8 }}
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8080"
-        prometheus.io/path: "/metrics"
+        app: catalog-api
     spec:
       containers:
-        - name: catalog-api
-          image: "{{ .Values.global.registry }}{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - containerPort: 8080
-          env:
-            - name: Database__Username
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "catalog.fullname" . }}-secret
-                  key: username
-            - name: Database__Password
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "catalog.fullname" . }}-secret
-                  key: password
-          volumeMounts:
-            - name: config-volume
-              mountPath: "/app/config/appsettings.json"
-              subPath: appsettings.json
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 8080
-            initialDelaySeconds: 15
-            periodSeconds: 10
-            timeoutSeconds: 5
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 8080
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 3
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-      volumes:
-        - name: config-volume
-          configMap:
-            name: {{ include "catalog.fullname" . }}-config
+      - name: catalog-api
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.service.port }}
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: catalog-api-config
+              key: ASPNETCORE_ENVIRONMENT
+        - name: ASPNETCORE_URLS
+          valueFrom:
+            configMapKeyRef:
+              name: catalog-api-config
+              key: ASPNETCORE_URLS
+        - name: ConnectionStrings__CatalogDB
+          valueFrom:
+            secretKeyRef:
+              name: catalog-api-secrets
+              key: CATALOGDB_CONNECTION
+        - name: ConnectionStrings__EventBus
+          valueFrom:
+            secretKeyRef:
+              name: catalog-api-secrets
+              key: EVENTBUS_CONNECTION
+        - name: DOTNET_READYTORUN
+          valueFrom:
+            configMapKeyRef:
+              name: catalog-api-config
+              key: DOTNET_READYTORUN
+        - name: DOTNET_TieredPGO
+          valueFrom:
+            configMapKeyRef:
+              name: catalog-api-config
+              key: DOTNET_TieredPGO
+        command: ["/bin/sh", "-c", "./wait-for-it.sh rabbitmq:5672 -- dotnet Catalog.API.dll"]
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.service.port }}
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.service.port }}
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        resources:
+          requests:
+            cpu: {{ .Values.resources.requests.cpu }}
+            memory: {{ .Values.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.resources.limits.cpu }}
+            memory: {{ .Values.resources.limits.memory }}

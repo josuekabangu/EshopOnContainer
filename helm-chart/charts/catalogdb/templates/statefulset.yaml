@@ -1,75 +1,75 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "catalogdb.fullname" . }}
-  namespace: {{ .Values.global.namespace }}
+  name: catalogdb
+  namespace: {{ .Values.namespace }}
   labels:
-    {{ include "catalogdb.labels" . | nindent 4 }}
+    app: catalogdb
 spec:
-  replicas: {{ index .Values "postgresql-ha" "postgresql" "replicaCount" }}
-  serviceName: {{ include "catalogdb.fullname" . }}
+  serviceName: {{ .Values.service.headlessName }}
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{ include "catalogdb.selectorLabels" . | nindent 6 }}
+      app: catalogdb
   template:
     metadata:
       labels:
-        {{ include "catalogdb.selectorLabels" . | nindent 8 }}
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "5432"
-        prometheus.io/path: "/metrics"
+        app: catalogdb
     spec:
+      securityContext:
+        fsGroup: 999
       containers:
-        - name: postgresql
-          image: "{{ .Values.global.registry }}postgres:13"
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 5432
-          env:
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "catalogdb.fullname" . }}-secret
-                  key: username
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "catalogdb.fullname" . }}-secret
-                  key: password
-            - name: POSTGRES_DB
-              value: {{ index .Values "postgresql-ha" "global" "postgresql" "database" }}
-          volumeMounts:
-            - name: config-volume
-              mountPath: "/etc/postgresql/postgresql.conf"
-              subPath: postgresql.conf
-            - name: data
-              mountPath: "/var/lib/postgresql/data"
-          livenessProbe:
-            tcpSocket:
-              port: 5432
-            initialDelaySeconds: 15
-            periodSeconds: 10
-            timeoutSeconds: 5
-          readinessProbe:
-            tcpSocket:
-              port: 5432
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 3
-          resources:
-            {{ toYaml .Values.resources | nindent 12 }}
+      - name: catalogdb
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+          - containerPort: {{ .Values.service.port }}
+        env:
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: catalogdb-secrets
+                key: POSTGRES_USER
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: catalogdb-secrets
+                key: POSTGRES_PASSWORD
+          - name: POSTGRES_DB
+            value: {{ .Values.postgres.db }}
+          - name: PGDATA
+            value: /var/lib/postgresql/data/pgdata
+          - name: POSTGRES_HOST_AUTH_METHOD
+            value: trust
+        securityContext:
+          runAsUser: 999
+        volumeMounts:
+          - name: pg-data
+            mountPath: /var/lib/postgresql/data
+          - name: init-db
+            mountPath: /docker-entrypoint-initdb.d/init-db.sh
+            subPath: init-db.sh
+        livenessProbe:
+          exec:
+            command: ["pg_isready", "-U", "postgres", "-d", "catalogdb"]
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 5
+        readinessProbe:
+          exec:
+            command: ["pg_isready", "-U", "postgres", "-d", "catalogdb"]
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
       volumes:
-        - name: config-volume
+        - name: pg-data
+          persistentVolumeClaim:
+            claimName: {{ .Values.pvc.name }}
+        - name: init-db
           configMap:
-            name: {{ include "catalogdb.fullname" . }}-config
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes:
-          {{ toYaml .Values.persistence.accessModes | nindent 10 }}
-        storageClassName: {{ .Values.persistence.storageClassName }}
-        resources:
-          requests:
-            storage: {{ .Values.persistence.storageSize }}
+            name: catalogdb-config
+            items:
+              - key: init-db.sh
+                path: init-db.sh

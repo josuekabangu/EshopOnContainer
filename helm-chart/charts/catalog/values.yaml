@@ -1,4 +1,5 @@
-replicas: 2
+namespace: dev
+replicaCount: 1
 
 image:
   repository: ajkabs/catalog-api
@@ -6,29 +7,28 @@ image:
   pullPolicy: IfNotPresent
 
 service:
-  type: ClusterIP
+  type: NodePort
   port: 80
-
-env:
-  - name: ConnectionStrings__catalogdb
-    value: "Host=eshop-catalogdb;Port=5432;Database=CatalogDb;Username=postgres;Password=yourpassword"
-
-database:
-  host: "{{ .Release.Name }}-catalogdb-postgresql-ha"
-  name: catalogdb
-  username: postgres
-  password: postgres
+  nodePort: 30222
 
 resources:
   limits:
-    cpu: "500m"
-    memory: "512Mi"
+    cpu: 500m
+    memory: 512Mi
   requests:
-    cpu: "200m"
-    memory: "256Mi"
+    cpu: 200m
+    memory: 256Mi
 
-serviceAccount:
-  create: true
-  name: ""
-  annotations: {}
-  automount: true
+env:
+  ASPNETCORE_ENVIRONMENT: Development
+  ASPNETCORE_URLS: http://*:80
+  DOTNET_READYTORUN: "1"
+  DOTNET_TieredPGO: "1"
+
+secret:
+  CATALOGDB_CONNECTION: SG9zdD1jYXRhbG9nZGI7UG9ydD01NDMyO0RhdGFiYXNlPWNhdGFsb2dkYjtVc2VyIElkPXBvc3RncmVzO1Bhc3N3b3JkPXBhc3N3b3JkOw==
+  EVENTBUS_CONNECTION: YW1xcDovL2d1ZXN0Omd1ZXN0QHJhYmJpdG1xOjU2NzI=
+
+pvc:
+  name: catalog-data-pvc
+  size: 100Mi

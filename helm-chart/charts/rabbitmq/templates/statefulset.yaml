@@ -1,73 +1,79 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "rabbitmq.fullname" . }}
-  namespace: {{ .Values.global.namespace }}
+  name: rabbitmq
+  namespace: {{ .Values.namespace }}
   labels:
-    {{- include "rabbitmq.labels" . | nindent 4 }}
+    app: rabbitmq
 spec:
-  replicas: {{ .Values.rabbitmq.replicaCount }}
-  serviceName: {{ include "rabbitmq.fullname" . }}
+  serviceName: {{ .Values.service.headlessName }}
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "rabbitmq.selectorLabels" . | nindent 6 }}
+      app: rabbitmq
   template:
     metadata:
       labels:
-        {{- include "rabbitmq.selectorLabels" . | nindent 8 }}
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "5672"
-        prometheus.io/path: "/metrics"
+        app: rabbitmq
     spec:
+      hostname: rabbitmq
       containers:
         - name: rabbitmq
-          image: "{{ .Values.global.registry }}rabbitmq:3.9"
-          imagePullPolicy: IfNotPresent
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: 5672
-            - containerPort: 15672
+            - containerPort: {{ .Values.service.amqpPort }}
+            - containerPort: {{ .Values.service.managementPort }}
           env:
             - name: RABBITMQ_DEFAULT_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "rabbitmq.fullname" . }}-secret
-                  key: username
+                  name: rabbitmq-secrets
+                  key: RABBITMQ_DEFAULT_USER
             - name: RABBITMQ_DEFAULT_PASS
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "rabbitmq.fullname" . }}-secret
-                  key: password
+                  name: rabbitmq-secrets
+                  key: RABBITMQ_DEFAULT_PASS
+            - name: RABBITMQ_DEFAULT_VHOST
+              value: "/"
+            - name: RABBITMQ_MNESIA_BASE
+              value: /var/lib/rabbitmq/mnesia
+            - name: RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS
+              value: "+sbwt none +sbwtdcpu none +sbwtdio none +stbt db"
+            - name: RABBITMQ_CTL_ERL_ARGS
+              value: "+P 1048576 +K true +A 128"
+            - name: RABBITMQ_NODENAME
+              value: {{ .Values.rabbitmq.nodename }}
+            - name: RABBITMQ_USE_LONGNAME
+              value: "true"
           volumeMounts:
-            - name: config-volume
-              mountPath: "/etc/rabbitmq/rabbitmq.conf"
+            - name: rmq-data
+              mountPath: /var/lib/rabbitmq
+            - name: rabbitmq-config
+              mountPath: /etc/rabbitmq/rabbitmq.conf
               subPath: rabbitmq.conf
-            - name: data
-              mountPath: "/var/lib/rabbitmq"
           livenessProbe:
-            tcpSocket:
-              port: 5672
-            initialDelaySeconds: 60
+            exec:
+              command: ["rabbitmq-diagnostics", "-q", "ping"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+          readinessProbe:
+            exec:
+              command: ["rabbitmq-diagnostics", "-q", "ping"]
+            initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 5
-          readinessProbe:
-            tcpSocket:
-              port: 5672
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 3
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            failureThreshold: 5
       volumes:
-        - name: config-volume
+        - name: rmq-data
+          persistentVolumeClaim:
+            claimName: {{ .Values.pvc.name }}
+        - name: rabbitmq-config
           configMap:
-            name: {{ include "rabbitmq.fullname" . }}-config
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes: {{ toYaml .Values.persistence.accessModes | nindent 10 }}
-        storageClassName: {{ .Values.persistence.storageClassName }}
-        resources:
-          requests:
-            storage: {{ .Values.persistence.storageSize }}
+            name: rabbitmq-config
+            items:
+              - key: rabbitmq.conf
+                path: rabbitmq.conf

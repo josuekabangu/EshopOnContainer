@@ -1,27 +1,28 @@
+replicaCount: 1
+
 image:
   repository: redis
-  tag: alpine
+  tag: 7.2-alpine
   pullPolicy: IfNotPresent
+
 service:
-  type: ClusterIP
+  type: NodePort
   port: 6379
-password: "default-redis-password"
+  nodePort: 30679
+
+headlessService:
+  name: redis-headless
+
+redis:
+  password: "redis"
+  config:
+    maxmemory: "256mb"
+    maxmemoryPolicy: "allkeys-lru"
+
 persistence:
   enabled: true
-  storageClassName: "standard"
-  accessModes:
-    - ReadWriteOnce
-  storageSize: "8Gi"
-resources:
-  limits:
-    cpu: "500m"
-    memory: "512Mi"
-  requests:
-    cpu: "200m"
-    memory: "256Mi"
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 1Gi
 
-serviceAccount:
-  create: true
-  name: ""
-  annotations: {}
-  automount: true
+namespace: dev

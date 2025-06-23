@@ -1,15 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "catalog.fullname" . }}-config
-  namespace: {{ .Values.global.namespace }}
-  labels:
-    {{- include "catalog.labels" . | nindent 4 }}
+  name: catalog-api-config
+  namespace: {{ .Values.namespace | default .Values.global.namespace }}
 data:
-  appsettings.json: |
-    {
-      "Database": {
-        "Host": "{{ .Values.database.host }}",
-        "Name": "{{ .Values.database.name }}"
-      }
-    }
+  ASPNETCORE_ENVIRONMENT: {{ .Values.env.ASPNETCORE_ENVIRONMENT | quote }}
+  ASPNETCORE_URLS: {{ .Values.env.ASPNETCORE_URLS | quote }}
+  DOTNET_READYTORUN: {{ .Values.env.DOTNET_READYTORUN | quote }}
+  DOTNET_TieredPGO: {{ .Values.env.DOTNET_TieredPGO | quote }}

@@ -1,68 +1,65 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "redis.fullname" . }}
-  namespace: {{ .Values.global.namespace }}
+  name: redis
+  namespace: {{ .Values.namespace }}
   labels:
-    {{- include "redis.labels" . | nindent 4 }}
+    app: redis
 spec:
-  replicas: 1
-  serviceName: {{ include "redis.fullname" . }}
+  serviceName: {{ .Values.headlessService.name }}
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "redis.selectorLabels" . | nindent 6 }}
+      app: redis
   template:
     metadata:
       labels:
-        {{- include "redis.selectorLabels" . | nindent 8 }}
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "6379"
-        prometheus.io/path: "/metrics"
+        app: redis
     spec:
       containers:
         - name: redis
-          image: "{{ .Values.global.registry }}{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: 6379
+            - containerPort: {{ .Values.service.port }}
+          command:
+            - redis-server
+            - "/etc/redis/redis.conf"
+            - "--requirepass"
+            - "$(REDIS_PASSWORD)"
           env:
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "redis.fullname" . }}-secret
-                  key: password
+                  name: redis-secret
+                  key: REDIS_PASSWORD
           volumeMounts:
-            - name: config-volume
-              mountPath: "/usr/local/etc/redis/redis.conf"
+            - name: redis-data
+              mountPath: /data
+            - name: redis-config
+              mountPath: /etc/redis/redis.conf
               subPath: redis.conf
-            - name: data
-              mountPath: "/data"
           livenessProbe:
-            tcpSocket:
-              port: 6379
-            initialDelaySeconds: 15
+            exec:
+              command: ["redis-cli", "-a", "$(REDIS_PASSWORD)", "ping"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "-a", "$(REDIS_PASSWORD)", "ping"]
+            initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 5
-          readinessProbe:
-            tcpSocket:
-              port: 6379
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 3
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            failureThreshold: 3
       volumes:
-        - name: config-volume
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: redis-pvc
+        - name: redis-config
           configMap:
-            name: {{ include "redis.fullname" . }}-config
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes: {{ toYaml .Values.persistence.accessModes | nindent 10 }}
-        storageClassName: {{ .Values.persistence.storageClassName }}
-        resources:
-          requests:
-            storage: {{ .Values.persistence.storageSize }}
-
+            name: redis-config
+            items:
+              - key: redis.conf
+                path: redis.conf
