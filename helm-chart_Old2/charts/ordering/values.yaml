@@ -1,24 +1,21 @@
 replicas: 2
-
 image:
-  repository: ajkabs/catalog-api
+  repository: eshop/ordering
   tag: latest
   pullPolicy: IfNotPresent
-
 service:
   type: ClusterIP
   port: 80
-
-env:
-  - name: ConnectionStrings__catalogdb
-    value: "Host=eshop-catalogdb;Port=5432;Database=CatalogDb;Username=postgres;Password=yourpassword"
-
 database:
   host: "{{ .Release.Name }}-catalogdb-postgresql-ha"
-  name: catalogdb
+  name: orderingdb
   username: postgres
   password: postgres
-
+rabbitmq:
+  host: "{{ .Release.Name }}-rabbitmq"
+  port: 5672
+  username: guest
+  password: guest
 resources:
   limits:
     cpu: "500m"
@@ -26,9 +23,3 @@ resources:
   requests:
     cpu: "200m"
     memory: "256Mi"
-
-serviceAccount:
-  create: true
-  name: ""
-  annotations: {}
-  automount: true

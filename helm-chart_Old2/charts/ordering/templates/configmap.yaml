@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "eshop.ordering.fullname" . }}-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.ordering.labels" . | nindent 4 }}
+data:
+  appsettings.json: |
+    {
+      "Database": {
+        "Host": "{{ .Values.database.host }}",
+        "Name": "{{ .Values.database.name }}"
+      },
+      "RabbitMQ": {
+        "Host": "{{ .Values.rabbitmq.host }}",
+        "Port": "{{ .Values.rabbitmq.port }}"
+      }
+    }

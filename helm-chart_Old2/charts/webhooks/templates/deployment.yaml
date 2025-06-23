@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "eshop.webhooks.fullname" . }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.webhooks.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      {{- include "eshop.webhooks.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "eshop.webhooks.selectorLabels" . | nindent 8 }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "80"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: webhooks
+          image: "{{ .Values.global.registry }}{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 80
+          env:
+            - name: Database__Username
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "eshop.webhooks.fullname" . }}-secret
+                  key: username
+            - name: Database__Password
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "eshop.webhooks.fullname" . }}-secret
+                  key: password
+          volumeMounts:
+            - name: config-volume
+              mountPath: "/app/config/appsettings.json"
+              subPath: appsettings.json
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "eshop.webhooks.fullname" . }}-config

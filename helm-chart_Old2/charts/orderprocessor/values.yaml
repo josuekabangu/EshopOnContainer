@@ -1,0 +1,17 @@
+replicas: 1
+image:
+  repository: eshop/orderprocessor
+  tag: latest
+  pullPolicy: IfNotPresent
+rabbitmq:
+  host: "{{ .Release.Name }}-rabbitmq"
+  port: 5672
+  username: guest
+  password: guest
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+  requests:
+    cpu: "200m"
+    memory: "256Mi"

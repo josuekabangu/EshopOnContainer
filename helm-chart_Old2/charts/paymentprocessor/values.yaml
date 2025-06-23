@@ -1,18 +1,12 @@
-replicas: 2
-
+replicas: 1
 image:
-  repository: ajkabs/basket-api
+  repository: eshop/paymentprocessor
   tag: latest
   pullPolicy: IfNotPresent
-
 service:
   type: ClusterIP
   port: 80
-
-redis:
-  host: "{{ .Release.Name }}-redis"
-  port: 6379
-
+apiKey: "default-api-key"
 resources:
   limits:
     cpu: "500m"
@@ -20,9 +14,3 @@ resources:
   requests:
     cpu: "200m"
     memory: "256Mi"
-
-serviceAccount:
-  create: true
-  name: ""
-  annotations: {}
-  automount: true

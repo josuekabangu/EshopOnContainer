@@ -1,6 +1,6 @@
 global:
   registry: "docker.io/"
-  namespace: eshop
+  namespace: dev
 
 service:
   type: ClusterIP

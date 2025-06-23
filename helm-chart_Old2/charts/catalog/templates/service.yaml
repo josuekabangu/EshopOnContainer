@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "eshop.catalogdb.fullname" . }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.catalogdb.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: 5432
+      protocol: TCP
+      name: postgresql
+  selector:
+    {{- include "eshop.catalogdb.selectorLabels" . | nindent 4 }}

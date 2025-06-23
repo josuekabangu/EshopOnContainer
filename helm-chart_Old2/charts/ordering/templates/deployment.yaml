@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "eshop.ordering.fullname" . }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.ordering.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      {{- include "eshop.ordering.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "eshop.ordering.selectorLabels" . | nindent 8 }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "80"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: ordering-api
+          image: "{{ .Values.global.registry }}{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 80
+          env:
+            - name: RabbitMQ__Username
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "eshop.ordering.fullname" . }}-secret
+                  key: rabbitmqUsername
+            - name: RabbitMQ__Password
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "eshop.ordering.fullname" . }}-secret
+                  key: rabbitmqPassword
+            - name: Database__Username
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "eshop.ordering.fullname" . }}-secret
+                  key: dbUsername
+            - name: Database__Password
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "eshop.ordering.fullname" . }}-secret
+                  key: dbPassword
+          volumeMounts:
+            - name: config-volume
+              mountPath: "/app/config/appsettings.json"
+              subPath: appsettings.json
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "eshop.ordering.fullname" . }}-config

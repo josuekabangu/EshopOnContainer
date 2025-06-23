@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "eshop.ordering.fullname" . }}-test-db-connection"
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.ordering.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: psql
+      image: postgres:15-alpine
+      command: ['psql']
+      args:
+        - '-h'
+        - '{{ include "eshop.catalogdb.fullname" . }}'
+        - '-U'
+        - '{{ .Values.database.username }}'
+        - '-d'
+        - '{{ .Values.database.name }}'
+        - '-c'
+        - 'SELECT 1'
+      env:
+        - name: PGPASSWORD
+          value: {{ .Values.database.password }}
+  restartPolicy: Never

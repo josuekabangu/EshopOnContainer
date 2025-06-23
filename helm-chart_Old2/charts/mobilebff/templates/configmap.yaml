@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "eshop.mobilebff.fullname" . }}-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.mobilebff.labels" . | nindent 4 }}
+data:
+  appsettings.json: |
+    {
+      "ServiceUrls": {
+        "Catalog": "http://{{ .Release.Name }}-catalog",
+        "Basket": "http://{{ .Release.Name }}-basket"
+      }
+    }

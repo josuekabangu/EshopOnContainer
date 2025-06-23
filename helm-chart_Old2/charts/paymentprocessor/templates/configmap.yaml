@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "eshop.paymentprocessor.fullname" . }}-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.paymentprocessor.labels" . | nindent 4 }}
+data:
+  appsettings.json: |
+    {
+      "ServiceUrls": {
+        "Ordering": "http://{{ .Release.Name }}-ordering"
+      }
+    }

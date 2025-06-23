@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "eshop.catalogdb.fullname" . }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{ include "eshop.catalogdb.labels" . | nindent 4 }}
+spec:
+  replicas: {{ index .Values "postgresql-ha" "postgresql" "replicaCount" }}
+  serviceName: {{ include "eshop.catalogdb.fullname" . }}
+  selector:
+    matchLabels:
+      {{ include "eshop.catalogdb.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{ include "eshop.catalogdb.selectorLabels" . | nindent 8 }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5432"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: postgresql
+          image: "{{ .Values.global.registry }}postgres:13"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "eshop.catalogdb.fullname" . }}-secret
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "eshop.catalogdb.fullname" . }}-secret
+                  key: password
+            - name: POSTGRES_DB
+              value: {{ index .Values "postgresql-ha" "global" "postgresql" "database" }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: "/etc/postgresql/postgresql.conf"
+              subPath: postgresql.conf
+            - name: data
+              mountPath: "/var/lib/postgresql/data"
+          livenessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            {{ toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "eshop.catalogdb.fullname" . }}-config
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          {{ toYaml .Values.persistence.accessModes | nindent 10 }}
+        storageClassName: {{ .Values.persistence.storageClassName }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.storageSize }}
