@@ -1,18 +1,20 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "eshop.fullname" . }}
-  namespace: {{ .Values.global.namespace | default "app" }}
+  name: {{ include "rabbitmq.fullname" . }}
+  namespace: {{ .Values.global.namespace }}
   labels:
-    {{- include "eshop.labels" . | nindent 4 }}
+    {{- include "rabbitmq.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.serviceType }}
+  type: {{ .Values.service.type }}
   ports:
-    {{- range .Values.servicePorts }}
-    - port: {{ .port }}
-      targetPort: {{ .targetPort }}
+    - port: {{ .Values.service.port }}
+      targetPort: 5672
       protocol: TCP
-      name: {{ .name }}
-    {{- end }}
+      name: amqp
+    - port: 15672
+      targetPort: 15672
+      protocol: TCP
+      name: management
   selector:
-    {{- include "eshop.selectorLabels" . | nindent 4 }}
+    {{- include "rabbitmq.selectorLabels" . | nindent 4 }}

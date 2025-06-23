@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "eshop.fullname" . }}-test-connection
+  namespace: {{ .Values.global.namespace | default "dev" }}
+  labels:
+    {{- include "eshop.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: identity-test
+      image: busybox:latest
+      command: ["/bin/sh", "-c"]
+      args: ["wget -qO- http://{{ include 'eshop.fullname' . }}:{{ .Values.servicePort }}/health"]
+  restartPolicy: Never

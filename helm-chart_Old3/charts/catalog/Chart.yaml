@@ -1,0 +1,6 @@
+apiVersion: v2
+name: catalog
+description: A Helm chart for deploying Catalog API for eShopOnContainers
+type: application
+version: 0.1.0
+appVersion: "1.0"

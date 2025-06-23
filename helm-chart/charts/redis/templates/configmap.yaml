@@ -1,9 +1,12 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "eshop.fullname" . }}-config
-  namespace: {{ .Values.global.namespace | default "app" }}
+  name: {{ include "redis.fullname" . }}-config
+  namespace: {{ .Values.global.namespace }}
   labels:
-    {{- include "eshop.labels" . | nindent 4 }}
+    {{- include "redis.labels" . | nindent 4 }}
 data:
-  APP_ENV: production
+  redis.conf: |
+    port {{ .Values.service.port }}
+    requirepass {{ .Values.password }}
+    

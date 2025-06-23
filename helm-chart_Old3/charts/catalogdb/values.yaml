@@ -1,0 +1,50 @@
+enabled: true
+replicas: 1
+image: ankane/pgvector:latest
+imagePullPolicy: IfNotPresent
+containerPort: 5432
+servicePort: 5432
+serviceType: ClusterIP
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+livenessProbe:
+  exec:
+    command: ["pg_isready", "-U", "postgres", "-d", "catalogdb"]
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 5
+readinessProbe:
+  exec:
+    command: ["pg_isready", "-U", "postgres", "-d", "catalogdb"]
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 5
+persistence:
+  enabled: true
+  size: 1Gi
+env:
+  POSTGRES_USER: postgres
+  POSTGRES_DB: catalogdb
+  PGDATA: /var/lib/postgresql/data/pgdata
+  POSTGRES_HOST_AUTH_METHOD: trust
+command:
+  - postgres
+  - -c
+  - shared_buffers=512MB
+  - -c
+  - max_connections=200
+  - -c
+  - fsync=off
+secret:
+  POSTGRES_PASSWORD: ""
+global:
+  namespace: "dev"
+  imagePullPolicy: IfNotPresent
+  storageClassName: local-path

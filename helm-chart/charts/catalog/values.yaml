@@ -1,10 +1,23 @@
-enabled: true
-replicas: 1
-image: catalog-api:latest
-imagePullPolicy: IfNotPresent
-containerPort: 80
-servicePort: 80
-serviceType: ClusterIP
+replicas: 2
+
+image:
+  repository: ajkabs/catalog-api
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+env:
+  - name: ConnectionStrings__catalogdb
+    value: "Host=eshop-catalogdb;Port=5432;Database=CatalogDb;Username=postgres;Password=yourpassword"
+
+database:
+  host: "{{ .Release.Name }}-catalogdb-postgresql-ha"
+  name: catalogdb
+  username: postgres
+  password: postgres
 
 resources:
   limits:
@@ -14,46 +27,8 @@ resources:
     cpu: "200m"
     memory: "256Mi"
 
-livenessProbe:
-  httpGet:
-    path: /health
-    port: 80
-    scheme: HTTP
-  initialDelaySeconds: 30
-  periodSeconds: 30
-  timeoutSeconds: 5
-  failureThreshold: 5
-
-readinessProbe:
-  httpGet:
-    path: /health
-    port: 80
-    scheme: HTTP
-  initialDelaySeconds: 30
-  periodSeconds: 30
-  timeoutSeconds: 5
-  failureThreshold: 5
-
-env:
-  ASPNETCORE_ENVIRONMENT: Development
-  ASPNETCORE_URLS: "http://*:80"
-  DOTNET_READYTORUN: "1"
-  DOTNET_TieredPGO: "1"
-
-initContainers:
-  - name: wait-for-dependencies
-    image: busybox:latest
-    command:
-      - "/bin/sh"
-      - "-c"
-      - >
-        until nslookup eshop-catalogdb && nslookup eshop-rabbitmq;
-        do echo "waiting for catalogdb and rabbitmq"; sleep 2; done;
-
-secret:
-  CATALOGDB_CONNECTION: ""
-  EVENTBUS_CONNECTION: ""
-
-global:
-  namespace: "app"
-  imagePullPolicy: IfNotPresent
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+  automount: true

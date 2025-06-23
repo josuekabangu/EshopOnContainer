@@ -1,91 +1,19 @@
 global:
+  registry: "docker.io/"
   namespace: dev
-  imagePullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
 
 serviceAccount:
   create: true
   name: ""
+  annotations: {}
+  automount: true
 
-Basket-chart:
-  enabled: true
-  replicas: 1
-  image: ajkabs/basket-api:latest
-  containerPort: 5221
-  servicePort: 80
-
-Catalog-chart:
-  enabled: true
-  replicas: 1
-  image: ajkabs/catalog-api:latest
-  containerPort: 80
-  servicePort: 80
-
-Identity-chart:
-  enabled: true
-  replicas: 1
-  image: ajkabs/identity-api:latest
-  containerPort: 5001
-  servicePort: 80
-
-Ordering-chart:
-  enabled: true
-  replicas: 1
-  image: ajkabs/ordering-api:latest
-  containerPort: 8080
-  servicePort: 80
-
-OrderProcessor-chart:
-  enabled: true
-  replicas: 1
-  image: ajkabs/order-processor:latest
-  containerPort: 16888
-  servicePort: 80
-
-PaymentProcessor-chart:
-  enabled: true
-  replicas: 1
-  image: ajkabs/payment-processor:latest
-  containerPort: 8080
-  servicePort: 80
-
-Webhooks-chart:
-  enabled: true
-  replicas: 1
-  image: ajkabs/webhooks-api:latest
-  containerPort: 5101
-  servicePort: 80
-
-MobileBff-chart:
-  enabled: true
-  replicas: 1
-  image: ajkabs/mobile-bff:latest
-  containerPort: 11632
-  servicePort: 80
-
-Webapp-chart:
-  enabled: true
-  replicas: 1
-  image: ajkabs/webapp:latest
-  containerPort: 5004
-  servicePort: 80
-
-CatalogDb-chart:
-  enabled: true
-  replicas: 1
-  image: postgres:latest
-  containerPort: 5432
-  servicePort: 5432
-
-Redis-chart:
-  enabled: true
-  replicas: 1
-  image: redis:latest
-  containerPort: 6379
-  servicePort: 6379
-
-RabbitMQ-chart:
-  enabled: true
-  replicas: 1
-  image: rabbitmq:3-management
-  containerPort: 5672
-  servicePort: 5672
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80

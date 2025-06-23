@@ -1,0 +1,60 @@
+enabled: true
+replicas: 1
+image: mobile-bff:latest
+imagePullPolicy: IfNotPresent
+containerPort: 11632
+servicePort: 11632
+serviceType: ClusterIP
+
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 11632
+    scheme: HTTP
+  initialDelaySeconds: 90
+  periodSeconds: 90
+  timeoutSeconds: 30
+  failureThreshold: 5
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 11632
+    scheme: HTTP
+  initialDelaySeconds: 90
+  periodSeconds: 90
+  timeoutSeconds: 30
+  failureThreshold: 5
+
+env:
+  ASPNETCORE_ENVIRONMENT: Development
+  ASPNETCORE_URLS: "http://*:11632"
+
+initContainers:
+  - name: wait-for-dependencies
+    image: busybox:latest
+    command:
+      - "/bin/sh"
+      - "-c"
+      - >
+        until nslookup eshop-identity && nslookup eshop-catalog &&
+              nslookup eshop-ordering && nslookup eshop-basket;
+        do echo "waiting for dependencies"; sleep 2; done;
+
+secret:
+  IDENTITY_URL: ""
+  CATALOG_URL: ""
+  ORDERING_URL: ""
+  BASKET_URL: ""
+
+global:
+  namespace: "dev"
+  imagePullPolicy: IfNotPresent

@@ -1,16 +1,16 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "eshop.fullname" . }}
-  namespace: {{ .Values.global.namespace | default "app" }}
+  name: {{ include "redis.fullname" . }}
+  namespace: {{ .Values.global.namespace }}
   labels:
-    {{- include "eshop.labels" . | nindent 4 }}
+    {{- include "redis.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.serviceType }}
+  type: {{ .Values.service.type }}
   ports:
-    - port: {{ .Values.servicePort }}
-      targetPort: {{ .Values.containerPort }}
+    - port: {{ .Values.service.port }}
+      targetPort: 6379
       protocol: TCP
       name: redis
   selector:
-    {{- include "eshop.selectorLabels" . | nindent 4 }}
+    {{- include "redis.selectorLabels" . | nindent 4 }}

@@ -1,65 +1,75 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "eshop.fullname" . }}
-  namespace: {{ .Values.globalnamespaceName | default "app" }}
+  name: {{ include "catalogdb.fullname" . }}
+  namespace: {{ .Values.global.namespace }}
   labels:
-    {{- include "eshop.labels" . | nindent 4 }}
+    {{ include "catalogdb.labels" . | nindent 4 }}
 spec:
-  serviceName: {{ include "eshop.fullname" . }}-headless
-  replicas: {{ .Values.replicas }}
+  replicas: {{ index .Values "postgresql-ha" "postgresql" "replicaCount" }}
+  serviceName: {{ include "catalogdb.fullname" . }}
   selector:
     matchLabels:
-      {{- include "eshop.selectorLabels" . | nindent 6 }}
+      {{ include "catalogdb.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "eshop.selectorLabels" . | nindent 8 }}
+        {{ include "catalogdb.selectorLabels" . | nindent 8 }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5432"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
-        - name: {{ .Chart.Name }}
-          image: {{ .Values.image }}
-          imagePullPolicy: {{ .Values.imagePullPolicy }}
-          command: {{- toYaml .Values.command | nindent 12 }}
+        - name: postgresql
+          image: "{{ .Values.global.registry }}postgres:13"
+          imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: {{ .Values.containerPort }}
-              name: postgres
+            - containerPort: 5432
           env:
-            {{- range $key, $value := .Values.env }}
-            - name: {{ $key }}
-              value: {{ $value | quote }}
-            {{- end }}
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "catalogdb.fullname" . }}-secret
+                  key: username
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "eshop.fullname" . }}-secrets
-                  key: POSTGRES_PASSWORD
+                  name: {{ include "catalogdb.fullname" . }}-secret
+                  key: password
+            - name: POSTGRES_DB
+              value: {{ index .Values "postgresql-ha" "global" "postgresql" "database" }}
           volumeMounts:
-            - name: pg-data
-              mountPath: /var/lib/postgresql/data
-            - name: init-script
-              mountPath: /docker-entrypoint-initdb.d/init-db.sh
-              subPath: init-db.sh
+            - name: config-volume
+              mountPath: "/etc/postgresql/postgresql.conf"
+              subPath: postgresql.conf
+            - name: data
+              mountPath: "/var/lib/postgresql/data"
           livenessProbe:
-            {{- toYaml .Values.livenessProbe | nindent 12 }}
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
           readinessProbe:
-            {{- toYaml .Values.readinessProbe | nindent 12 }}
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{ toYaml .Values.resources | nindent 12 }}
       volumes:
-        - name: init-script
+        - name: config-volume
           configMap:
-            name: {{ include "eshop.fullname" . }}-init-script
-            items:
-              - key: init-db.sh
-                path: init-db.sh
-                mode: 0755
+            name: {{ include "catalogdb.fullname" . }}-config
   volumeClaimTemplates:
     - metadata:
-        name: pg-data
+        name: data
       spec:
-        accessModes: ["ReadWriteOnce"]
-        storageClassName: {{ .Values.persistence.storageClass }}
+        accessModes:
+          {{ toYaml .Values.persistence.accessModes | nindent 10 }}
+        storageClassName: {{ .Values.persistence.storageClassName }}
         resources:
           requests:
-            storage: {{ .Values.persistence.size }}
+            storage: {{ .Values.persistence.storageSize }}
