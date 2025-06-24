@@ -1,3 +1,4 @@
+# helm-chart/charts/basket/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -8,6 +9,6 @@ spec:
     app: basket-api
   ports:
     - protocol: TCP
-      port: 80
-      targetPort: {{ .Values.service.port }}
+      port: {{ .Values.service.port }}         # port: 5221
+      targetPort: {{ .Values.service.port }}   # targetPort: 5221
   type: ClusterIP

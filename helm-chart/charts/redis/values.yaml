@@ -25,4 +25,3 @@ persistence:
   accessMode: ReadWriteOnce
   size: 1Gi
 
-

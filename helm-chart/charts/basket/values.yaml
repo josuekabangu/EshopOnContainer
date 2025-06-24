@@ -1,5 +1,7 @@
 replicaCount: 1
 
+namespace: dev
+
 image:
   repository: ajkabs/basket-api
   tag: latest
@@ -13,13 +15,14 @@ service:
 resources:
   limits:
     cpu: 500m
-    memory: 512Mi
+    memory: 1Gi
   requests:
     cpu: 200m
     memory: 256Mi
 
 env:
   ASPNETCORE_ENVIRONMENT: Development
+  ASPNETCORE_HOSTING__ALLOWEDHOSTS: "*"
   ASPNETCORE_URLS: http://*:5221
   ConnectionStrings__Redis: redis
   Identity__Url: http://identity-api:5001
@@ -36,7 +39,7 @@ pvc:
 
 probe:
   path: /hc
-  port: 80
+  port: 5221
 
 ingress:
   enabled: true
@@ -48,4 +51,4 @@ ingress:
 nameOverride: ""
 fullnameOverride: ""
 
-namespace: dev
+

@@ -1,10 +1,4 @@
 dependencies:
-- name: basket
-  repository: file://charts/basket
-  version: 0.1.0
-- name: catalog
-  repository: file://charts/catalog
-  version: 0.1.0
 - name: catalogdb
   repository: file://charts/catalogdb
   version: 0.1.0
@@ -14,5 +8,5 @@ dependencies:
 - name: redis
   repository: file://charts/redis
   version: 0.1.0
-digest: sha256:e2f4d9c927a7135fce267523f947745cbb738d17bbaed367a3cbe94403e14b99
-generated: "2025-06-24T08:16:10.912936676Z"
+digest: sha256:386cf1f33b9f70cb4d34bc9a63ea81230121e37283a43ef9bf960b562292a3cc
+generated: "2025-06-24T11:39:35.548552887Z"
