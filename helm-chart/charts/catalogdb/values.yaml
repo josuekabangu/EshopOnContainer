@@ -23,6 +23,7 @@ persistence:
   storageClassName: "standard"
   accessModes:
     - ReadWriteOnce
+<<<<<<< HEAD
   storageSize: "1Gi"
 
 resources:
@@ -32,6 +33,17 @@ resources:
   requests:
     cpu: "100m"
     memory: "256Mi"
+=======
+  storageSize: "8Gi"
+
+resources:
+  limits:
+    cpu: "1000m"
+    memory: "1024Mi"
+  requests:
+    cpu: "500m"
+    memory: "512Mi"
+>>>>>>> 713ef402ffd6afc8580349fe1e1b5402583fca12
 
 serviceAccount:
   create: true

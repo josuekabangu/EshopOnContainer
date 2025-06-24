@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "eshop.basket.fullname" . }}-test-redis-connection"
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.basket.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: redis-cli
+      image: redis:alpine
+      command: ['redis-cli']
+      args:
+        - '-h'
+        - '{{ include "eshop.redis.fullname" . }}'
+        - '-p'
+        - '{{ .Values.redis.service.port }}'
+        - 'PING'
+  restartPolicy: Never

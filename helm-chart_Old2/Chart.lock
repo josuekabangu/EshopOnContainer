@@ -1,0 +1,39 @@
+dependencies:
+- name: basket
+  repository: file://charts/basket
+  version: 0.1.0
+- name: catalog
+  repository: file://charts/catalog
+  version: 0.1.0
+- name: catalogdb
+  repository: file://charts/catalogdb
+  version: 0.1.0
+- name: identity
+  repository: file://charts/identity
+  version: 0.1.0
+- name: mobilebff
+  repository: file://charts/mobilebff
+  version: 0.1.0
+- name: ordering
+  repository: file://charts/ordering
+  version: 0.1.0
+- name: orderprocessor
+  repository: file://charts/orderprocessor
+  version: 0.1.0
+- name: paymentprocessor
+  repository: file://charts/paymentprocessor
+  version: 0.1.0
+- name: rabbitmq
+  repository: file://charts/rabbitmq
+  version: 0.1.0
+- name: redis
+  repository: file://charts/redis
+  version: 0.1.0
+- name: webapp
+  repository: file://charts/webapp
+  version: 0.1.0
+- name: webhooks
+  repository: file://charts/webhooks
+  version: 0.1.0
+digest: sha256:1a827e99b28a866edcc7d6e8dc6d14d3fdf8518b9c4ded5654a9061cd60cac59
+generated: "2025-06-22T02:25:25.636136805+02:00"

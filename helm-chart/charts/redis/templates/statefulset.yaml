@@ -65,3 +65,7 @@ spec:
         resources:
           requests:
             storage: {{ .Values.persistence.storageSize }}
+<<<<<<< HEAD
+=======
+
+>>>>>>> 713ef402ffd6afc8580349fe1e1b5402583fca12

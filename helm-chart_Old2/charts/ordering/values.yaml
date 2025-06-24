@@ -1,0 +1,25 @@
+replicas: 2
+image:
+  repository: eshop/ordering
+  tag: latest
+  pullPolicy: IfNotPresent
+service:
+  type: ClusterIP
+  port: 80
+database:
+  host: "{{ .Release.Name }}-catalogdb-postgresql-ha"
+  name: orderingdb
+  username: postgres
+  password: postgres
+rabbitmq:
+  host: "{{ .Release.Name }}-rabbitmq"
+  port: 5672
+  username: guest
+  password: guest
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+  requests:
+    cpu: "200m"
+    memory: "256Mi"

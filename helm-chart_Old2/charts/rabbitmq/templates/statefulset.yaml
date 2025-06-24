@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "eshop.rabbitmq.fullname" . }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.rabbitmq.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.rabbitmq.replicaCount }}
+  serviceName: {{ include "eshop.rabbitmq.fullname" . }}
+  selector:
+    matchLabels:
+      {{- include "eshop.rabbitmq.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "eshop.rabbitmq.selectorLabels" . | nindent 8 }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5672"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: rabbitmq
+          image: "{{ .Values.global.registry }}rabbitmq:3.9"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5672
+            - containerPort: 15672
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "eshop.rabbitmq.fullname" . }}-secret
+                  key: username
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "eshop.rabbitmq.fullname" . }}-secret
+                  key: password
+          volumeMounts:
+            - name: config-volume
+              mountPath: "/etc/rabbitmq/rabbitmq.conf"
+              subPath: rabbitmq.conf
+            - name: data
+              mountPath: "/var/lib/rabbitmq"
+          livenessProbe:
+            tcpSocket:
+              port: 5672
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: 5672
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "eshop.rabbitmq.fullname" . }}-config
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: {{ toYaml .Values.persistence.accessModes | nindent 10 }}
+        storageClassName: {{ .Values.persistence.storageClassName }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.storageSize }}

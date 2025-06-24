@@ -14,10 +14,16 @@ persistence:
   storageSize: "8Gi"
 resources:
   limits:
-    cpu: "500m"
+    cpu: "1000m"
     memory: "1024Mi"
   requests:
     cpu: "500m"
+<<<<<<< HEAD
+    memory: "1024Mi"
+  requests:
+    cpu: "500m"
+=======
+>>>>>>> 713ef402ffd6afc8580349fe1e1b5402583fca12
     memory: "512Mi"
 
 serviceAccount:

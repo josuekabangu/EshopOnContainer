@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "eshop.catalogdb.fullname" . }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.catalogdb.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ index .Values "postgresql-ha" "service" "port" }}
+      targetPort: 5432
+      protocol: TCP
+      name: postgres
+  selector:
+    app.kubernetes.io/name: postgresql-ha-postgresql
+    app.kubernetes.io/instance: {{ .Release.Name }}

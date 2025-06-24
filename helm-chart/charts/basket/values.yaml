@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 replicas: 1
 
 image:
@@ -18,6 +19,23 @@ env:
   DOTNET_TieredPGO: "1"
   DataProtection__Path: /app/keys
 
+=======
+replicas: 2
+
+image:
+  repository: ajkabs/basket-api
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+redis:
+  host: "{{ .Release.Name }}-redis"
+  port: 6379
+
+>>>>>>> 713ef402ffd6afc8580349fe1e1b5402583fca12
 resources:
   limits:
     cpu: "500m"
@@ -26,9 +44,17 @@ resources:
     cpu: "200m"
     memory: "256Mi"
 
+<<<<<<< HEAD
 pvc:
   storage: "100Mi"
 
 secrets:
   redisHost: "redis"
   eventBusConnection: "amqp://guest:guest@rabbitmq:5672"
+=======
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+  automount: true
+>>>>>>> 713ef402ffd6afc8580349fe1e1b5402583fca12

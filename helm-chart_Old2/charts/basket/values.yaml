@@ -1,0 +1,18 @@
+replicas: 2
+image:
+  repository: eshop/basket
+  tag: latest
+  pullPolicy: IfNotPresent
+service:
+  type: ClusterIP
+  port: 80
+redis:
+  host: "{{ .Release.Name }}-redis"
+  port: 6379
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+  requests:
+    cpu: "200m"
+    memory: "256Mi"

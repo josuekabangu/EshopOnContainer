@@ -1,0 +1,79 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "eshop.fullname" . }}-ingress
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.labels" . | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{ .Values.ingress.hostname }}
+      http:
+        paths:
+          - path: /webapp
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "eshop.webapp.fullname" . }}
+                port:
+                  number: {{ .Values.webapp.service.port }}
+          - path: /basket
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "eshop.basket.fullname" . }}
+                port:
+                  number: {{ .Values.basket.service.port }}
+          - path: /catalog
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "eshop.catalog.fullname" . }}
+                port:
+                  number: {{ .Values.catalog.service.port }}
+          - path: /identity
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "eshop.identity.fullname" . }}
+                port:
+                  number: {{ .Values.identity.service.port }}
+          - path: /mobilebff
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "eshop.mobilebff.fullname" . }}
+                port:
+                  number: {{ .Values.mobilebff.service.port }}
+          - path: /ordering
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "eshop.ordering.fullname" . }}
+                port:
+                  number: {{ .Values.ordering.service.port }}
+          - path: /payment
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "eshop.paymentprocessor.fullname" . }}
+                port:
+                  number: {{ .Values.paymentprocessor.service.port }}
+          - path: /webhooks
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "eshop.webhooks.fullname" . }}
+                port:
+                  number: {{ .Values.webhooks.service.port }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.hostname }}
+      secretName: {{ include "eshop.fullname" . }}-tls
+  {{- end }}
+{{- end }}

@@ -6,6 +6,7 @@ metadata:
   labels:
     {{- include "basket.labels" . | nindent 4 }}
 spec:
+<<<<<<< HEAD
   selector:
     {{- include "basket.selectorLabels" . | nindent 4 }}
   type: {{ .Values.service.type }}
@@ -14,3 +15,13 @@ spec:
       port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.port }}
       nodePort: {{ .Values.service.nodePort }}
+=======
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: 80
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "basket.selectorLabels" . | nindent 4 }}
+>>>>>>> 713ef402ffd6afc8580349fe1e1b5402583fca12

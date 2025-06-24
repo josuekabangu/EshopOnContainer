@@ -2,7 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "basket.fullname" . }}
+<<<<<<< HEAD
   namespace: {{ .Values.global.namespace | default "dev" }}
+=======
+  namespace: {{ .Values.global.namespace }}
+>>>>>>> 713ef402ffd6afc8580349fe1e1b5402583fca12
   labels:
     {{- include "basket.labels" . | nindent 4 }}
 spec:
@@ -14,12 +18,20 @@ spec:
     metadata:
       labels:
         {{- include "basket.selectorLabels" . | nindent 8 }}
+<<<<<<< HEAD
+=======
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "80"
+        prometheus.io/path: "/metrics"
+>>>>>>> 713ef402ffd6afc8580349fe1e1b5402583fca12
     spec:
       containers:
         - name: basket-api
           image: "{{ .Values.global.registry }}{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
+<<<<<<< HEAD
             - containerPort: {{ .Values.service.port }}
           env:
             - name: ASPNETCORE_ENVIRONMENT
@@ -56,21 +68,54 @@ spec:
               path: /health
               port: {{ .Values.service.port }}
             initialDelaySeconds: 30
+=======
+            - containerPort: 80
+          env:
+            - name: Redis__Host
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "basket.fullname" . }}-secret
+                  key: redisHost
+            - name: Redis__Port
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "basket.fullname" . }}-secret
+                  key: redisPort
+          volumeMounts:
+            - name: config-volume
+              mountPath: "/app/config/appsettings.json"
+              subPath: appsettings.json
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 15
+>>>>>>> 713ef402ffd6afc8580349fe1e1b5402583fca12
             periodSeconds: 10
             timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /health
+<<<<<<< HEAD
               port: {{ .Values.service.port }}
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 5
+=======
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+>>>>>>> 713ef402ffd6afc8580349fe1e1b5402583fca12
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
         - name: config-volume
           configMap:
             name: {{ include "basket.fullname" . }}-config
+<<<<<<< HEAD
         - name: basket-data-protection
           persistentVolumeClaim:
             claimName: basket-data-protection-pvc
+=======
+>>>>>>> 713ef402ffd6afc8580349fe1e1b5402583fca12

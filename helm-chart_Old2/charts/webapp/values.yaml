@@ -1,0 +1,16 @@
+replicas: 2
+image:
+  repository: eshop/webapp
+  tag: latest
+  pullPolicy: IfNotPresent
+service:
+  type: ClusterIP
+  port: 80
+apiKey: "default-api-key"
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+  requests:
+    cpu: "200m"
+    memory: "256Mi"

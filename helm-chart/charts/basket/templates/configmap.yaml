@@ -3,6 +3,7 @@ kind: ConfigMap
 metadata:
   name: {{ include "basket.fullname" . }}-config
   namespace: {{ .Values.global.namespace }}
+<<<<<<< HEAD
 data:
   appsettings.json: |
     {
@@ -12,5 +13,15 @@ data:
           "Microsoft": "Warning",
           "Microsoft.Hosting.Lifetime": "Information"
         }
+=======
+  labels:
+    {{- include "basket.labels" . | nindent 4 }}
+data:
+  appsettings.json: |
+    {
+      "Redis": {
+        "Host": "{{ .Values.redis.host }}",
+        "Port": "{{ .Values.redis.port }}"
+>>>>>>> 713ef402ffd6afc8580349fe1e1b5402583fca12
       }
     }

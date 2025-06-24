@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "eshop.webapp.fullname" . }}-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.webapp.labels" . | nindent 4 }}
+data:
+  appsettings.json: |
+    {
+      "ServiceUrls": {
+        "Catalog": "http://{{ .Release.Name }}-catalog",
+        "Basket": "http://{{ .Release.Name }}-basket",
+        "Ordering": "http://{{ .Release.Name }}-ordering"
+      }
+    }

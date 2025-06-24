@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "eshop.rabbitmq.fullname" . }}-test-connection
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.rabbitmq.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: test-connection
+      image: busybox
+      command: ['sh', '-c', 'nc -zv {{ include "eshop.rabbitmq.fullname" . }} {{ .Values.service.port }}']
+  restartPolicy: Never

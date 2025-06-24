@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "eshop.paymentprocessor.fullname" . }}-test-connection
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.paymentprocessor.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: test-connection
+      image: busybox
+      command: ['sh', '-c', 'wget -q --spider http://{{ include "eshop.paymentprocessor.fullname" . }}:{{ .Values.service.port }}/health']
+  restartPolicy: Never

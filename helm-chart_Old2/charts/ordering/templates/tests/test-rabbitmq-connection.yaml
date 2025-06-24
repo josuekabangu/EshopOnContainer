@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "eshop.ordering.fullname" . }}-test-rabbitmq-connection"
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.ordering.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: rabbitmqctl
+      image: bitnami/rabbitmq:3.12
+      command: ['rabbitmqctl']
+      args: ['status']
+      env:
+        - name: RABBITMQ_USERNAME
+          value: {{ .Values.rabbitmq.username }}
+        - name: RABBITMQ_PASSWORD
+          value: {{ .Values.rabbitmq.password }}
+  restartPolicy: Never
