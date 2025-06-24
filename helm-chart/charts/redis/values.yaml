@@ -21,7 +21,6 @@ redis:
 
 persistence:
   enabled: true
-  storageClass: ""
+  storageClass: local-path
   accessMode: ReadWriteOnce
   size: 1Gi
-

@@ -34,8 +34,8 @@ secret:
   EVENTBUS_CONNECTION: YW1xcDovL2d1ZXN0Omd1ZXN0QHJhYmJpdG1xOjU2NzI=
 
 pvc:
-  name: basket-data-protection-pvc
-  size: 100Mi
+  name: basket-data-protection
+  size: 1Gi
 
 probe:
   path: /hc
@@ -50,5 +50,3 @@ ingress:
 
 nameOverride: ""
 fullnameOverride: ""
-
-
