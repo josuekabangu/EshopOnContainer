@@ -1,0 +1,51 @@
+replicaCount: 1
+
+image:
+  repository: ajkabs/basket-api
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 5221
+  nodePort: 30221  # inutile ici, mais conservé si besoin
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+env:
+  ASPNETCORE_ENVIRONMENT: Development
+  ASPNETCORE_URLS: http://*:5221
+  ConnectionStrings__Redis: redis
+  Identity__Url: http://identity-api:5001
+  DOTNET_READYTORUN: "1"
+  DOTNET_TieredPGO: "1"
+  DataProtection__Path: /app/keys
+
+secret:
+  EVENTBUS_CONNECTION: YW1xcDovL2d1ZXN0Omd1ZXN0QHJhYmJpdG1xOjU2NzI=
+
+pvc:
+  name: basket-data-protection-pvc
+  size: 100Mi
+
+probe:
+  path: /hc
+  port: 80
+
+ingress:
+  enabled: true
+  host: basket.local
+  path: /hc
+  pathType: Prefix
+  servicePort: 80
+
+nameOverride: ""
+fullnameOverride: ""
+
+namespace: dev

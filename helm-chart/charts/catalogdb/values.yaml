@@ -1,0 +1,31 @@
+namespace: dev
+
+image:
+  repository: ankane/pgvector
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+service:
+  type: NodePort
+  port: 5432
+  nodePort: 30433
+  headlessName: catalogdb-headless
+
+pvc:
+  name: catalogdb-pvc
+  size: 1Gi
+
+postgres:
+  user: postgres
+  password: password
+  db: catalogdb
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"

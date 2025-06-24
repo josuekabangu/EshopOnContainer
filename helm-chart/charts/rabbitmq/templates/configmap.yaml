@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-config
+  namespace: {{ .Values.namespace }}
+data:
+  rabbitmq.conf: |
+    loopback_users.guest = true
+    listeners.tcp.default = {{ .Values.service.amqpPort }}
+    management.tcp.port = {{ .Values.service.managementPort }}

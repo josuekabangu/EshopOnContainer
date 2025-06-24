@@ -1,0 +1,28 @@
+replicaCount: 1
+
+image:
+  repository: redis
+  tag: 7.2-alpine
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 6379
+  nodePort: 30679
+
+headlessService:
+  name: redis-headless
+
+redis:
+  password: "redis"
+  config:
+    maxmemory: "256mb"
+    maxmemoryPolicy: "allkeys-lru"
+
+persistence:
+  enabled: true
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 1Gi
+
+

@@ -1,0 +1,33 @@
+namespace: dev
+
+image:
+  repository: rabbitmq
+  tag: 3.12-management-alpine
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+service:
+  type: NodePort
+  amqpPort: 5672
+  amqpNodePort: 30672
+  managementPort: 15672
+  managementNodePort: 31672
+  headlessName: rabbitmq-headless
+
+pvc:
+  name: rmq-data-pvc
+  size: 1Gi
+
+rabbitmq:
+  defaultUser: guest
+  defaultPass: guest
+  nodename: rabbit@rabbitmq-0.rabbitmq-headless.dev.svc.cluster.local
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"

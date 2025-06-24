@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: catalogdb-config
+  namespace: {{ .Values.namespace }}
+data:
+  init-db.sh: |
+    #!/bin/bash
+    set -e
+
+    echo "Waiting for PostgreSQL to start..."
+    until pg_isready -U postgres -d catalogdb; do
+      sleep 1
+    done
+
+    echo "Creating vector extension in catalogdb..."
+    psql -U postgres -d catalogdb -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+    for db in identitydb orderingdb webhooksdb catalogdb; do
+      echo "Checking if $db exists..."
+      psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$db'" | grep -q 1 || psql -U postgres -c "CREATE DATABASE $db;"
+    done
+
+    echo "All databases created (if they weren't already)."

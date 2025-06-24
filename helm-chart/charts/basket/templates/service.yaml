@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: basket-api
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: basket-api
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: {{ .Values.service.port }}
+  type: ClusterIP

@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-api
+  namespace: {{ .Values.namespace | default .Values.global.namespace }}
+  labels:
+    app: catalog-api
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: catalog-api
+  template:
+    metadata:
+      labels:
+        app: catalog-api
+    spec:
+      containers:
+      - name: catalog-api
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.service.port }}
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: catalog-api-config
+              key: ASPNETCORE_ENVIRONMENT
+        - name: ASPNETCORE_URLS
+          valueFrom:
+            configMapKeyRef:
+              name: catalog-api-config
+              key: ASPNETCORE_URLS
+        - name: ConnectionStrings__CatalogDB
+          valueFrom:
+            secretKeyRef:
+              name: catalog-api-secrets
+              key: CATALOGDB_CONNECTION
+        - name: ConnectionStrings__EventBus
+          valueFrom:
+            secretKeyRef:
+              name: catalog-api-secrets
+              key: EVENTBUS_CONNECTION
+        - name: DOTNET_READYTORUN
+          valueFrom:
+            configMapKeyRef:
+              name: catalog-api-config
+              key: DOTNET_READYTORUN
+        - name: DOTNET_TieredPGO
+          valueFrom:
+            configMapKeyRef:
+              name: catalog-api-config
+              key: DOTNET_TieredPGO
+        command: ["/bin/sh", "-c", "./wait-for-it.sh rabbitmq:5672 -- dotnet Catalog.API.dll"]
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.service.port }}
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.service.port }}
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        resources:
+          requests:
+            cpu: {{ .Values.resources.requests.cpu }}
+            memory: {{ .Values.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.resources.limits.cpu }}
+            memory: {{ .Values.resources.limits.memory }}

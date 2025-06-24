@@ -1,0 +1,34 @@
+namespace: dev
+replicaCount: 1
+
+image:
+  repository: ajkabs/catalog-api
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  nodePort: 30222
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+env:
+  ASPNETCORE_ENVIRONMENT: Development
+  ASPNETCORE_URLS: http://*:80
+  DOTNET_READYTORUN: "1"
+  DOTNET_TieredPGO: "1"
+
+secret:
+  CATALOGDB_CONNECTION: SG9zdD1jYXRhbG9nZGI7UG9ydD01NDMyO0RhdGFiYXNlPWNhdGFsb2dkYjtVc2VyIElkPXBvc3RncmVzO1Bhc3N3b3JkPXBhc3N3b3JkOw==
+  EVENTBUS_CONNECTION: YW1xcDovL2d1ZXN0Omd1ZXN0QHJhYmJpdG1xOjU2NzI=
+
+pvc:
+  name: catalog-data-pvc
+  size: 100Mi
