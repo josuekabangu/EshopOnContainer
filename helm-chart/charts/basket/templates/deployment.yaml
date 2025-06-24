@@ -48,7 +48,7 @@ spec:
             ["/bin/sh", "-c", "./wait-for-it.sh redis:6379 -- ./wait-for-it.sh rabbitmq:5672 -- dotnet Basket.API.dll"]
           livenessProbe:
             httpGet:
-              path: /health
+              path: /hc
               port: {{ .Values.service.port }}
               scheme: HTTP
             initialDelaySeconds: 30
@@ -57,7 +57,7 @@ spec:
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /health
+              path: /hc
               port: {{ .Values.service.port }}
               scheme: HTTP
             initialDelaySeconds: 10

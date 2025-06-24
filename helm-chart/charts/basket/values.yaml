@@ -34,5 +34,9 @@ pvc:
   name: basket-data-protection-pvc
   size: 100Mi
 
+# Nouveau bloc pour permettre de configurer le chemin des probes
+probe:
+  path: /hc
+
 nameOverride: ""
 fullnameOverride: ""
