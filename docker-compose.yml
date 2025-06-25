@@ -77,7 +77,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: "http://*:5221"
-      ConnectionStrings__Redis: redis
+      ConnectionStrings__Redis: redis:6379
       ConnectionStrings__EventBus: amqp://guest:guest@rabbitmq:5672
       Identity__Url: "http://identity-api:5001"
       DOTNET_READYTORUN: 1
