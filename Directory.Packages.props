@@ -52,6 +52,9 @@
     <PackageVersion Include="Microsoft.Extensions.Identity.Stores" Version="$(AspnetVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="9.4.0" />
 
+    <!-- **Ajout Microsoft.AspNetCore.DataProtection** -->
+    <PackageVersion Include="Microsoft.AspNetCore.DataProtection" Version="$(AspnetVersion)" />
+
     <!-- MSTest -->
     <PackageVersion Include="MSTest.TestFramework" Version="3.8.2" />
     <PackageVersion Include="MSTest.TestAdapter" Version="3.8.2" />

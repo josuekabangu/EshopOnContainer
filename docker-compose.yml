@@ -96,7 +96,7 @@ services:
       - eShopNetwork
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl --http2-prior-knowledge -sf http://localhost:5221/hc || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:5221/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
