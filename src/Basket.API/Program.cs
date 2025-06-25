@@ -1,5 +1,11 @@
 ﻿var builder = WebApplication.CreateBuilder(args);
 
+// Autoriser HTTP/1.1 + HTTP/2
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ConfigureEndpointDefaults(lo => lo.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1AndHttp2);
+});
+
 // Ajouter HealthChecks
 builder.Services.AddHealthChecks();
 
