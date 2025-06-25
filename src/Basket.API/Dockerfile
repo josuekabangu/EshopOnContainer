@@ -26,5 +26,5 @@ RUN chmod +x wait-for-it.sh && \
 
 EXPOSE 5221
 
-ENTRYPOINT ["dotnet", "Basket.API.dll"]
+#ENTRYPOINT ["dotnet", "Basket.API.dll"]
 

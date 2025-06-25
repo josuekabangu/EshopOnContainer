@@ -18,4 +18,4 @@ spec:
             - key: kubernetes.io/hostname
               operator: In
               values:
-                - ip-172-31-18-201   # Remplace par le nom exact de ton node (kubectl get nodes)
+                - aka-thk  # Remplace par le nom exact de ton node (kubectl get nodes)

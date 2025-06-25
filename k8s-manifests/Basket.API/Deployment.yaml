@@ -47,22 +47,26 @@ spec:
             ["/bin/sh", "-c", "./wait-for-it.sh redis:6379 -- ./wait-for-it.sh rabbitmq:5672 -- dotnet Basket.API.dll"]
           livenessProbe:
             httpGet:
-              path: /health
+              path: /hc
               port: 5221
-              scheme: HTTP
-            initialDelaySeconds: 30
+              httpHeaders:
+                - name: Host
+                  value: localhost
+            initialDelaySeconds: 40
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /health
+              path: /hc
               port: 5221
-              scheme: HTTP
-            initialDelaySeconds: 10
+              httpHeaders:
+                - name: Host
+                  value: localhost
+            initialDelaySeconds: 20
             periodSeconds: 10
             timeoutSeconds: 5
-            failureThreshold: 3
+            failureThreshold: 6
           resources:
             requests:
               cpu: "200m"
@@ -73,4 +77,4 @@ spec:
       volumes:
         - name: basket-data-protection
           persistentVolumeClaim:
-            claimName: basket-data-protection-pvc
+            claimName: basket-data-protection

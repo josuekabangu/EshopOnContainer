@@ -6,7 +6,6 @@ metadata:
 spec:
   selector:
     app.kubernetes.io/name: basket-api
-    app.kubernetes.io/instance: eshop
   ports:
     - protocol: TCP
       port: {{ .Values.service.port }}

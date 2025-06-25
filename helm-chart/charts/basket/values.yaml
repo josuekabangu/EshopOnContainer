@@ -10,7 +10,6 @@ image:
 service:
   type: ClusterIP
   port: 5221
-  nodePort: 30221  # inutile ici, mais conservé si besoin
 
 resources:
   limits:
@@ -22,9 +21,10 @@ resources:
 
 env:
   ASPNETCORE_ENVIRONMENT: Development
-  ASPNETCORE_HOSTING__ALLOWEDHOSTS: "*"
   ASPNETCORE_URLS: http://*:5221
+  ASPNETCORE_HOSTING__ALLOWEDHOSTS: "*"
   ConnectionStrings__Redis: redis
+  ConnectionStrings__EventBus: rabbitmq
   Identity__Url: http://identity-api:5001
   DOTNET_READYTORUN: "1"
   DOTNET_TieredPGO: "1"
@@ -36,17 +36,27 @@ secret:
 pvc:
   name: basket-data-protection
   size: 1Gi
+  storageClassName: local-path
 
-probe:
+readinessProbe:
   path: /hc
   port: 5221
+  initialDelaySeconds: 20
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 6
+
+livenessProbe:
+  path: /hc
+  port: 5221
+  initialDelaySeconds: 40
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
 
 ingress:
   enabled: true
   host: basket.local
-  path: /hc
+  path: /
   pathType: Prefix
   servicePort: 80
-
-nameOverride: ""
-fullnameOverride: ""

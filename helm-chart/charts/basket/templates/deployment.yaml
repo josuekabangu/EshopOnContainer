@@ -1,82 +1,79 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: eshop-basket-api
+  name: basket-api
   namespace: {{ .Values.namespace }}
   labels:
     app.kubernetes.io/name: basket-api
-    app.kubernetes.io/instance: eshop
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       app.kubernetes.io/name: basket-api
-      app.kubernetes.io/instance: eshop
   template:
     metadata:
       labels:
         app.kubernetes.io/name: basket-api
-        app.kubernetes.io/instance: eshop
     spec:
       containers:
-      - name: basket-api
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
-        command:
-          - "/bin/sh"
-          - "-c"
-          - "./wait-for-it.sh redis:6379 -- ./wait-for-it.sh rabbitmq:5672 -- dotnet Basket.API.dll"
-        ports:
-        - containerPort: {{ .Values.service.port }}
-        env:
-        - name: ASPNETCORE_ENVIRONMENT
-          value: {{ .Values.env.ASPNETCORE_ENVIRONMENT | quote }}
-        - name: ASPNETCORE_URLS
-          value: {{ .Values.env.ASPNETCORE_URLS | quote }}
-        - name: ConnectionStrings__Redis
-          value: {{ .Values.env.ConnectionStrings__Redis | quote }}
-        - name: ASPNETCORE_HOSTING__ALLOWEDHOSTS
-          value: {{ .Values.env.ASPNETCORE_HOSTING__ALLOWEDHOSTS | quote }}
-        - name: ConnectionStrings__EventBus
-          valueFrom:
-            secretKeyRef:
-              name: basket-api-secrets
-              key: EVENTBUS_CONNECTION
-        - name: Identity__Url
-          value: {{ .Values.env.Identity__Url | quote }}
-        - name: DOTNET_READYTORUN
-          value: {{ .Values.env.DOTNET_READYTORUN | quote }}
-        - name: DOTNET_TieredPGO
-          value: {{ .Values.env.DOTNET_TieredPGO | quote }}
-        - name: DataProtection__Path
-          value: {{ .Values.env.DataProtection__Path | quote }}
-        resources:
-          requests:
-            cpu: {{ .Values.resources.requests.cpu }}
-            memory: {{ .Values.resources.requests.memory }}
-          limits:
-            cpu: {{ .Values.resources.limits.cpu }}
-            memory: {{ .Values.resources.limits.memory }}
-        readinessProbe:
-          httpGet:
-            path: {{ .Values.probe.path | quote }}
-            port: {{ .Values.probe.port }}
-          initialDelaySeconds: 20
-          timeoutSeconds: 5
-          periodSeconds: 10
-          failureThreshold: 6
-        livenessProbe:
-          httpGet:
-            path: {{ .Values.probe.path | quote }}
-            port: {{ .Values.probe.port }}
-          initialDelaySeconds: 40
-          timeoutSeconds: 5
-          periodSeconds: 30
-          failureThreshold: 3
-        volumeMounts:
-        - name: basket-data-protection
-          mountPath: {{ .Values.env.DataProtection__Path }}
+        - name: basket-api
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - "/bin/sh"
+            - "-c"
+            - "./wait-for-it.sh redis:6379 -- ./wait-for-it.sh rabbitmq:5672 -- dotnet Basket.API.dll"
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: {{ .Values.env.ASPNETCORE_ENVIRONMENT | quote }}
+            - name: ASPNETCORE_URLS
+              value: {{ .Values.env.ASPNETCORE_URLS | quote }}
+            - name: ConnectionStrings__Redis
+              value: {{ .Values.env.ConnectionStrings__Redis | quote }}
+            - name: ASPNETCORE_HOSTING__ALLOWEDHOSTS
+              value: {{ .Values.env.ASPNETCORE_HOSTING__ALLOWEDHOSTS | quote }}
+            - name: ConnectionStrings__EventBus
+              valueFrom:
+                secretKeyRef:
+                  name: basket-api-secrets
+                  key: EVENTBUS_CONNECTION
+            - name: Identity__Url
+              value: {{ .Values.env.Identity__Url | quote }}
+            - name: DOTNET_READYTORUN
+              value: {{ .Values.env.DOTNET_READYTORUN | quote }}
+            - name: DOTNET_TieredPGO
+              value: {{ .Values.env.DOTNET_TieredPGO | quote }}
+            - name: DataProtection__Path
+              value: {{ .Values.env.DataProtection__Path | quote }}
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.readinessProbe.path | quote }}
+              port: {{ .Values.readinessProbe.port }}
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.livenessProbe.path | quote }}
+              port: {{ .Values.livenessProbe.port }}
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          volumeMounts:
+            - name: basket-data-protection
+              mountPath: {{ .Values.env.DataProtection__Path }}
       volumes:
-      - name: basket-data-protection
-        persistentVolumeClaim:
-          claimName: {{ .Values.pvc.name }}
+        - name: basket-data-protection
+          persistentVolumeClaim:
+            claimName: {{ .Values.pvc.name }}

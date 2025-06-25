@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: redis
-  namespace: {{ .Values.namespace }}
   labels:
     app: redis
 spec:
@@ -54,12 +53,19 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 3
       volumes:
-        - name: redis-data
-          persistentVolumeClaim:
-            claimName: redis-pvc
         - name: redis-config
           configMap:
             name: redis-config
             items:
               - key: redis.conf
                 path: redis.conf
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-data
+      spec:
+        accessModes: 
+          - {{ .Values.persistence.accessMode }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        storageClassName: {{ .Values.persistence.storageClass }}
