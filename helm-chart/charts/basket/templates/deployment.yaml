@@ -55,9 +55,8 @@ spec:
               cpu: {{ .Values.resources.limits.cpu }}
               memory: {{ .Values.resources.limits.memory }}
           readinessProbe:
-            httpGet:
-              path: {{ .Values.readinessProbe.path | quote }}
-              port: {{ .Values.readinessProbe.port }}
+            exec:
+              command: {{ toJson .Values.readinessProbe.exec.command }}
             initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
