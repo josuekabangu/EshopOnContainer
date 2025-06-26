@@ -39,20 +39,20 @@ pvc:
   storageClassName: local-path
 
 readinessProbe:
-  path: /hc
-  port: 5221
-  initialDelaySeconds: 20
+  exec:
+    command: ["curl", "-f", "http://localhost:5221/hc"]
+  initialDelaySeconds: 60
   periodSeconds: 10
   timeoutSeconds: 5
-  failureThreshold: 6
+  failureThreshold: 10
 
 livenessProbe:
   path: /hc
   port: 5221
-  initialDelaySeconds: 40
+  initialDelaySeconds: 90
   periodSeconds: 30
   timeoutSeconds: 5
-  failureThreshold: 3
+  failureThreshold: 5
 
 ingress:
   enabled: true
