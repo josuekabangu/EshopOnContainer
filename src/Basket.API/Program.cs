@@ -6,8 +6,9 @@ builder.WebHost.ConfigureKestrel(options =>
     options.ConfigureEndpointDefaults(lo => lo.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1AndHttp2);
 });
 
-// Ajouter HealthChecks
-builder.Services.AddHealthChecks();
+// Ajouter HealthChecks avec au moins un check
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => HealthCheckResult.Healthy());
 
 builder.AddBasicServiceDefaults();
 builder.AddApplicationServices();
