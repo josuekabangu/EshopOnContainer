@@ -3,7 +3,10 @@
 // Autoriser HTTP/1.1 + HTTP/2
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.ConfigureEndpointDefaults(lo => lo.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1AndHttp2);
+    options.ListenAnyIP(5221, listenOptions =>
+    {
+        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1AndHttp2;
+    });
 });
 
 // Ajouter HealthChecks avec au moins un check
