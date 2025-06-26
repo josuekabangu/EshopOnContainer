@@ -21,17 +21,20 @@ resources:
 
 env:
   ASPNETCORE_ENVIRONMENT: Development
-  ASPNETCORE_URLS: http://*:5221
+  ASPNETCORE_URLS: http://0.0.0.0:5221
   ASPNETCORE_HOSTING__ALLOWEDHOSTS: "*"
-  ConnectionStrings__Redis: redis
-  ConnectionStrings__EventBus: rabbitmq
+  ConnectionStrings__Redis: redis:6379,password=redis
+  ConnectionStrings__EventBus: amqp://guest:guest@rabbitmq:5672
   Identity__Url: http://identity-api:5001
   DOTNET_READYTORUN: "1"
   DOTNET_TieredPGO: "1"
   DataProtection__Path: /app/keys
+  ASPNETCORE_DataProtection__Keys: /app/keys
+  ASPNETCORE_Kestrel__EndpointDefaults__Protocols: Http1AndHttp2
 
 secret:
-  EVENTBUS_CONNECTION: YW1xcDovL2d1ZXN0Omd1ZXN0QHJhYmJpdG1xOjU2NzI=
+  REDIS_PASSWORD: redis
+  EVENTBUS_CONNECTION: amqp://guest:guest@rabbitmq:5672
 
 pvc:
   name: basket-data-protection
@@ -41,7 +44,7 @@ pvc:
 readinessProbe:
   path: /hc
   port: 5221
-  initialDelaySeconds: 20
+  initialDelaySeconds: 45
   periodSeconds: 10
   timeoutSeconds: 5
   failureThreshold: 6
@@ -49,7 +52,7 @@ readinessProbe:
 livenessProbe:
   path: /hc
   port: 5221
-  initialDelaySeconds: 40
+  initialDelaySeconds: 90
   periodSeconds: 30
   timeoutSeconds: 5
   failureThreshold: 3
@@ -59,4 +62,4 @@ ingress:
   host: basket.local
   path: /
   pathType: Prefix
-  servicePort: 80
+  servicePort: 5221

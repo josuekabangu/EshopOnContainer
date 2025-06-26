@@ -1,6 +1,5 @@
 apiVersion: v2
 name: basket-api
-description: A Helm chart for Basket.API
-type: application
+description: A Helm chart for eShopOnContainer Basket API
 version: 0.1.0
 appVersion: "1.0"

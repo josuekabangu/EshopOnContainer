@@ -20,9 +20,9 @@ spec:
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
-            - "/bin/sh"
-            - "-c"
-            - "./wait-for-it.sh redis:6379 -- ./wait-for-it.sh rabbitmq:5672 -- dotnet Basket.API.dll"
+            - /bin/sh
+            - -c
+            - ./wait-for-it.sh redis:6379 -t 30 -- ./wait-for-it.sh rabbitmq:5672 -t 30 -- dotnet Basket.API.dll
           ports:
             - containerPort: {{ .Values.service.port }}
           env:
@@ -32,6 +32,11 @@ spec:
               value: {{ .Values.env.ASPNETCORE_URLS | quote }}
             - name: ConnectionStrings__Redis
               value: {{ .Values.env.ConnectionStrings__Redis | quote }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: basket-api-secrets
+                  key: REDIS_PASSWORD
             - name: ASPNETCORE_HOSTING__ALLOWEDHOSTS
               value: {{ .Values.env.ASPNETCORE_HOSTING__ALLOWEDHOSTS | quote }}
             - name: ConnectionStrings__EventBus
@@ -47,6 +52,10 @@ spec:
               value: {{ .Values.env.DOTNET_TieredPGO | quote }}
             - name: DataProtection__Path
               value: {{ .Values.env.DataProtection__Path | quote }}
+            - name: ASPNETCORE_DataProtection__Keys
+              value: {{ .Values.env.ASPNETCORE_DataProtection__Keys | quote }}
+            - name: ASPNETCORE_Kestrel__EndpointDefaults__Protocols
+              value: {{ .Values.env.ASPNETCORE_Kestrel__EndpointDefaults__Protocols | quote }}
           resources:
             requests:
               cpu: {{ .Values.resources.requests.cpu }}

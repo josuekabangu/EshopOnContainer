@@ -1,18 +1,21 @@
 apiVersion: v2
 name: eshop
-description: A Helm chart for eShopOnContainers
-type: application
+description: A Helm chart for deploying eShopOnContainer application
 version: 0.1.0
-appVersion: "1.0.0"
-
+appVersion: "1.0"
 dependencies:
+  - name: basket-api
+    version: 0.1.0
+    repository: file://charts/basket
+  - name: catalog
+    version: 0.1.0
+    repository: file://charts/catalog
   - name: catalogdb
-    version: "0.1.0"
-    repository: "file://charts/catalogdb"
+    version: 0.1.0
+    repository: file://charts/catalogdb
   - name: rabbitmq
-    version: "0.1.0"
-    repository: "file://charts/rabbitmq"
+    version: 0.1.0
+    repository: file://charts/rabbitmq
   - name: redis
-    version: "0.1.0"
-    repository: "file://charts/redis"
- 
+    version: 0.1.0
+    repository: file://charts/redis
