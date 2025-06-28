@@ -1,5 +1,5 @@
 apiVersion: v2
-name: catalog
+name: catalog-api
 description: A Helm chart for Catalog.API
 type: application
 version: 0.1.0

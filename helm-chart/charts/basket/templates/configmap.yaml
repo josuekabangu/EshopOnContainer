@@ -6,7 +6,6 @@ data:
   ASPNETCORE_ENVIRONMENT: {{ .Values.env.ASPNETCORE_ENVIRONMENT | quote }}
   ASPNETCORE_URLS: {{ .Values.env.ASPNETCORE_URLS | quote }}
   ConnectionStrings__Redis: {{ .Values.env.ConnectionStrings__Redis | quote }}
-  ConnectionStrings__EventBus: {{ .Values.env.ConnectionStrings__EventBus | quote }}
   Identity__Url: {{ .Values.env.Identity__Url | quote }}
   DOTNET_READYTORUN: {{ .Values.env.DOTNET_READYTORUN | quote }}
   DOTNET_TieredPGO: {{ .Values.env.DOTNET_TieredPGO | quote }}

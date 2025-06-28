@@ -7,6 +7,11 @@ spec:
   selector:
     matchLabels:
       app: basket
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   template:
     metadata:
       labels:
@@ -21,9 +26,12 @@ spec:
           envFrom:
             - configMapRef:
                 name: basket-config
+            - secretRef:
+                name: basket-secrets
           volumeMounts:
             - name: {{ .Values.volumeMount.name }}
               mountPath: {{ .Values.volumeMount.mountPath }}
+
           readinessProbe:
             tcpSocket:
               port: {{ .Values.service.port }}
@@ -31,7 +39,23 @@ spec:
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 3
+
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+
       volumes:
         - name: {{ .Values.volumeMount.name }}
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: {{ .Values.pvc.name }}
+
       restartPolicy: Always
+      nodeSelector: {{- toYaml .Values.nodeSelector | nindent 8 }}
+      tolerations: {{- toYaml .Values.tolerations | nindent 8 }}
+      affinity: {{- toYaml .Values.affinity | nindent 8 }}

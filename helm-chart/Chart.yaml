@@ -15,4 +15,11 @@ dependencies:
   - name: redis
     version: "0.1.0"
     repository: "file://charts/redis"
+  - name: basket-api
+    version: "0.1.0"
+    repository: "file://charts/basket"
+  - name: catalog-api
+    version: "0.1.0"
+    repository: "file://charts/catalog"
+
  

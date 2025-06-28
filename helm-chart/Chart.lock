@@ -8,5 +8,11 @@ dependencies:
 - name: redis
   repository: file://charts/redis
   version: 0.1.0
-digest: sha256:386cf1f33b9f70cb4d34bc9a63ea81230121e37283a43ef9bf960b562292a3cc
-generated: "2025-06-24T11:39:35.548552887Z"
+- name: basket-api
+  repository: file://charts/basket
+  version: 0.1.0
+- name: catalog-api
+  repository: file://charts/catalog
+  version: 0.1.0
+digest: sha256:084d20e130f12969078cda98c4bc33f0471909f9849e14a9572ffd245fc4e561
+generated: "2025-06-28T15:08:11.116780132+02:00"

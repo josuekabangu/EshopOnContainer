@@ -1,12 +1,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: "basket-test-connection"
+  name: "{{ include "basket.fullname" . }}-test-connection"
   labels:
-    helm.sh/chart: basket
-    app.kubernetes.io/name: basket
-    app.kubernetes.io/instance: test
-    app.kubernetes.io/component: test
+    {{- include "basket.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": test
 spec:
@@ -14,5 +11,5 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args: ['basket:{{ .Values.service.port }}{{ .Values.healthcheck.path }}']
+      args: ['{{ include "basket.fullname" . }}:{{ .Values.service.port }}']
   restartPolicy: Never

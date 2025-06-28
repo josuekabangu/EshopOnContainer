@@ -13,23 +13,37 @@ env:
   ASPNETCORE_ENVIRONMENT: Development
   ASPNETCORE_URLS: "http://*:5221"
   ConnectionStrings__Redis: redis
-  ConnectionStrings__EventBus: amqp://guest:guest@rabbitmq:5672
   Identity__Url: "http://identity-api:5001"
   DOTNET_READYTORUN: "1"
   DOTNET_TieredPGO: "1"
+  # Note: suppression volontaire de DOTNET_DataProtection__PersistKeysToFileSystem
+
+secretEnv:
+  ConnectionStrings__EventBus: amqp://guest:guest@rabbitmq:5672
 
 volumeMount:
   name: basket-data-protection
-  mountPath: /app/keys
+  mountPath: /root/.aspnet/DataProtection-Keys
 
-healthcheck:
-  path: /hc
-  port: 5221
+pvc:
+  name: basket-data-protection-pvc
+  size: 100Mi
 
-resources: {}
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+
+persistence:
+  enabled: true
+  storageClassName: local-path 
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
 
 nodeSelector: {}
-
 tolerations: []
-
 affinity: {}
