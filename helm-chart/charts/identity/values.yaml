@@ -1,0 +1,51 @@
+replicaCount: 1
+
+fullnameOverride: identity-api  # <-- nom final des ressources sera "identity-api"
+
+image:
+  repository: ajkabs/identity-api
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 5001
+  nodePort: 30501
+
+env:
+  ASPNETCORE_ENVIRONMENT: Development
+  MauiCallback: "http://identity-api:5001/callback"
+  ASPNETCORE_URLS: "http://*:5001"
+  WebAppClient: "http://localhost:16889"
+  ConnectionStrings__IdentityDB: "Server=catalogdb;Port=5432;Database=identitydb;User Id=postgres;Password=password;"
+  ConnectionStrings__EventBus: "amqp://guest:guest@rabbitmq:5672"
+
+volumes:
+  mountPath: /root/.aspnet/data-protection-keys
+  hostPath: /data/data-protection-keys
+
+extraConfig:
+  dependsOn:
+    catalogdb:
+      condition: service_healthy
+    rabbitmq:
+      condition: service_healthy
+  entrypoint:
+    - "/bin/sh"
+    - "-c"
+    - "./wait-for-it.sh rabbitmq:5672 -- ./wait-for-it.sh catalogdb:5432 -- dotnet Identity.API.dll"
+  networks:
+    - eShopNetwork
+  restartPolicy: "UnlessStopped"
+  healthcheck:
+    test:
+      - "CMD"
+      - "curl"
+      - "-f"
+      - "http://localhost:5001/health"
+    interval: 10s
+    timeout: 5s
+    retries: 5
+
+serviceAccount:
+  create: false

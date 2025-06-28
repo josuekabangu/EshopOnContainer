@@ -1,0 +1,5 @@
+apiVersion: v2
+name: identity-api
+description: A Helm chart for the Identity API microservice
+version: 0.1.0
+appVersion: "1.0.0"

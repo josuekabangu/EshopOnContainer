@@ -14,5 +14,8 @@ dependencies:
 - name: catalog-api
   repository: file://charts/catalog
   version: 0.1.0
-digest: sha256:084d20e130f12969078cda98c4bc33f0471909f9849e14a9572ffd245fc4e561
-generated: "2025-06-28T15:08:11.116780132+02:00"
+- name: identity-api
+  repository: file://charts/identity
+  version: 0.1.0
+digest: sha256:c8e349a5adf9d4e5280524fe653e3628406a090dc19bfaa93494756e8a2314ec
+generated: "2025-06-28T16:04:11.62574511+02:00"

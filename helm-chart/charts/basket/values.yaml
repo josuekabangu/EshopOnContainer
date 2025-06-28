@@ -6,8 +6,9 @@ image:
   pullPolicy: IfNotPresent
 
 service:
-  type: ClusterIP
+  type: NodePort
   port: 5221
+  nodePort: 30521
 
 env:
   ASPNETCORE_ENVIRONMENT: Development
