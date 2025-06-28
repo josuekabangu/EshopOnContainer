@@ -2,12 +2,12 @@ apiVersion: v1
 kind: Service
 metadata:
   name: basket-api
-  namespace: {{ .Values.namespace }}
 spec:
-  selector:
-    app.kubernetes.io/name: basket-api
-  ports:
-    - protocol: TCP
-      port: {{ .Values.service.port }}
-      targetPort: {{ .Values.service.port }}
   type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.port }}
+      protocol: TCP
+      name: http
+  selector:
+    app: basket
