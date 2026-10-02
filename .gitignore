@@ -1,0 +1,5 @@
+.vagrant/
+*.tfstate*
+.terraform/
+*.csv
+.env
