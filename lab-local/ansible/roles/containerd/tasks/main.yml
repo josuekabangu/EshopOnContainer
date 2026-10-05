@@ -1,0 +1,30 @@
+---
+- name: Installer containerd
+  ansible.builtin.apt:
+    name: "containerd={{ containerd_version }}-0ubuntu1~22.04.2"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Créer le répertoire des fragments de configuration containerd
+  ansible.builtin.file:
+    path: /etc/containerd/conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Générer la configuration par défaut de containerd
+  ansible.builtin.shell:
+    cmd: containerd config default > /etc/containerd/config.toml
+    creates: /etc/containerd/config.toml
+  notify: Redémarrer containerd
+
+- name: Déployer la configuration containerd pour Kubernetes
+  ansible.builtin.template:
+    src: 10-kubernetes.toml.j2
+    dest: /etc/containerd/conf.d/10-kubernetes.toml
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Redémarrer containerd

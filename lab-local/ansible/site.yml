@@ -1,0 +1,9 @@
+---
+- name: Préparer les noeuds du cluster Kubernetes
+  hosts: k8s_cluster
+  become: true
+
+  roles:
+    - common
+    - containerd
+    
