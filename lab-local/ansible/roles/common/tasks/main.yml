@@ -42,3 +42,15 @@
       value: "1"
     - name: net.ipv4.ip_forward
       value: "1"
+
+- name: Désactiver le swap immédiatement
+  ansible.builtin.command: swapoff -a
+  when: ansible_swaptotal_mb > 0
+  changed_when: true
+
+- name: Désactiver le swap au démarrage
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^([^#].*\sswap\s.*)$'
+    replace: '# \1'
+

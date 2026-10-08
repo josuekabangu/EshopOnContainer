@@ -1,0 +1,54 @@
+---
+- name: Vérifier que le système est Ubuntu
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution == "Ubuntu"
+      - ansible_distribution_release == "jammy"
+    fail_msg: "Le rôle Kubernetes nécessite Ubuntu 22.04 (Jammy)."
+    success_msg: "Le système est compatible avec le rôle Kubernetes."
+
+- name: Créer le répertoire des clés APT
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Télécharger la clé du dépôt Kubernetes
+  ansible.builtin.get_url:
+    url: "https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_minor_version }}/deb/Release.key"
+    dest: "{{ kubernetes_apt_key_source }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Convertir la clé Kubernetes au format GPG
+  ansible.builtin.command:
+    cmd: "gpg --dearmor --output {{ kubernetes_apt_keyring }} {{ kubernetes_apt_key_source }}"
+    creates: "{{ kubernetes_apt_keyring }}"
+
+- name: Configurer le dépôt APT Kubernetes
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by={{ kubernetes_apt_keyring }}] {{ kubernetes_apt_repository }} /"
+    filename: kubernetes
+    state: present
+    update_cache: true
+
+- name: Installer les composants Kubernetes
+  ansible.builtin.apt:
+    name:
+      - "kubeadm={{ kubernetes_version }}"
+      - "kubelet={{ kubernetes_version }}"
+      - "kubectl={{ kubernetes_version }}"
+    state: present
+    update_cache: true
+
+- name: Figer les versions des composants Kubernetes
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - kubeadm
+    - kubelet
+    - kubectl

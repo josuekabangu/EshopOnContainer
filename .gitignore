@@ -3,3 +3,4 @@
 .terraform/
 *.csv
 .env
+*.retry

@@ -2,113 +2,322 @@
 
 ## 1. Objectif
 
-Ce document présente l'architecture du laboratoire Kubernetes local du projet EshopOnContainer.
+Ce document présente l'architecture du laboratoire Kubernetes local du projet **EshopOnContainer**.
 
-Il définit les machines virtuelles, leurs rôles, leurs ressources et leur réseau de communication.
+Il définit :
 
-Les procédures de création des machines sont détaillées dans `02-vagrant.md`.
+* les composants du laboratoire ;
+* les machines virtuelles ;
+* leurs rôles ;
+* les ressources allouées ;
+* le réseau utilisé ;
+* les relations entre les différents composants.
+
+Les procédures de création et de gestion des machines virtuelles sont détaillées dans `02-vagrant.md`.
+
+La configuration de l'environnement de contrôle WSL2 est présentée dans `03-wsl.md`.
+
+---
 
 ## 2. Vue d'ensemble
 
-Le laboratoire est hébergé sur un poste Windows. VirtualBox assure la virtualisation et Vagrant permet de définir et de gérer les machines virtuelles.
+Le laboratoire est hébergé sur un poste Windows.
+
+**VMware Workstation** fournit la virtualisation des machines virtuelles et **Vagrant** permet de déclarer et de gérer leur configuration.
+
+**WSL2** fournit l'environnement Linux utilisé comme poste de contrôle pour l'administration du laboratoire.
+
+**Ansible** est utilisé depuis WSL2 afin de préparer et configurer les machines virtuelles.
+
+### Pourquoi VMware Workstation et non VirtualBox ?
+
+Le laboratoire a d'abord été construit sous VirtualBox. Il a été migré vers VMware Workstation le 8 octobre 2026.
+
+WSL2 impose que l'hyperviseur Hyper-V reste actif sur le poste Windows. Dans cette situation, VirtualBox ne dispose plus de la virtualisation matérielle et les machines virtuelles se figent au démarrage. VMware Workstation fonctionne avec Hyper-V actif, ce qui permet d'utiliser les machines virtuelles et WSL2 en même temps.
+
+Le diagnostic complet est consigné dans `13-troubleshooting.md` (problème 1).
 
 ```text
-                    Poste Windows
-                         |
-                  Vagrant / VirtualBox
-                         |
-              +----------+----------+
-              |                     |
-              v                     v
-         kube-control          kube-worker
-         192.168.57.10         192.168.57.11
-         Control Plane         Worker Node
-              |                     |
-              +----------+----------+
-                         |
-                  Réseau privé
-                  192.168.57.0/24
+                              Poste Windows
+                                   |
+                    +--------------+--------------+
+                    |                             |
+           VMware Workstation                    WSL2
+                    |                             |
+              Vagrant                         Ansible
+                    |                             |
+          +---------+---------+                  |
+          |                   |                  |
+          v                   v                  |
+   kube-control         kube-worker             |
+   192.168.57.10        192.168.57.11           |
+   Control Plane         Worker Node             |
+          |                   |                  |
+          +---------+---------+                  |
+                    |                             |
+                    +-----------------------------+
+                         Réseau privé
+                       192.168.57.0/24
 ```
 
-## 3. Machines virtuelles
+---
+
+## 3. Composants du laboratoire
+
+Le laboratoire repose sur six composants principaux.
+
+| Composant          | Rôle                                          |
+| ------------------ | --------------------------------------------- |
+| Windows            | Système hôte                                  |
+| VMware Workstation | Hyperviseur                                   |
+| Vagrant            | Gestion et définition des machines virtuelles |
+| WSL2 / Ubuntu      | Environnement Linux de contrôle               |
+| Ansible            | Automatisation de la configuration            |
+| Kubernetes         | Orchestration des workloads                   |
+
+La séparation des responsabilités permet de distinguer clairement :
+
+* la création de l'infrastructure ;
+* l'administration des systèmes ;
+* l'orchestration des applications.
+
+---
+
+## 4. Machines virtuelles
+
+Le laboratoire comporte actuellement deux machines virtuelles.
 
 | Propriété         | `kube-control`   | `kube-worker`    |
 | ----------------- | ---------------- | ---------------- |
 | Système           | Ubuntu 22.04 LTS | Ubuntu 22.04 LTS |
 | Rôle cible        | Control Plane    | Worker Node      |
 | Adresse IP privée | `192.168.57.10`  | `192.168.57.11`  |
-| Mémoire vive      | 3 Go             | 2 Go             |
+| Mémoire           | 3 Go             | 6 Go             |
 | CPU virtuels      | 2                | 2                |
 
-### 3.1 Control Plane
+Le Worker reçoit davantage de mémoire que le Control Plane, car c'est lui qui exécutera les Pods applicatifs d'eShop.
 
-La machine `kube-control` hébergera les composants de contrôle du cluster Kubernetes. Elle permettra notamment de gérer l'état du cluster et de coordonner les workloads.
+### 4.1 `kube-control`
 
-### 3.2 Worker Node
+La machine `kube-control` constitue le futur **Control Plane** du cluster Kubernetes.
 
-La machine `kube-worker` hébergera les workloads déployés dans le cluster Kubernetes.
+Elle hébergera notamment les composants permettant de :
 
-Les applications seront planifiées sur les nœuds en fonction de leurs ressources disponibles et des contraintes définies.
+* gérer l'état du cluster ;
+* recevoir les demandes d'administration ;
+* planifier les workloads ;
+* coordonner les différents nœuds.
 
-## 4. Architecture réseau
+Son adresse privée est :
 
-Chaque machine dispose d'une interface NAT et d'une interface associée au réseau privé du laboratoire.
+```text
+192.168.57.10
+```
 
-### Interface NAT
+### 4.2 `kube-worker`
 
-L'interface NAT permet notamment aux machines virtuelles d'accéder à Internet.
+La machine `kube-worker` constitue le futur **Worker Node**.
 
-Exemple d'adresse observée : `10.0.2.15`.
+Elle sera chargée d'exécuter les workloads Kubernetes, notamment les Pods applicatifs.
 
-Cette adresse dépend de la configuration NAT de VirtualBox et ne doit pas être confondue avec l'adresse privée du laboratoire.
+Son adresse privée est :
 
-### Réseau privé
+```text
+192.168.57.11
+```
 
-Le réseau privé permet aux machines virtuelles de communiquer directement entre elles.
+---
 
-| Machine        | Adresse privée     |
-| -------------- | ------------------ |
-| `kube-control` | `192.168.57.10/24` |
-| `kube-worker`  | `192.168.57.11/24` |
+## 5. Architecture réseau
 
-Les communications entre les nœuds du cluster utiliseront ce réseau.
+Chaque machine virtuelle possède deux interfaces réseau.
 
-## 5. État du laboratoire
+| Interface | Réseau             | Réseau VMware        | Adressage | Usage                                      |
+| --------- | ------------------ | -------------------- | --------- | ------------------------------------------ |
+| `eth0`    | `192.168.200.0/24` | `VMnet8` (NAT)       | DHCP      | Accès à Internet                           |
+| `eth1`    | `192.168.57.0/24`  | `VMnet6` (host-only) | Statique  | Communication entre nœuds et administration |
+
+### 5.1 Réseau NAT
+
+Le réseau NAT permet aux machines virtuelles d'accéder aux ressources externes, notamment Internet.
+
+Les adresses sont attribuées par le service DHCP de VMware. Celles observées le 8 octobre 2026 sont :
+
+```text
+kube-control → 192.168.200.129
+kube-worker  → 192.168.200.130
+```
+
+Ces adresses peuvent changer d'un démarrage à l'autre. Elles ne doivent donc pas être utilisées comme adresses de communication entre les nœuds Kubernetes.
+
+La route par défaut de chaque machine passe par cette interface :
+
+```text
+default via 192.168.200.2 dev eth0
+```
+
+Cette particularité devra être prise en compte lors de l'initialisation du cluster, afin que Kubernetes utilise l'adresse du réseau privé et non celle du réseau NAT. Ce point sera traité dans `10-control-plane.md`.
+
+### 5.2 Réseau privé
+
+Le laboratoire utilise le réseau privé :
+
+```text
+192.168.57.0/24
+```
+
+Les adresses sont attribuées statiquement :
+
+| Équipement              | Adresse            |
+| ----------------------- | ------------------ |
+| Poste Windows (`VMnet6`) | `192.168.57.1/24`  |
+| `kube-control`          | `192.168.57.10/24` |
+| `kube-worker`           | `192.168.57.11/24` |
+
+Ce réseau est utilisé pour l'administration depuis WSL2 et le sera pour les communications entre les nœuds du cluster.
+
+L'adresse `192.168.57.1` du poste Windows est indispensable : sans elle, ni Windows ni WSL2 ne peuvent joindre les machines virtuelles. Sa mise en place est décrite dans `02-vagrant.md`.
+
+---
+
+## 6. Environnement de contrôle
+
+WSL2 est utilisé comme environnement Linux de contrôle.
+
+Depuis WSL2, l'administrateur pourra notamment :
+
+* utiliser SSH ;
+* exécuter Ansible ;
+* administrer les machines virtuelles ;
+* exécuter les commandes Kubernetes lorsque le cluster sera opérationnel.
+
+La connectivité réseau entre WSL2 et les machines virtuelles a été vérifiée.
+
+Tests réalisés :
+
+```bash
+ping -c 3 192.168.57.10
+ping -c 3 192.168.57.11
+```
+
+Les deux machines répondent correctement.
+
+La validation de l'accès **SSH depuis WSL2** constitue une étape distincte et sera documentée dans `05-inventory.md`.
+
+---
+
+## 7. Flux d'administration
+
+Le flux d'administration prévu est le suivant :
+
+```text
+Administrateur
+      |
+      v
+   Windows
+      |
+      v
+    WSL2
+      |
+      v
+   Ansible
+      |
+      | SSH
+      |
+      +--------------------+
+      |                    |
+      v                    v
+kube-control          kube-worker
+192.168.57.10         192.168.57.11
+```
+
+Ansible ne sera donc pas exécuté depuis les machines Kubernetes elles-mêmes.
+
+Le poste de contrôle est WSL2.
+
+---
+
+## 8. État du laboratoire
 
 ### Infrastructure
 
 * [x] Machines virtuelles créées.
-* [x] Ubuntu 22.04 LTS opérationnel.
+* [x] Ubuntu 22.04 LTS installé.
 * [x] Adresses IP privées configurées.
-* [x] Accès SSH fonctionnel.
-* [x] Communication entre les deux machines vérifiée.
+* [x] Connectivité WSL2 → `kube-control` vérifiée.
+* [x] Connectivité WSL2 → `kube-worker` vérifiée.
+* [x] Accès SSH depuis WSL2 validé.
+* [x] Inventaire Ansible validé.
 
-### Cluster Kubernetes
+### Préparation Kubernetes
 
-* [ ] Préparation des systèmes avec Ansible.
-* [ ] Installation de containerd.
-* [ ] Installation des composants Kubernetes.
+* [x] Préparation des systèmes avec Ansible.
+* [x] Installation de containerd.
+* [x] Installation des composants Kubernetes.
 * [ ] Initialisation du Control Plane.
 * [ ] Installation du plugin réseau CNI.
 * [ ] Jonction du Worker.
 * [ ] Validation du cluster.
 
-Ces étapes constituent la cible de construction du laboratoire ; leur réalisation sera documentée dans les fichiers suivants.
+Les éléments cochés ont été vérifiés le 8 octobre 2026, après la reconstruction des machines virtuelles sous VMware Workstation. Les autres représentent la cible de construction du laboratoire et seront validés au fur et à mesure de leur mise en œuvre.
 
-## 6. Documentation associée
+---
 
-| Fichier                          | Responsabilité                                     |
-| -------------------------------- | -------------------------------------------------- |
-| `02-vagrant.md`                  | Création et gestion des machines virtuelles        |
-| `03-ansible.md`                  | Automatisation de la configuration des systèmes    |
-| `04-inventory.md`                | Déclaration des machines dans l'inventaire Ansible |
-| `05-roles.md`                    | Organisation des rôles Ansible                     |
-| `06-kubernetes-prerequisites.md` | Préparation des nœuds pour Kubernetes              |
-| `07-containerd.md`               | Installation et configuration de containerd        |
-| `08-kubernetes.md`               | Composants et fonctionnement de Kubernetes         |
-| `09-control-plane.md`            | Initialisation du Control Plane                    |
-| `10-calico.md`                   | Installation et validation du CNI Calico           |
-| `11-worker.md`                   | Jonction et validation du Worker                   |
-| `12-troubleshooting.md`          | Diagnostic des problèmes du laboratoire            |
+## 9. Documentation associée
 
-Ce document constitue la référence architecturale du laboratoire local. Il ne décrit pas les procédures d'installation ou de configuration des composants.
+| Fichier                          | Responsabilité                              |
+| -------------------------------- | ------------------------------------------- |
+| `01-architecture.md`             | Architecture générale du laboratoire        |
+| `02-vagrant.md`                  | Création et gestion des machines virtuelles |
+| `03-wsl.md`                      | Configuration de l'environnement WSL2       |
+| `04-ansible.md`                  | Installation et configuration d'Ansible     |
+| `05-inventory.md`                | Inventaire Ansible et accès SSH             |
+| `06-roles.md`                    | Organisation des rôles Ansible              |
+| `07-kubernetes-prerequisites.md` | Préparation des nœuds Kubernetes            |
+| `08-containerd.md`               | Installation et configuration de containerd |
+| `09-kubernetes.md`               | Installation des composants Kubernetes      |
+| `10-control-plane.md`            | Initialisation du Control Plane             |
+| `11-calico.md`                   | Installation et validation du CNI Calico    |
+| `12-worker.md`                   | Jonction et validation du Worker            |
+| `13-troubleshooting.md`          | Diagnostic des problèmes                    |
+
+---
+
+## 10. Principe d'organisation
+
+Le laboratoire suit une séparation claire des responsabilités :
+
+```text
+Vagrant
+  ↓
+Création des VMs
+
+WSL2
+  ↓
+Environnement de contrôle
+
+Ansible
+  ↓
+Configuration des systèmes
+
+Kubernetes
+  ↓
+Orchestration des workloads
+```
+
+Cette organisation permet de reproduire une approche proche d'un environnement professionnel dans lequel :
+
+* l'infrastructure est définie séparément ;
+* la configuration est automatisée ;
+* les nœuds sont administrés à distance ;
+* Kubernetes est utilisé comme couche d'orchestration.
+
+Ce document constitue la référence architecturale du laboratoire local. Il ne décrit pas les procédures détaillées d'installation ou de configuration des composants.
+
+---
+
+## 11. Étape suivante
+
+La prochaine étape consiste à créer les machines virtuelles décrites dans ce document.
+
+Elle est documentée dans `02-vagrant.md`.

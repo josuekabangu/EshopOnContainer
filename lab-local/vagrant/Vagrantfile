@@ -2,7 +2,7 @@ Vagrant.configure("2") do |config|
   # ========================================
   # BOX UBUNTU
   # ========================================
-  config.vm.box = "ubuntu/jammy64"
+  config.vm.box = "bento/ubuntu-22.04"
 
   # ========================================
   # KUBE CONTROL PLANE
@@ -12,13 +12,13 @@ Vagrant.configure("2") do |config|
     control.vm.network "private_network",
       ip: "192.168.57.10"
 
-    control.vm.provider "virtualbox" do |vb|
-      vb.name = "eshop-kube-control"
-      vb.memory = 3072
-      vb.cpus = 2
+    control.vm.provider "vmware_desktop" do |v|
+      v.gui = false
+      v.vmx["displayname"] = "eshop-kube-control"
+      v.vmx["memsize"] = "3072"
+      v.vmx["numvcpus"] = "2"
     end
   end
-
 
   # ========================================
   # KUBE WORKER
@@ -27,11 +27,12 @@ Vagrant.configure("2") do |config|
     worker.vm.hostname = "kube-worker"
     worker.vm.network "private_network",
       ip: "192.168.57.11"
-    worker.vm.provider "virtualbox" do |vb|
-      vb.name = "eshop-kube-worker"
-      vb.memory = 2048
-      vb.cpus = 2
+
+    worker.vm.provider "vmware_desktop" do |v|
+      v.gui = false
+      v.vmx["displayname"] = "eshop-kube-worker"
+      v.vmx["memsize"] = "6144"
+      v.vmx["numvcpus"] = "2"
     end
   end
-
 end
