@@ -108,6 +108,7 @@ Chaque répertoire possède une responsabilité précise.
 Contient les tâches permettant :
 
 * d'installer `containerd` ;
+* de figer sa version ;
 * de créer les répertoires nécessaires ;
 * de générer la configuration principale ;
 * de déployer la configuration spécifique à Kubernetes.
@@ -215,6 +216,82 @@ kube-worker
 Sur une machine qui vient d'être créée, l'index APT est celui de la box et ne connaît pas encore cette version de `containerd`. L'option `update_cache: true` actualise l'index avant l'installation.
 
 Cette actualisation n'a pas lieu en mode simulation (`--check`), ce qui fait échouer la tâche sur une machine neuve. Ce cas est décrit dans `13-troubleshooting.md` (problème 6).
+
+### Gel de la version
+
+#### Pourquoi figer la version ?
+
+Installer une version précise ne suffit pas à la conserver. Une mise à jour du système (`apt upgrade`) pourrait installer une version plus récente de `containerd`, sans que personne ne l'ait décidé.
+
+Le runtime exécute tous les conteneurs du cluster. Un changement de version non maîtrisé peut modifier son comportement ou sa configuration, sur un seul nœud à la fois si les mises à jour ne sont pas simultanées.
+
+Les paquets Kubernetes sont figés pour la même raison, comme décrit dans `09-kubernetes.md` (section 6.1).
+
+#### Tâche
+
+La tâche suivante est placée juste après l'installation :
+
+```yaml
+- name: Figer la version de containerd
+  ansible.builtin.dpkg_selections:
+    name: containerd
+    selection: hold
+```
+
+Le module `ansible.builtin.dpkg_selections` enregistre l'état `hold` pour le paquet. APT ne le met alors plus à jour automatiquement.
+
+L'ordre des tâches compte : le paquet doit être installé avant d'être figé.
+
+Le gel est réalisé par le rôle qui installe le paquet. Chaque rôle reste ainsi responsable de bout en bout de ce qu'il installe.
+
+#### Vérification
+
+```bash
+ansible all -m shell -a 'apt-mark showhold'
+```
+
+Cette commande liste les paquets figés sur chaque nœud.
+
+Résultat vérifié le 9 octobre 2026 sur les deux nœuds :
+
+```text
+containerd
+cri-tools
+kubeadm
+kubectl
+kubelet
+```
+
+Le gel ne redémarre pas le service. Son état a été contrôlé après l'application de la tâche :
+
+```bash
+ansible all -m shell -a 'systemctl is-active containerd; containerd --version'
+```
+
+Résultat vérifié sur les deux nœuds :
+
+```text
+active
+containerd github.com/containerd/containerd/v2 2.2.1
+```
+
+#### Idempotence
+
+La tâche a été ajoutée sur un cluster déjà construit. Le premier passage du playbook a modifié une seule chose sur chaque nœud, et le second plus rien :
+
+```text
+Premier passage
+kube-control : ok=29   changed=1    unreachable=0    failed=0    skipped=2
+kube-worker  : ok=23   changed=1    unreachable=0    failed=0    skipped=3
+
+Second passage
+kube-control : ok=29   changed=0    unreachable=0    failed=0    skipped=2
+kube-worker  : ok=23   changed=0    unreachable=0    failed=0    skipped=3
+```
+
+#### Conséquence pour un changement de version
+
+Un paquet figé ne peut plus être modifié par la tâche d'installation. Pour changer la valeur de `containerd_version`, il faudra ajouter l'option `allow_change_held_packages: true` à la tâche « Installer containerd ». La montée de version devient ainsi une décision explicite.
 
 ---
 
@@ -633,6 +710,7 @@ Le rôle `containerd` est donc idempotent dans l'état final obtenu.
 ```text
 kube-control
     ├── containerd 2.2.1 installé
+    ├── version figée
     ├── service enabled
     ├── service active
     ├── /etc/containerd/config.toml
@@ -642,6 +720,7 @@ kube-control
 
 kube-worker
     ├── containerd 2.2.1 installé
+    ├── version figée
     ├── service enabled
     ├── service active
     ├── /etc/containerd/config.toml
@@ -665,7 +744,11 @@ Cette étape ne réalise pas encore :
 * l'installation du CNI ;
 * la jonction du Worker au cluster.
 
-Ces opérations seront réalisées dans les étapes suivantes.
+Ces opérations sont réalisées dans les étapes suivantes.
+
+### Limite connue
+
+Le paquet `runc`, sur lequel `containerd` s'appuie pour exécuter les conteneurs, est installé automatiquement comme dépendance. Il n'est pas figé. Une mise à jour du système peut donc encore faire évoluer sa version, indépendamment de celle de `containerd`.
 
 ---
 

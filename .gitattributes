@@ -1,0 +1,2 @@
+# Les scripts shell doivent garder des fins de ligne LF, y compris après un clone sous Windows
+*.sh text eol=lf

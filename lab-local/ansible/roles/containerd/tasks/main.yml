@@ -6,6 +6,11 @@
     update_cache: true
     cache_valid_time: 3600
 
+- name: Figer la version de containerd
+  ansible.builtin.dpkg_selections:
+    name: containerd
+    selection: hold
+
 - name: Créer le répertoire des fragments de configuration containerd
   ansible.builtin.file:
     path: /etc/containerd/conf.d

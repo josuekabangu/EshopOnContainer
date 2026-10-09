@@ -73,7 +73,7 @@ Les trois premiers rôles préparent les machines. Les trois suivants construise
 | Rôle            | Machines ciblées | Responsabilité                                                          | Document de référence            |
 | --------------- | ---------------- | ----------------------------------------------------------------------- | -------------------------------- |
 | `common`        | Tous les nœuds   | Paquets de base, modules du noyau, `sysctl`, désactivation du swap      | `07-kubernetes-prerequisites.md` |
-| `containerd`    | Tous les nœuds   | Installation et configuration du runtime de conteneurs                  | `08-containerd.md`               |
+| `containerd`    | Tous les nœuds   | Installation, gel de version et configuration du runtime de conteneurs  | `08-containerd.md`               |
 | `kubernetes`    | Tous les nœuds   | `kubeadm`, `kubelet`, `kubectl`, `crictl`, gel des versions, adresse du nœud | `09-kubernetes.md`          |
 | `control_plane` | Control Plane    | Configuration `kubeadm`, initialisation du cluster, accès `kubectl`     | `10-control-plane.md`            |
 | `calico`        | Control Plane    | Installation du plugin réseau et attente de sa disponibilité            | `11-calico.md`                   |
@@ -252,6 +252,17 @@ Les tâches ignorées sont les gardes de la section 7 : la désactivation du swa
 
 L'état du cluster obtenu est vérifié dans `10-control-plane.md`, `11-calico.md` et `12-worker.md`.
 
+Les machines ont été recréées une seconde fois le même jour, et le playbook rejoué. Le résultat a été identique :
+
+```text
+kube-control : ok=32   changed=25   unreachable=0    failed=0    skipped=0
+kube-worker  : ok=27   changed=21   unreachable=0    failed=0    skipped=0
+```
+
+Depuis ces deux reconstructions, une tâche a été ajoutée au rôle `containerd` pour figer sa version. Une exécution sur un cluster déjà construit se termine désormais avec `ok=29` sur `kube-control` et `ok=23` sur `kube-worker`, toujours avec `changed=0`.
+
+Deux reconstructions successives donnant le même résultat confirment que la construction est reproductible. Les tests fonctionnels du réseau, décrits dans `12-worker.md` (section 7), ont été rejoués avec succès sur ce second cluster.
+
 ---
 
 ## 9. État et limites
@@ -271,10 +282,10 @@ L'état du cluster obtenu est vérifié dans `10-control-plane.md`, `11-calico.m
 
 | Limite                                                                               | Conséquence                                                          |
 | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| La création des machines reste une étape séparée, lancée depuis PowerShell           | La reconstruction complète demande deux commandes, dans deux terminaux |
-| Les clés SSH doivent être recopiées dans WSL2 après chaque recréation des machines   | Étape manuelle décrite dans `05-inventory.md`                        |
+| La création des machines reste une étape séparée, lancée depuis PowerShell           | La reconstruction complète demande trois commandes, dans deux terminaux, listées dans `02-vagrant.md` |
+| Les accès SSH doivent être remis en place dans WSL2 après chaque recréation des machines | Un script s'en charge, décrit dans `05-inventory.md` (section 11.2) |
 | Le rôle `worker` ne gère pas le retrait d'un nœud                                    | Un nœud à retirer doit l'être à la main                              |
-| Les tests fonctionnels du réseau ne font pas partie du playbook                      | Ils sont réalisés à la main, comme décrit dans `12-worker.md`        |
+| Les tests fonctionnels du réseau ne font pas partie du playbook                      | Ils sont lancés à la main depuis un fichier du dépôt, comme décrit dans `12-worker.md` (section 7) |
 
 ---
 

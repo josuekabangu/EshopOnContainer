@@ -273,11 +273,12 @@ Le poste de contrôle est WSL2.
 * [x] Installation du plugin réseau automatisée avec Ansible.
 * [x] Jonction du Worker automatisée avec Ansible.
 * [x] Reconstruction complète du cluster validée à partir de machines neuves.
-* [ ] Création des machines et remise en place des accès SSH automatisées.
+* [x] Remise en place des accès SSH regroupée dans un script.
+* [ ] Enchaînement de la création des machines, des accès SSH et d'Ansible en une seule commande.
 
 Le laboratoire a d'abord été construit à la main le 8 octobre 2026, puis automatisé le 9 octobre 2026. Les éléments cochés ont été vérifiés le 9 octobre 2026 sur le cluster reconstruit par Ansible, dont le résultat est présenté dans `06-roles.md` (section 8.3).
 
-La validation du cluster comprend des tests fonctionnels du réseau, réalisés le 8 octobre 2026 et restant à rejouer sur le cluster reconstruit, comme indiqué dans `12-worker.md`.
+La validation du cluster comprend trois tests fonctionnels du réseau (Pod à Pod entre nœuds, Service, DNS). Ils ont été rejoués avec succès le 9 octobre 2026 sur le cluster reconstruit, comme décrit dans `12-worker.md` (section 7).
 
 ---
 

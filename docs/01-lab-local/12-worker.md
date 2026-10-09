@@ -327,22 +327,124 @@ L'absence de création de jeton a aussi été contrôlée directement : le nombr
 
 Les vérifications précédentes montrent que le Worker est intégré. Elles ne prouvent pas qu'un Pod peut en joindre un autre.
 
-Une validation fonctionnelle a été réalisée dans un namespace temporaire `network-test`, avec des Pods Nginx.
+Trois tests fonctionnels complètent donc la validation. Ils ont été réalisés une première fois le 8 octobre 2026, puis rejoués le **9 octobre 2026 à 21:45 UTC** sur un cluster entièrement reconstruit. Les résultats de cette section sont ceux du 9 octobre.
 
-**Ces tests ont été réalisés le 8 octobre 2026, sur la première construction du cluster. Ils n'ont pas été rejoués après la reconstruction du 9 octobre.** La configuration réseau obtenue étant identique (mêmes blocs, mêmes routes, voir `11-calico.md`), le résultat attendu est le même, mais il reste à confirmer.
+### 7.1 Principe
 
-### 7.1 Communication entre Pods de nœuds différents
+Chaque test isole une couche du réseau, afin qu'un échec indique où chercher :
 
-Un Pod a été placé sur chaque nœud :
+| Test                       | Ce qu'il emprunte                       | Ce qu'il prouve                                     |
+| -------------------------- | --------------------------------------- | --------------------------------------------------- |
+| Pod à Pod, par adresse     | Le tunnel Calico entre les deux nœuds   | Le réseau des Pods fonctionne entre nœuds           |
+| Service, par adresse       | `kube-proxy`                            | L'adresse virtuelle du Service mène au bon Pod      |
+| DNS, par nom               | CoreDNS                                 | Le nom du Service est résolu vers son adresse       |
 
-| Pod                     | Nœud           | Adresse         |
-| ----------------------- | -------------- | --------------- |
-| `network-test-control`  | `kube-control` | `10.244.222.4`  |
-| Pod Nginx               | `kube-worker`  | `10.244.73.129` |
+Le test du Service se fait par adresse et non par nom. S'il utilisait le nom, un échec ne permettrait pas de savoir si la panne vient du Service ou du DNS.
 
-Chaque adresse appartient au bloc de son nœud, indiqué dans `11-calico.md`.
+### 7.2 Ressources de test
 
-Une requête HTTP émise depuis le Pod du Control Plane vers l'adresse du Pod du Worker a retourné la page d'accueil de Nginx.
+Les ressources sont décrites dans un fichier du dépôt, ce qui permet de rejouer les tests à l'identique :
+
+```text
+kubernetes/tests/network-test.yaml
+```
+
+Le fichier crée quatre ressources dans un namespace temporaire :
+
+| Ressource              | Type      | Rôle                                                       |
+| ---------------------- | --------- | ---------------------------------------------------------- |
+| `network-test`         | Namespace | Isole les ressources de test et facilite leur suppression  |
+| `network-test-worker`  | Pod       | Serveur Nginx, placé sur `kube-worker`                     |
+| `network-test-control` | Pod       | Client, placé sur `kube-control`                           |
+| `network-test-service` | Service   | Adresse virtuelle de type `ClusterIP` devant le Pod Nginx  |
+
+Trois éléments du fichier déterminent la validité des tests.
+
+**Le placement des Pods.**
+
+```yaml
+  nodeSelector:
+    kubernetes.io/hostname: kube-worker
+```
+
+Le champ `nodeSelector` impose le nœud d'exécution d'un Pod. Sans lui, les deux Pods seraient placés sur le Worker et le réseau entre nœuds ne serait pas testé.
+
+**L'autorisation de s'exécuter sur le Control Plane.**
+
+```yaml
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+```
+
+Le Control Plane refuse les Pods applicatifs, comme indiqué en section 2. Ce champ autorise le Pod client à y être placé malgré cette restriction.
+
+**La sélection du Service.**
+
+```yaml
+  selector:
+    app: network-test
+```
+
+Seul le Pod Nginx porte le label `app: network-test`. Le Service ne dirige donc le trafic que vers lui.
+
+Les images utilisées portent une version explicite (`nginx:1.27-alpine` et `busybox:1.36`), et non l'étiquette `latest`.
+
+### 7.3 Déploiement
+
+Depuis WSL2, à la racine du projet :
+
+```bash
+ssh kube-control kubectl apply -f - < kubernetes/tests/network-test.yaml
+```
+
+Cette commande envoie le contenu du fichier à `kubectl` à travers la connexion SSH. Le tiret après `-f` indique à `kubectl` de lire les ressources sur son entrée standard. Le fichier reste dans le dépôt et n'est pas copié sur le nœud.
+
+Le sens de la redirection est important : `<` envoie le fichier à la commande. Le signe `>` ferait l'inverse et écraserait le fichier.
+
+Résultat vérifié :
+
+```text
+namespace/network-test created
+pod/network-test-worker created
+pod/network-test-control created
+service/network-test-service created
+```
+
+Les commandes suivantes sont exécutées sur `kube-control`.
+
+```bash
+kubectl wait -n network-test --for=condition=Ready pod --all --timeout=180s
+kubectl get pods -n network-test -o wide
+```
+
+La première commande attend que les Pods soient prêts, le temps que leurs images soient téléchargées. La seconde affiche leur adresse et leur nœud.
+
+Résultat vérifié :
+
+```text
+NAME                   READY   STATUS    RESTARTS   AGE     IP              NODE
+network-test-control   1/1     Running   0          2m42s   10.244.222.4    kube-control
+network-test-worker    1/1     Running   0          2m42s   10.244.73.129   kube-worker
+```
+
+Chaque Pod se trouve sur le nœud prévu, et son adresse appartient au bloc de ce nœud, indiqué dans `11-calico.md`.
+
+### 7.4 Test 1 — Pod à Pod entre nœuds
+
+```bash
+WORKER_IP=$(kubectl get pod -n network-test network-test-worker -o jsonpath='{.status.podIP}')
+kubectl exec -n network-test network-test-control -- wget -qO- -T 5 http://$WORKER_IP | grep title
+```
+
+La première commande récupère l'adresse du Pod Nginx. La seconde exécute, dans le Pod client, une requête HTTP vers cette adresse, avec un délai maximal de cinq secondes, et ne conserve que le titre de la page reçue.
+
+Résultat vérifié :
+
+```text
+<title>Welcome to nginx!</title>
+```
 
 ```text
 Pod sur kube-control          Pod sur kube-worker
@@ -351,79 +453,107 @@ Pod sur kube-control          Pod sur kube-worker
          |<-------- page Nginx ---------|
 ```
 
-Le réseau des Pods fonctionnait donc entre les deux nœuds.
+Le réseau des Pods fonctionne entre les deux nœuds.
 
-### 7.2 Accès par un Service
+### 7.5 Test 2 — Accès par le Service
 
-Un Service de type `ClusterIP` a été créé devant le Pod Nginx du Worker :
-
-```text
-network-test-service   ClusterIP   10.103.159.18
+```bash
+kubectl get svc,endpointslices -n network-test
 ```
 
-L'adresse du Service appartient à la plage des Services définie dans `10-control-plane.md`.
+Cette commande affiche le Service et la liste des Pods vers lesquels il dirige le trafic.
 
-Depuis le Pod du Control Plane :
+Résultat vérifié :
+
+```text
+NAME                           TYPE        CLUSTER-IP      PORT(S)
+service/network-test-service   ClusterIP   10.99.243.246   80/TCP
+
+NAME                                                        ADDRESSTYPE   PORTS   ENDPOINTS
+endpointslice.discovery.k8s.io/network-test-service-g9jxp   IPv4          80      10.244.73.129
+```
+
+L'adresse du Service appartient à la plage des Services définie dans `10-control-plane.md`. Sa destination est bien l'adresse du Pod Nginx.
+
+```bash
+SVC_IP=$(kubectl get svc -n network-test network-test-service -o jsonpath='{.spec.clusterIP}')
+kubectl exec -n network-test network-test-control -- wget -qO- -T 5 http://$SVC_IP | grep title
+```
+
+Ces commandes reprennent le test précédent, en visant cette fois l'adresse du Service.
+
+Résultat vérifié :
+
+```text
+<title>Welcome to nginx!</title>
+```
+
+```text
+Pod  →  Service 10.99.243.246  →  Pod du Worker 10.244.73.129
+```
+
+La traduction d'adresse réalisée par `kube-proxy` fonctionne.
+
+### 7.6 Test 3 — Résolution DNS
 
 ```bash
 kubectl exec -n network-test network-test-control -- \
-  wget -qO- http://network-test-service
+  nslookup network-test-service.network-test.svc.cluster.local
 ```
 
-Cette commande exécute, à l'intérieur du Pod, une requête HTTP vers le nom du Service.
+Cette commande demande au DNS du cluster de résoudre le nom complet du Service.
 
-Résultat obtenu : la page d'accueil de Nginx.
+Résultat vérifié :
 
 ```text
-Pod  →  Service ClusterIP  →  Pod du Worker
+Server:         10.96.0.10
+Address:        10.96.0.10:53
+
+Name:   network-test-service.network-test.svc.cluster.local
+Address: 10.99.243.246
 ```
 
-Ce test valide la traduction d'adresse réalisée par `kube-proxy`.
+Le serveur interrogé est le Service `kube-dns` du cluster, et l'adresse retournée est celle du Service.
 
-### 7.3 Résolution DNS
+Le nom complet est utilisé pour obtenir une réponse sans ambiguïté. Avec le nom court, `nslookup` affiche aussi des réponses `NXDOMAIN`, qui correspondent aux autres suffixes de recherche essayés automatiquement par le résolveur.
 
-Le service DNS du cluster est exposé par le Service `kube-dns` :
+Le nom court fonctionne néanmoins pour un usage normal :
 
 ```bash
-kubectl get svc -n kube-system kube-dns
+kubectl exec -n network-test network-test-control -- wget -qO- -T 5 http://network-test-service | grep title
 ```
+
+Résultat vérifié :
 
 ```text
-NAME       TYPE        CLUSTER-IP
-kube-dns   ClusterIP   10.96.0.10
+<title>Welcome to nginx!</title>
 ```
 
-Depuis le Pod du Control Plane :
+Cette dernière requête traverse les trois couches à la fois : résolution du nom, Service, puis réseau entre nœuds.
 
-```bash
-kubectl exec -n network-test network-test-control -- \
-  nslookup network-test-service
-```
-
-Cette commande demande au DNS du cluster de résoudre le nom du Service.
-
-Résultat obtenu :
-
-```text
-Server:   10.96.0.10
-
-Name:     network-test-service.network-test.svc.cluster.local
-Address:  10.103.159.18
-```
-
-CoreDNS résolvait donc le nom du Service vers son adresse.
-
-La commande `nslookup` affiche aussi des réponses `NXDOMAIN`. Elles correspondent aux autres suffixes de recherche que le résolveur essaie automatiquement, et ne remettent pas en cause la résolution réussie.
-
-### 7.4 Nettoyage
-
-Les ressources de test ont été supprimées :
+### 7.7 Nettoyage
 
 ```bash
 kubectl delete namespace network-test
+kubectl get namespaces
 ```
 
-Cette commande supprime le namespace et toutes les ressources qu'il contient.
+La première commande supprime le namespace et toutes les ressources qu'il contient. La seconde vérifie qu'il a disparu.
+
+Résultat vérifié :
+
+```text
+namespace "network-test" deleted
+NAME              STATUS   AGE
+default           Active   13m
+kube-node-lease   Active   13m
+kube-public       Active   13m
+kube-system       Active   13m
+```
+
+### 7.8 Comparaison avec la première construction
+
+Les mêmes tests avaient réussi le 8 octobre 2026 sur le cluster construit à la main. Les Pods de test ont reçu les mêmes adresses lors des deux constructions (`10.244.222.4` et `10.244.73.129`), ce qui confirme que la reconstruction par Ansible produit un réseau identique.
 
 ---
 
@@ -452,15 +582,15 @@ Cette commande supprime le namespace et toutes les ressources qu'il contient.
 | `calico-node` et `kube-proxy` sur le Worker  | ✅       | Vérifié le 9 octobre 2026 sur le cluster reconstruit      |
 | Jeton de dix minutes                         | ✅       | Vérifié le 9 octobre 2026 sur le cluster reconstruit      |
 | Rôle idempotent                              | ✅       | Vérifié le 9 octobre 2026 sur le cluster reconstruit      |
-| Pod à Pod entre nœuds                        | ⏳       | Validé le 8 octobre 2026, à rejouer après reconstruction  |
-| Pod vers Service                             | ⏳       | Validé le 8 octobre 2026, à rejouer après reconstruction  |
-| Résolution DNS                               | ⏳       | Validé le 8 octobre 2026, à rejouer après reconstruction  |
+| Pod à Pod entre nœuds                        | ✅       | Vérifié le 9 octobre 2026 sur le cluster reconstruit      |
+| Pod vers Service                             | ✅       | Vérifié le 9 octobre 2026 sur le cluster reconstruit      |
+| Résolution DNS                               | ✅       | Vérifié le 9 octobre 2026 sur le cluster reconstruit      |
 
 ### 9.2 Limites connues
 
 | Limite                                                                            | Conséquence                                                          |
 | --------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Les tests fonctionnels ne sont pas conservés sous forme de fichiers dans le dépôt | Ils doivent être réécrits pour être rejoués                          |
+| Les tests fonctionnels sont lancés à la main, et non par le playbook              | Ils doivent être rejoués après chaque reconstruction, voir section 7 |
 | `no_log` masque aussi les erreurs de la jonction                                  | Un échec se diagnostique à la main, voir section 5.6                 |
 | Le rôle ne gère pas le retrait d'un nœud                                          | Un nœud à retirer doit l'être à la main                              |
 | Le cluster ne comporte qu'un seul Worker                                          | L'arrêt de ce nœud interrompt toutes les applications                |

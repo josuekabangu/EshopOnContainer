@@ -315,6 +315,101 @@ Enregistrer les empreintes de cette façon revient à faire confiance aux machin
 
 La procédure complète, avec enregistrement préalable des empreintes, a été appliquée le 9 octobre 2026 : `ansible all -m ping` a répondu `pong` sur les deux machines et le playbook s'est exécuté sans aucune question.
 
+### 11.2 Script de remise en place des accès
+
+#### Pourquoi un script ?
+
+Les opérations de la section 11.1 doivent être refaites à l'identique après chaque recréation des machines. Elles sont faciles à oublier ou à exécuter dans le désordre. Un script les regroupe en une seule commande.
+
+Le script se trouve dans :
+
+```text
+lab-local/scripts/setup-ssh.sh
+```
+
+#### Ce qu'il fait
+
+| Étape | Action                                                                                  |
+| ----- | --------------------------------------------------------------------------------------- |
+| 1     | Vérifie la présence des outils et lit la liste des machines dans `inventory.ini`        |
+| 2     | Copie chaque clé générée par Vagrant vers le chemin déclaré dans l'inventaire, en mode `600` |
+| 3     | Attend, jusqu'à 60 secondes, que le port 22 de chaque machine réponde                   |
+| 4     | Supprime l'ancienne empreinte de chaque machine et enregistre la nouvelle               |
+| 5     | Se connecte à chaque machine et vérifie que le nom d'hôte renvoyé est celui attendu     |
+
+Le script s'arrête à la première anomalie, avec un message qui indique quoi vérifier.
+
+#### Principes retenus
+
+* **Une seule source de vérité.** Le script ne contient ni nom de machine, ni adresse, ni chemin de clé. Il lit ces informations dans `inventory.ini` : `ansible_host`, `ansible_user` et `ansible_ssh_private_key_file`. Ajouter une machine à l'inventaire suffit pour qu'il la prenne en compte.
+* **Aucun appel à Vagrant.** Le script lit les clés que Vagrant a produites, mais ne lance aucune commande `vagrant`. Les machines sont créées au préalable depuis PowerShell, comme décrit dans `02-vagrant.md`. Cette séparation évite l'incident décrit dans `13-troubleshooting.md` (problème 12).
+* **Les adresses du réseau privé.** Le script teste les machines sur leurs adresses `192.168.57.x`, celles qu'utilise Ansible, et non sur les ports redirigés par Vagrant.
+* **Vérifier l'identité de la machine.** La comparaison du nom d'hôte détecterait une machine qui répondrait à la place d'une autre sur la même adresse.
+
+#### Utilisation
+
+Depuis WSL2, à la racine du projet, après la création des machines :
+
+```bash
+bash lab-local/scripts/setup-ssh.sh
+```
+
+Cette commande exécute le script avec `bash`. Le script ne modifie rien sur les machines : il n'agit que sur le répertoire `~/.ssh` du poste de contrôle.
+
+Résultat vérifié le 9 octobre 2026 :
+
+```text
+=== 1. Vérification des prérequis ===
+Machines de l'inventaire : kube-control kube-worker
+
+=== 2. Copie des clés privées ===
+Clé copiée : kube-control -> /home/ajkabs/.ssh/vagrant/kube-control
+Clé copiée : kube-worker -> /home/ajkabs/.ssh/vagrant/kube-worker
+
+=== 3. Attente du service SSH ===
+Port 22 ouvert : kube-control (192.168.57.10)
+Port 22 ouvert : kube-worker (192.168.57.11)
+
+=== 4. Renouvellement des empreintes ===
+Empreinte enregistrée : kube-control (192.168.57.10)
+Empreinte enregistrée : kube-worker (192.168.57.11)
+
+=== 5. Vérification des connexions SSH ===
+Connexion SSH OK : kube-control (192.168.57.10)
+Connexion SSH OK : kube-worker (192.168.57.11)
+```
+
+La commande `ansible all -m ping`, lancée ensuite, a répondu `pong` sur les deux machines.
+
+Cette première validation a été faite sur des machines dont les accès étaient déjà en place.
+
+Le script a ensuite été éprouvé dans le cas pour lequel il est prévu : le 9 octobre 2026, les deux machines ont été recréées, puis le script a été lancé. Les cinq étapes ont réussi, `ansible all -m ping` a répondu `pong` sur les deux machines, et le playbook a reconstruit le cluster sans qu'aucune question ne soit posée sur l'authenticité des machines.
+
+#### Fins de ligne
+
+Un script shell doit utiliser des fins de ligne de type LF. Avec des fins de ligne Windows (CRLF), `bash` refuse de l'exécuter.
+
+Le dépôt est utilisé sous Windows, où Git peut convertir les fins de ligne lors d'un clone. Le fichier `.gitattributes`, à la racine du projet, impose le format LF aux scripts :
+
+```text
+*.sh text eol=lf
+```
+
+L'application de cette règle se vérifie avec :
+
+```bash
+git check-attr text eol -- lab-local/scripts/setup-ssh.sh
+```
+
+Cette commande affiche les attributs que Git applique au fichier indiqué.
+
+Résultat vérifié :
+
+```text
+lab-local/scripts/setup-ssh.sh: text: set
+lab-local/scripts/setup-ssh.sh: eol: lf
+```
+
 ---
 
 ## 12. Vérification des permissions

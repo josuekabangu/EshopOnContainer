@@ -236,7 +236,7 @@ kubectl
 kubelet
 ```
 
-Le paquet `containerd`, installé par le rôle `containerd`, n'est pas figé.
+Le paquet `containerd` est figé par le rôle `containerd`, qui l'installe, comme décrit dans `08-containerd.md` (section 6).
 
 ### 6.2 crictl
 

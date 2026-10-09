@@ -397,12 +397,16 @@ Détruire puis recréer les machines permet de repartir de systèmes neufs. Le c
 | ----- | -------------------------------------- | ---------- | --------------------- |
 | 1     | `vagrant destroy -f`                   | PowerShell | Ce document           |
 | 2     | `vagrant up --provider vmware_desktop` | PowerShell | Ce document           |
-| 3     | Remise en place des accès SSH          | WSL2       | `05-inventory.md` (section 11.1) |
+| 3     | `bash lab-local/scripts/setup-ssh.sh`  | WSL2       | `05-inventory.md` (section 11.2) |
 | 4     | `ansible-playbook site.yml`            | WSL2       | `06-roles.md`         |
 
 L'option `-f` de `vagrant destroy` supprime les machines sans demander de confirmation.
 
-Les étapes 2 à 4 ont été réalisées le 9 octobre 2026 : la création des deux machines a pris 2 minutes 36, et la construction du cluster par Ansible 2 minutes 31. Ce jour-là, les machines précédentes n'ont pas été supprimées par `vagrant destroy`, mais arrêtées à la main à la suite de l'incident décrit dans `13-troubleshooting.md` (problème 12).
+L'étape 3 remet en place les accès SSH du poste de contrôle. Elle se lance depuis la racine du projet.
+
+Les étapes 2 à 4 ont été réalisées le 9 octobre 2026 : la création des deux machines a pris 2 minutes 36, et la construction du cluster par Ansible 2 minutes 31. Ce jour-là, l'étape 3 a été effectuée à la main, le script ayant été écrit ensuite.
+
+La procédure a été rejouée plus tard le même jour, cette fois avec le script à l'étape 3. Les machines ont été recréées, les accès SSH remis en place par le script, et le cluster reconstruit par Ansible sans échec. Ce jour-là, les machines précédentes n'ont pas été supprimées par `vagrant destroy`, mais arrêtées à la main à la suite de l'incident décrit dans `13-troubleshooting.md` (problème 12).
 
 ---
 

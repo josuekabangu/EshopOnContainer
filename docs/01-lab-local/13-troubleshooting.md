@@ -932,7 +932,7 @@ kube-proxy-6k5xb   1/1   Running   0   192.168.57.10   kube-control
 kube-proxy-jn6wl   1/1   Running   0   192.168.57.11   kube-worker
 ```
 
-Le rôle de `kube-proxy`, l'accès aux Services, a par ailleurs été validé par le test décrit dans `12-worker.md` (section 7.2).
+Le rôle de `kube-proxy`, l'accès aux Services, a par ailleurs été validé par le test décrit dans `12-worker.md` (section 7.5).
 
 ### Cause
 
@@ -1360,16 +1360,20 @@ Les points suivants ont été identifiés mais ne sont pas des pannes. Ils sont 
 | L'option `--node-ip` était écrite à la main sur chaque nœud                                 | Intégrée au rôle `kubernetes` le 9 octobre 2026                             |
 | L'initialisation, l'installation de Calico et la jonction n'étaient pas dans le dépôt       | Automatisées par les rôles `control_plane`, `calico` et `worker`            |
 | La commande de jonction, jeton compris, figurait dans l'historique shell de `kube-worker`   | Machines détruites ; la jonction passe désormais par Ansible, sans affichage du jeton |
+| Les clés SSH devaient être recopiées à la main après chaque recréation des machines         | Script `lab-local/scripts/setup-ssh.sh`, décrit dans `05-inventory.md` (section 11.2) |
+| Le script `setup-ssh.sh` appelait `vagrant` depuis WSL2                                     | Réécrit le 9 octobre 2026 : il n'appelle plus Vagrant et lit l'inventaire Ansible |
+| Le script `setup-ssh.sh` n'avait pas été éprouvé à la suite d'une recréation des machines   | Utilisé avec succès lors de la seconde reconstruction du 9 octobre 2026     |
+| Le paquet `containerd` n'était pas figé, contrairement aux paquets Kubernetes               | Figé par le rôle `containerd` le 9 octobre 2026, voir `08-containerd.md` (section 6) |
+| Les tests fonctionnels du réseau n'avaient pas été rejoués après la reconstruction          | Rejoués le 9 octobre 2026 depuis `kubernetes/tests/network-test.yaml`, voir `12-worker.md` (section 7) |
 
 ### 19.2 Points ouverts
 
 | Point                                                                                         | Risque                                                              | Traitement prévu      |
 | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------- |
-| Les tests fonctionnels du réseau n'ont pas été rejoués après la reconstruction                | Le fonctionnement entre Pods n'est pas confirmé sur le cluster actuel | À rejouer, voir `12-worker.md` |
-| Le paquet `containerd` n'est pas figé, contrairement aux paquets Kubernetes                   | Une mise à jour du système pourrait changer la version du runtime   | À décider             |
+| Les tests fonctionnels du réseau sont lancés à la main                                        | Ils peuvent être oubliés après une reconstruction                   | À décider             |
+| Le paquet `runc`, dépendance de `containerd`, n'est pas figé                                  | Une mise à jour du système pourrait changer sa version              | À décider             |
 | Le `Vagrantfile` ne fixe pas de provider par défaut                                           | Un `vagrant up` sans option `--provider` peut choisir un autre hyperviseur | À décider             |
-| Les clés SSH doivent être recopiées après chaque recréation des machines                      | Étape manuelle facile à oublier                                     | À décider             |
-| Le script `lab-local/scripts/setup-ssh.sh` appelle `vagrant` depuis WSL2                      | Il reproduirait le problème 12                                      | À réécrire avant usage |
+| La reconstruction demande encore trois commandes, dans deux terminaux                         | Enchaînement manuel entre PowerShell et WSL2                        | À décider             |
 | La plage `192.168.57.0/24` est partagée avec le laboratoire `cka-lab`                         | Les deux laboratoires ne peuvent pas fonctionner en même temps      | À décider             |
 
 ---
