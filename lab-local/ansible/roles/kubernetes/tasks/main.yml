@@ -41,8 +41,21 @@
       - "kubeadm={{ kubernetes_version }}"
       - "kubelet={{ kubernetes_version }}"
       - "kubectl={{ kubernetes_version }}"
+      - "cri-tools={{ crictl_version }}"
     state: present
     update_cache: true
+
+- name: Configurer crictl pour containerd
+  ansible.builtin.copy:
+    dest: /etc/crictl.yaml
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      runtime-endpoint: unix:///run/containerd/containerd.sock
+      image-endpoint: unix:///run/containerd/containerd.sock
+      timeout: 10
+      debug: false
 
 - name: Figer les versions des composants Kubernetes
   ansible.builtin.dpkg_selections:
@@ -52,3 +65,4 @@
     - kubeadm
     - kubelet
     - kubectl
+    - cri-tools
