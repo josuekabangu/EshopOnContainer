@@ -254,10 +254,10 @@ Le poste de contrôle est WSL2.
 * [x] Préparation des systèmes avec Ansible.
 * [x] Installation de containerd.
 * [x] Installation des composants Kubernetes.
-* [ ] Initialisation du Control Plane.
-* [ ] Installation du plugin réseau CNI.
-* [ ] Jonction du Worker.
-* [ ] Validation du cluster.
+* [x] Initialisation du Control Plane.
+* [x] Installation du plugin réseau CNI.
+* [x] Jonction du Worker.
+* [x] Validation du cluster.
 
 Les éléments cochés ont été vérifiés le 8 octobre 2026, après la reconstruction des machines virtuelles sous VMware Workstation. Les autres représentent la cible de construction du laboratoire et seront validés au fur et à mesure de leur mise en œuvre.
 

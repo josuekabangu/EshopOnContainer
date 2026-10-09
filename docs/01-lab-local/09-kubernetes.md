@@ -182,11 +182,14 @@ La tâche utilisée est :
       - "kubeadm={{ kubernetes_version }}"
       - "kubelet={{ kubernetes_version }}"
       - "kubectl={{ kubernetes_version }}"
+      - "cri-tools={{ crictl_version }}"
     state: present
     update_cache: true
 ```
 
-Les trois paquets sont installés sur l'ensemble du groupe :
+Le paquet `cri-tools`, ajouté le 8 octobre 2026, fournit l'outil `crictl` décrit en section 6.2.
+
+Les paquets sont installés sur l'ensemble du groupe :
 
 ```text
 k8s_cluster
@@ -200,7 +203,7 @@ k8s_cluster
 
 L'installation d'une version précise ne suffit pas à la conserver. Une mise à jour du système (`apt upgrade`) pourrait installer une version plus récente de `kubelet` sans mettre à jour `kubeadm`, et rendre les composants incohérents entre eux.
 
-Le rôle marque donc les trois paquets comme figés :
+Le rôle marque donc les paquets comme figés :
 
 ```yaml
 - name: Figer les versions des composants Kubernetes
@@ -211,6 +214,7 @@ Le rôle marque donc les trois paquets comme figés :
     - kubeadm
     - kubelet
     - kubectl
+    - cri-tools
 ```
 
 Le module `ansible.builtin.dpkg_selections` enregistre l'état `hold` pour chaque paquet. APT ne les met alors plus à jour automatiquement. Une montée de version devra être décidée et réalisée explicitement.
@@ -226,10 +230,78 @@ Cette commande liste les paquets figés sur chaque nœud.
 Résultat vérifié le 8 octobre 2026 sur les deux nœuds :
 
 ```text
+cri-tools
 kubeadm
 kubectl
 kubelet
 ```
+
+Le paquet `containerd`, installé par le rôle `containerd`, n'est pas figé.
+
+### 6.2 crictl
+
+#### Pourquoi crictl ?
+
+`kubectl` interroge l'API du cluster. Il ne peut donc rien dire d'un nœud qui n'a pas encore rejoint le cluster, ni d'un nœud dont `kubelet` ne répond plus.
+
+`crictl` interroge directement le runtime de conteneurs, à travers la même interface CRI que `kubelet`. Il permet de diagnostiquer un nœud indépendamment de l'état du cluster. Il a notamment servi à contrôler le Worker avant sa jonction, décrite dans `12-worker.md`.
+
+#### Version
+
+La version est définie dans `lab-local/ansible/group_vars/all.yml` :
+
+```yaml
+crictl_version: "1.36.0-1.1"
+```
+
+Le paquet `cri-tools` provient du même dépôt APT que les composants Kubernetes. Sa version suit la version mineure `1.36`, sans être identique à celle de `kubeadm`.
+
+#### Configuration
+
+Sans configuration, `crictl` ne sait pas quel runtime interroger. Le rôle dépose donc le fichier `/etc/crictl.yaml` :
+
+```yaml
+- name: Configurer crictl pour containerd
+  ansible.builtin.copy:
+    dest: /etc/crictl.yaml
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      runtime-endpoint: unix:///run/containerd/containerd.sock
+      image-endpoint: unix:///run/containerd/containerd.sock
+      timeout: 10
+      debug: false
+```
+
+| Paramètre          | Rôle                                                        |
+| ------------------ | ----------------------------------------------------------- |
+| `runtime-endpoint` | Socket du runtime, celui de `containerd` (`08-containerd.md`) |
+| `image-endpoint`   | Socket utilisé pour la gestion des images                   |
+| `timeout`          | Délai maximal d'une requête, en secondes                    |
+| `debug`            | Affichage détaillé, désactivé                               |
+
+#### Vérification
+
+```bash
+crictl --version
+```
+
+Cette commande affiche la version de l'outil installé.
+
+Résultat vérifié le 8 octobre 2026 sur les deux nœuds :
+
+```text
+crictl version v1.36.0
+```
+
+```bash
+sudo crictl info | grep -E 'RuntimeReady|NetworkReady'
+```
+
+Cette commande interroge le runtime et affiche les conditions qui indiquent si le runtime et le réseau sont prêts. Elle nécessite `sudo`, car le socket de `containerd` appartient à `root`.
+
+Résultat vérifié sur les deux nœuds : les conditions `RuntimeReady` et `NetworkReady` sont présentes, ce qui confirme que `crictl` communique avec `containerd`.
 
 ---
 
@@ -397,6 +469,21 @@ kube-worker  : ok=17   changed=0    unreachable=0    failed=0    skipped=1
 
 La tâche de gel des versions apparaît en `ok` et non en `changed` lors de cette seconde exécution. La tâche ignorée appartient au rôle `common` et est expliquée dans `07-kubernetes-prerequisites.md`.
 
+Après l'ajout de `crictl`, le playbook compte une tâche de plus. Une simulation a été lancée le 8 octobre 2026 sur les deux nœuds déjà configurés, afin de détecter un éventuel écart entre le rôle et l'état réel :
+
+```bash
+ansible-playbook site.yml --check
+```
+
+Résultat vérifié :
+
+```text
+kube-control : ok=18   changed=0    unreachable=0    failed=0    skipped=1
+kube-worker  : ok=18   changed=0    unreachable=0    failed=0    skipped=1
+```
+
+Aucun écart n'est détecté : les nœuds sont conformes au rôle. Le mode `--check` est ici pertinent, car les machines sont déjà configurées.
+
 Cette vérification confirme l'idempotence de la configuration.
 
 L'état souhaité étant déjà présent, Ansible n'effectue aucune modification supplémentaire.
@@ -430,6 +517,7 @@ kube-control
 ├── kubeadm 1.36.5    ✅
 ├── kubelet 1.36.5    ✅
 ├── kubectl 1.36.5    ✅
+├── crictl 1.36.0     ✅
 └── versions figées   ✅
 
 kube-worker
@@ -438,6 +526,7 @@ kube-worker
 ├── kubeadm 1.36.5    ✅
 ├── kubelet 1.36.5    ✅
 ├── kubectl 1.36.5    ✅
+├── crictl 1.36.0     ✅
 └── versions figées   ✅
 ```
 

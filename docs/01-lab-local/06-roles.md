@@ -76,6 +76,7 @@ Responsabilités prévues :
 * configuration de la source officielle des paquets adaptée à la version retenue ;
 * gestion de la clé de signature selon les recommandations de la source ;
 * installation de `kubeadm`, `kubelet` et, lorsque nécessaire, `kubectl` ;
+* installation et configuration de `crictl`, l'outil de diagnostic du runtime ;
 * gel des versions installées, pour qu'une mise à jour du système ne les modifie pas ;
 * vérification des versions installées.
 

@@ -45,8 +45,13 @@ Un problème n'est déclaré résolu que lorsque sa validation a été réelleme
 | 6  | `--check` : `no available installation candidate for containerd` | Index APT non actualisé en mode simulation              | Ansible           |
 | 7  | Swap actif alors que la documentation le disait désactivé        | Changement de box Vagrant                               | Système           |
 | 8  | `No inventory was parsed`, `ansible.cfg` ignoré                  | Répertoire du projet accessible en écriture à tous      | Ansible sous WSL2 |
+| 9  | Le nœud s'enregistre avec l'adresse NAT `192.168.200.129`        | `kubelet` choisit l'interface de la route par défaut    | Kubernetes        |
+| 10 | `kubeadm join` : `user is not running as root`                   | Commande lancée sans privilèges administrateur          | Kubernetes        |
+| 11 | Avertissement `bindAddress` de `kube-proxy` pendant la jonction  | Non investiguée, aucun dysfonctionnement observé        | Kubernetes        |
 
 Tous ces problèmes ont été rencontrés le 8 octobre 2026.
+
+Les problèmes 1 à 8 ont été diagnostiqués pas à pas, avec les résultats de commande relevés au moment de la panne. Pour le problème 9, le symptôme et l'état initial du fichier `/etc/default/kubelet` proviennent des notes prises lors de l'intervention ; la table de routage et la validation ont été vérifiées après correction. Pour les problèmes 10 et 11, les messages proviennent également des notes prises lors de l'intervention ; l'état final du nœud a été vérifié sur le cluster.
 
 Un problème plus ancien, propre à la configuration de `containerd`, est documenté dans `08-containerd.md` (sections 15 à 17).
 
@@ -704,23 +709,216 @@ ansible-inventory --graph
 
 ---
 
-## 12. Points de vigilance non encore traités
+## 12. Problème 9 — Le nœud s'enregistre avec l'adresse NAT
+
+### Symptôme
+
+Après `kubeadm init`, le Control Plane fonctionne et l'API répond sur l'adresse attendue, mais le nœud est enregistré avec l'adresse de l'interface NAT :
+
+```bash
+kubectl get nodes -o wide
+```
+
+```text
+NAME           STATUS   ROLES           VERSION   INTERNAL-IP
+kube-control   ...      control-plane   v1.36.5   192.168.200.129
+```
+
+L'adresse attendue, définie dans `01-architecture.md`, est `192.168.57.10`.
+
+### Diagnostic
+
+**L'API est-elle annoncée sur la bonne adresse ?**
+
+```bash
+kubectl cluster-info
+```
+
+```text
+Kubernetes control plane is running at https://192.168.57.10:6443
+```
+
+Le paramètre `advertiseAddress` du fichier de configuration `kubeadm` a donc bien été pris en compte. L'écart ne concerne que l'adresse du nœud.
+
+**Par quelle interface passe la route par défaut ?**
+
+```bash
+ip route
+```
+
+Cette commande affiche la table de routage de la machine.
+
+```text
+default via 192.168.200.2 dev eth0 proto dhcp src 192.168.200.129 metric 100
+192.168.57.0/24 dev eth1 proto kernel scope link src 192.168.57.10
+```
+
+**Quelles options reçoit kubelet ?**
+
+```bash
+cat /etc/default/kubelet
+```
+
+```text
+KUBELET_EXTRA_ARGS=
+```
+
+Aucune adresse n'est imposée à `kubelet`.
+
+### Cause
+
+L'adresse de l'API et l'adresse du nœud sont deux paramètres indépendants, comme expliqué dans `10-control-plane.md` (section 4).
+
+Le fichier de configuration `kubeadm` fixait `advertiseAddress`, qui ne concerne que l'API. Rien n'indiquait à `kubelet` quelle adresse utiliser pour le nœud. Il a donc retenu celle de l'interface portant la route par défaut, c'est-à-dire l'interface NAT.
+
+Cette adresse est attribuée en DHCP et peut changer. Un nœud enregistré avec elle pourrait devenir injoignable pour le reste du cluster après un redémarrage.
+
+### Correction
+
+L'option `--node-ip=192.168.57.10` a été ajoutée dans `/etc/default/kubelet`, puis `kubelet` a été redémarré. La procédure est décrite dans `10-control-plane.md` (section 6.3).
+
+### Validation
+
+```text
+NAME           STATUS   ROLES           VERSION   INTERNAL-IP
+kube-control   Ready    control-plane   v1.36.5   192.168.57.10
+```
+
+L'option est bien reçue par le processus en cours d'exécution :
+
+```text
+--node-ip=192.168.57.10
+```
+
+### Effet résiduel
+
+Quatre Pods statiques du Control Plane affichent encore l'adresse NAT dans leur statut. Les vérifications montrant que cet affichage est sans effet sont détaillées dans `10-control-plane.md` (section 8).
+
+### À retenir
+
+Sur une machine à plusieurs interfaces, l'adresse du nœud doit être fixée explicitement. Le Worker possède les deux mêmes interfaces : la précaution a été appliquée avant sa jonction, comme décrit dans `12-worker.md` (section 4), et il s'est enregistré directement avec `192.168.57.11`.
+
+Dans ce laboratoire, l'adresse a été corrigée après l'initialisation. Elle peut aussi être fournie dès l'initialisation, dans le fichier de configuration `kubeadm`, ce qui éviterait de passer par l'adresse NAT. Cette piste n'a pas été appliquée.
+
+---
+
+## 13. Problème 10 — kubeadm join échoue sans privilèges administrateur
+
+### Symptôme
+
+Sur `kube-worker`, la commande de jonction échoue dès les vérifications préalables :
+
+```bash
+kubeadm join 192.168.57.10:6443 --token <JETON> --discovery-token-ca-cert-hash sha256:<EMPREINTE>
+```
+
+```text
+[ERROR IsPrivilegedUser]: user is not running as root
+```
+
+### Diagnostic
+
+Le message désigne directement la vérification en échec : `IsPrivilegedUser`. La commande a été lancée par l'utilisateur `vagrant`, sans élévation de privilèges.
+
+### Cause
+
+`kubeadm join` écrit dans `/etc/kubernetes` et configure le service `kubelet`. Ces opérations sont réservées à `root`. `kubeadm` le vérifie avant toute modification, ce qui évite de laisser le nœud dans un état partiel.
+
+### Correction
+
+La même commande a été relancée avec `sudo` :
+
+```bash
+sudo kubeadm join 192.168.57.10:6443 --token <JETON> --discovery-token-ca-cert-hash sha256:<EMPREINTE>
+```
+
+### Validation
+
+```text
+This node has joined the cluster
+```
+
+```text
+kube-worker    Ready    <none>          v1.36.5   192.168.57.11
+```
+
+### À retenir
+
+L'échec s'est produit avant toute modification du nœud. Aucun nettoyage n'a été nécessaire avant de relancer la commande.
+
+---
+
+## 14. Problème 11 — Avertissement kube-proxy pendant la jonction
+
+### Symptôme
+
+Pendant l'exécution de `kubeadm join`, un avertissement est affiché :
+
+```text
+The recommended value for "bindAddress" in "KubeProxyConfiguration" is: ::;
+the provided value is: 0.0.0.0
+```
+
+La jonction se termine malgré tout avec succès.
+
+### Diagnostic
+
+Il s'agit d'un avertissement et non d'une erreur : la commande n'a pas été interrompue.
+
+L'effet sur le composant concerné a été vérifié sur le cluster :
+
+```bash
+kubectl -n kube-system get daemonset kube-proxy
+kubectl get pods -n kube-system -o wide | grep kube-proxy
+```
+
+Ces commandes affichent l'état du DaemonSet `kube-proxy` et celui de ses Pods sur chaque nœud.
+
+Résultat vérifié : 2 Pods attendus, 2 Pods prêts, sans aucun redémarrage.
+
+```text
+kube-proxy-6k5xb   1/1   Running   0   192.168.57.10   kube-control
+kube-proxy-jn6wl   1/1   Running   0   192.168.57.11   kube-worker
+```
+
+Le rôle de `kube-proxy`, l'accès aux Services, a par ailleurs été validé par le test décrit dans `12-worker.md` (section 9.2).
+
+### Cause
+
+La cause n'a pas été investiguée. La valeur `0.0.0.0` n'a pas été choisie dans ce laboratoire : le fichier de configuration `kubeadm` ne contient aucun paramètre relatif à `kube-proxy`.
+
+### Décision
+
+Aucune modification n'a été appliquée.
+
+### À retenir
+
+Un avertissement doit être lu et vérifié, mais il ne justifie pas à lui seul une modification de configuration. Ici, le composant visé fonctionne sur les deux nœuds et le test fonctionnel qui en dépend réussit.
+
+---
+
+## 15. Points de vigilance non encore traités
 
 Les points suivants ont été identifiés mais ne sont pas des pannes. Ils sont listés pour ne pas être oubliés.
 
 | Point                                                                                         | Risque                                                              | Traitement prévu      |
 | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------- |
-| La route par défaut des machines passe par l'interface NAT `eth0`, dont l'adresse est attribuée en DHCP | Kubernetes pourrait retenir cette adresse au lieu de celle du réseau privé | `10-control-plane.md` |
+| L'option `--node-ip` est écrite à la main dans `/etc/default/kubelet` sur les deux nœuds      | Après une reconstruction, un nœud s'enregistrerait de nouveau avec son adresse NAT (problème 9) | À décider |
+| L'initialisation du Control Plane, l'installation de Calico et la jonction du Worker ne sont pas dans le dépôt | La reconstruction du cluster n'est pas entièrement reproductible | À décider |
+| Le paquet `containerd` n'est pas figé, contrairement aux paquets Kubernetes                   | Une mise à jour du système pourrait changer la version du runtime   | À décider             |
+| La commande de jonction, jeton compris, figure dans l'historique shell de `kube-worker`       | Limité : le jeton expire le 9 octobre 2026 à 20:47 UTC              | Aucun                 |
 | Le `Vagrantfile` ne fixe pas de provider par défaut                                           | Un `vagrant up` sans option `--provider` peut choisir un autre hyperviseur | À décider             |
 | Les clés SSH doivent être recopiées après chaque recréation des machines                      | Étape manuelle facile à oublier                                     | À décider             |
 | La plage `192.168.57.0/24` est partagée avec le laboratoire `cka-lab`                         | Les deux laboratoires ne peuvent pas fonctionner en même temps      | À décider             |
 
 ---
 
-## 13. Documentation associée
+## 16. Documentation associée
 
 | Fichier                          | Lien avec ce document                              |
 | -------------------------------- | -------------------------------------------------- |
+| `10-control-plane.md`            | Adresse du nœud (problème 9)                       |
+| `12-worker.md`                   | Jonction du Worker (problèmes 10 et 11)            |
 | `01-architecture.md`             | Choix de l'hyperviseur, réseaux                    |
 | `02-vagrant.md`                  | Prérequis VMware, réseau privé (problèmes 1 à 4)   |
 | `04-ansible.md`                  | Chargement de `ansible.cfg` (problème 8)           |
