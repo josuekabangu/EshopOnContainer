@@ -468,6 +468,6 @@ Ces points ont été vérifiés le 8 octobre 2026.
 
 ## 15. Étape suivante
 
-La prochaine étape consiste à préparer l'environnement de contrôle WSL2 depuis lequel les machines seront administrées.
+La prochaine étape consiste à préparer l'environnement de contrôle WSL2 depuis lequel les machines sont administrées.
 
 Elle est documentée dans `03-wsl.md`.

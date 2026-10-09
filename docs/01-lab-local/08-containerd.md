@@ -6,7 +6,7 @@ Ce document décrit l'installation et la configuration du runtime de conteneurs 
 
 Cette étape intervient après la préparation système réalisée par le rôle Ansible `common`.
 
-L'objectif est de fournir aux futurs nœuds Kubernetes un runtime de conteneurs fonctionnel et correctement configuré pour être utilisé par `kubelet` via l'interface CRI.
+L'objectif est de fournir aux nœuds Kubernetes un runtime de conteneurs fonctionnel et correctement configuré pour être utilisé par `kubelet` via l'interface CRI.
 
 La configuration est automatisée avec Ansible à travers le rôle :
 
@@ -25,7 +25,7 @@ Kubernetes nécessite un runtime capable d'exécuter les conteneurs.
 
 Dans notre architecture, `containerd` est utilisé comme runtime de conteneurs sur les nœuds du cluster.
 
-L'architecture cible est :
+L'architecture est la suivante :
 
 ```text
 Kubernetes
@@ -447,7 +447,7 @@ containerd
                 └── SystemdCgroup = true
 ```
 
-Cette configuration sera importante lorsque `kubelet` sera installé et configuré.
+Cette configuration est indispensable à `kubelet`, installé à l'étape suivante : les deux doivent utiliser le même gestionnaire de cgroups.
 
 ---
 
@@ -735,7 +735,7 @@ Le runtime de conteneurs est donc considéré comme validé.
 
 ## 20. Limites de cette étape
 
-Cette étape ne réalise pas encore :
+Cette étape ne réalise pas :
 
 * l'installation de `kubeadm` ;
 * l'installation de `kubelet` ;
@@ -762,13 +762,13 @@ kubelet
 kubectl
 ```
 
-Cette configuration sera documentée dans :
+Cette configuration est documentée dans :
 
 ```text
 docs/01-lab-local/09-kubernetes.md
 ```
 
-Le rôle Ansible correspondant sera :
+Le rôle Ansible correspondant est :
 
 ```text
 lab-local/
@@ -777,4 +777,4 @@ lab-local/
         └── kubernetes/
 ```
 
-L'initialisation du Control Plane et la jonction du Worker au cluster resteront séparées de cette étape.
+L'initialisation du Control Plane et la jonction du Worker au cluster sont traitées séparément, dans `10-control-plane.md` et `12-worker.md`.

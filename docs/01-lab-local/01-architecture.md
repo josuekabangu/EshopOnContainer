@@ -90,7 +90,7 @@ Le laboratoire comporte actuellement deux machines virtuelles.
 | Propriété         | `kube-control`   | `kube-worker`    |
 | ----------------- | ---------------- | ---------------- |
 | Système           | Ubuntu 22.04 LTS | Ubuntu 22.04 LTS |
-| Rôle cible        | Control Plane    | Worker Node      |
+| Rôle              | Control Plane    | Worker Node      |
 | Adresse IP privée | `192.168.57.10`  | `192.168.57.11`  |
 | Mémoire           | 3 Go             | 6 Go             |
 | CPU virtuels      | 2                | 2                |
@@ -99,9 +99,9 @@ Le Worker reçoit davantage de mémoire que le Control Plane, car c'est lui qui 
 
 ### 4.1 `kube-control`
 
-La machine `kube-control` constitue le futur **Control Plane** du cluster Kubernetes.
+La machine `kube-control` constitue le **Control Plane** du cluster Kubernetes.
 
-Elle hébergera notamment les composants permettant de :
+Elle héberge les composants permettant de :
 
 * gérer l'état du cluster ;
 * recevoir les demandes d'administration ;
@@ -116,9 +116,9 @@ Son adresse privée est :
 
 ### 4.2 `kube-worker`
 
-La machine `kube-worker` constitue le futur **Worker Node**.
+La machine `kube-worker` constitue le **Worker Node**.
 
-Elle sera chargée d'exécuter les workloads Kubernetes, notamment les Pods applicatifs.
+Elle est chargée d'exécuter les workloads Kubernetes, notamment les Pods applicatifs.
 
 Son adresse privée est :
 
@@ -181,7 +181,7 @@ Les adresses sont attribuées statiquement :
 | `kube-control`          | `192.168.57.10/24` |
 | `kube-worker`           | `192.168.57.11/24` |
 
-Ce réseau est utilisé pour l'administration depuis WSL2 et le sera pour les communications entre les nœuds du cluster.
+Ce réseau est utilisé pour l'administration depuis WSL2 et pour les communications entre les nœuds du cluster.
 
 L'adresse `192.168.57.1` du poste Windows est indispensable : sans elle, ni Windows ni WSL2 ne peuvent joindre les machines virtuelles. Sa mise en place est décrite dans `02-vagrant.md`.
 
@@ -191,12 +191,12 @@ L'adresse `192.168.57.1` du poste Windows est indispensable : sans elle, ni Wind
 
 WSL2 est utilisé comme environnement Linux de contrôle.
 
-Depuis WSL2, l'administrateur pourra notamment :
+Depuis WSL2, l'administrateur peut :
 
 * utiliser SSH ;
 * exécuter Ansible ;
 * administrer les machines virtuelles ;
-* exécuter les commandes Kubernetes lorsque le cluster sera opérationnel.
+* exécuter les commandes Kubernetes, à travers une session SSH sur `kube-control`, seule machine où `kubectl` est configuré.
 
 La connectivité réseau entre WSL2 et les machines virtuelles a été vérifiée.
 
@@ -209,13 +209,13 @@ ping -c 3 192.168.57.11
 
 Les deux machines répondent correctement.
 
-La validation de l'accès **SSH depuis WSL2** constitue une étape distincte et sera documentée dans `05-inventory.md`.
+La validation de l'accès **SSH depuis WSL2** constitue une étape distincte, documentée dans `05-inventory.md`.
 
 ---
 
 ## 7. Flux d'administration
 
-Le flux d'administration prévu est le suivant :
+Le flux d'administration est le suivant :
 
 ```text
 Administrateur
@@ -238,7 +238,7 @@ kube-control          kube-worker
 192.168.57.10         192.168.57.11
 ```
 
-Ansible ne sera donc pas exécuté depuis les machines Kubernetes elles-mêmes.
+Ansible n'est donc pas exécuté depuis les machines Kubernetes elles-mêmes.
 
 Le poste de contrôle est WSL2.
 

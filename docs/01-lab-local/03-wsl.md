@@ -268,7 +268,7 @@ Résultat attendu :
 
 Ces tests valident uniquement la connectivité IP.
 
-Ils ne valident pas encore l'accès SSH.
+Ils ne valident pas l'accès SSH, traité dans `05-inventory.md`.
 
 ---
 
@@ -300,9 +300,9 @@ Elle ne doit donc pas être considérée comme une adresse IP fixe de l'architec
 
 ## 11. SSH
 
-SSH sera utilisé depuis WSL2 pour administrer les machines virtuelles.
+SSH est utilisé depuis WSL2 pour administrer les machines virtuelles.
 
-Le flux prévu est :
+Le flux est :
 
 ```text
 WSL2
@@ -326,7 +326,7 @@ La validation détaillée des clés SSH, des utilisateurs et de l'inventaire Ans
 
 ## 12. Ansible
 
-Ansible sera exécuté depuis WSL2.
+Ansible est exécuté depuis WSL2.
 
 Le principe est :
 
@@ -352,19 +352,17 @@ L'installation et la configuration d'Ansible sont documentées dans :
 
 ## 13. Outils utilisés depuis WSL2
 
-L'environnement de contrôle pourra notamment contenir :
+L'environnement de contrôle contient les outils suivants :
 
-| Outil   | Utilisation                   |
-| ------- | ----------------------------- |
-| SSH     | Administration distante       |
-| Ansible | Automatisation                |
-| Git     | Gestion du dépôt              |
-| kubectl | Administration Kubernetes     |
-| Helm    | Gestion des charts Kubernetes |
+| Outil   | Utilisation                   | État au 10 octobre 2026 |
+| ------- | ----------------------------- | ----------------------- |
+| SSH     | Administration distante       | Installé                |
+| Ansible | Automatisation                | Installé                |
+| Git     | Gestion du dépôt              | Installé                |
+| kubectl | Administration Kubernetes     | Non installé            |
+| Helm    | Gestion des charts Kubernetes | Non installé            |
 
-Tous ces outils ne sont pas nécessairement installés au même moment.
-
-Ils seront ajoutés au fur et à mesure de la construction du laboratoire.
+Le laboratoire local n'a besoin ni de `kubectl` ni de Helm sur le poste de contrôle : les commandes Kubernetes sont lancées sur `kube-control`, à travers une session SSH. Ces deux outils pourront être ajoutés pour la suite du projet.
 
 ### Vagrant n'est pas utilisé depuis WSL2
 

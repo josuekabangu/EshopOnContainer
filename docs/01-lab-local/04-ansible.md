@@ -4,9 +4,9 @@
 
 Ce document présente l'installation et la configuration d'**Ansible** pour le laboratoire local EshopOnContainer.
 
-Ansible sera utilisé depuis l'environnement WSL2 afin d'automatiser la configuration des machines virtuelles du laboratoire.
+Ansible est utilisé depuis l'environnement WSL2 afin d'automatiser la configuration des machines virtuelles du laboratoire.
 
-L'objectif est de remplacer progressivement les opérations manuelles par une configuration :
+L'objectif est de remplacer les opérations manuelles par une configuration :
 
 * reproductible ;
 * versionnable ;
@@ -92,7 +92,7 @@ Ansible fonctionne selon un modèle **agentless**.
 
 Cela signifie qu'aucun agent Ansible permanent n'est installé sur les machines administrées.
 
-Dans notre laboratoire, Ansible utilisera principalement SSH pour communiquer avec les machines Ubuntu.
+Dans notre laboratoire, Ansible utilise SSH pour communiquer avec les machines Ubuntu.
 
 ```text
 WSL2
@@ -169,7 +169,7 @@ lab-local/
 └── ansible/
 ```
 
-L'organisation cible est :
+L'organisation est la suivante :
 
 ```text
 ansible/
@@ -201,7 +201,7 @@ Par défaut, Ansible recherche notamment un fichier :
 ansible.cfg
 ```
 
-Le projet utilisera un fichier de configuration propre au laboratoire :
+Le projet utilise un fichier de configuration propre au laboratoire :
 
 ```text
 lab-local/ansible/ansible.cfg
@@ -312,7 +312,7 @@ ansible/
 └── inventory.ini
 ```
 
-L'inventaire définira notamment :
+L'inventaire définit :
 
 * les machines ;
 * leur adresse IP ;
@@ -348,7 +348,7 @@ La connectivité réseau a déjà été vérifiée avec `ping`.
 
 La validation de la connexion SSH constitue une étape distincte.
 
-Elle sera réalisée dans `05-inventory.md`.
+Elle est réalisée dans `05-inventory.md`.
 
 ---
 
@@ -356,7 +356,7 @@ Elle sera réalisée dans `05-inventory.md`.
 
 Un **Playbook** décrit les opérations qu'Ansible doit effectuer.
 
-Le projet utilisera notamment un playbook principal :
+Le projet utilise un playbook principal :
 
 ```text
 site.yml
@@ -380,7 +380,7 @@ L'objectif est d'éviter un playbook monolithique contenant toutes les opératio
 
 ## 13. Rôles Ansible
 
-Les rôles permettront de séparer les responsabilités.
+Les rôles séparent les responsabilités.
 
 Les trois premiers rôles préparent les machines :
 
@@ -415,7 +415,7 @@ Responsable de :
 
 Responsable de la préparation et de l'installation des composants Kubernetes.
 
-La conception détaillée des rôles sera présentée dans :
+L'organisation détaillée des rôles est présentée dans :
 
 ```text
 06-roles.md
@@ -472,7 +472,7 @@ Le projet doit notamment éviter :
 ❌ mots de passe en clair
 ```
 
-Les clés utilisées par Vagrant resteront en dehors du dépôt versionné.
+Les clés utilisées par Vagrant restent en dehors du dépôt versionné.
 
 Les éventuels secrets nécessaires ultérieurement pourront être gérés avec des mécanismes adaptés, notamment **Ansible Vault** lorsque cela deviendra nécessaire.
 
@@ -488,13 +488,13 @@ ansible --version
 
 retourne une version valide.
 
-La connexion aux machines ne sera considérée comme validée qu'après exécution réussie :
+La connexion aux machines n'est considérée comme validée qu'après l'exécution réussie de :
 
 ```bash
 ansible all -i inventory.ini -m ping
 ```
 
-Cette commande sera exécutée après la configuration de l'inventaire et de SSH.
+Cette commande s'exécute après la configuration de l'inventaire et de SSH. Son résultat est présenté dans `05-inventory.md`.
 
 ---
 
@@ -528,7 +528,7 @@ L'architecture Ansible retenue est :
         192.168.57.10   192.168.57.11
 ```
 
-Ansible constitue la couche d'automatisation entre l'infrastructure créée par Vagrant et la future installation de Kubernetes.
+Ansible constitue la couche d'automatisation entre l'infrastructure créée par Vagrant et l'installation de Kubernetes.
 
 ---
 

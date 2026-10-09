@@ -433,7 +433,7 @@ Cette étape ne réalise pas :
 * l'installation du CNI ;
 * la jonction du Worker au cluster.
 
-Ces opérations seront réalisées dans les étapes suivantes.
+Ces opérations sont réalisées dans les étapes suivantes, de `08-containerd.md` à `12-worker.md`.
 
 ---
 
@@ -441,7 +441,7 @@ Ces opérations seront réalisées dans les étapes suivantes.
 
 La prochaine étape consiste à installer et configurer le runtime de conteneurs `containerd`.
 
-Cette configuration sera documentée dans :
+Cette configuration est documentée dans :
 
 ```text
 docs/01-lab-local/08-containerd.md
@@ -455,4 +455,4 @@ lab-local/ansible/
     └── containerd/
 ```
 
-L'installation de Kubernetes ne commencera qu'après validation du runtime de conteneurs.
+Les composants Kubernetes ne sont installés qu'après le runtime de conteneurs : dans le playbook, le rôle `containerd` précède le rôle `kubernetes`.

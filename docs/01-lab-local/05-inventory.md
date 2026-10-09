@@ -50,7 +50,7 @@ Le fichier utilisé par le projet est :
 lab-local/ansible/inventory.ini
 ```
 
-L'inventaire sera organisé en groupes correspondant aux rôles futurs des machines.
+L'inventaire est organisé en groupes correspondant aux rôles des machines.
 
 ```text
 control_plane
@@ -73,7 +73,7 @@ k8s_cluster
 
 ### `control_plane`
 
-Ce groupe contient les machines qui hébergeront les composants du Control Plane Kubernetes.
+Ce groupe contient les machines qui hébergent les composants du Control Plane Kubernetes.
 
 Actuellement :
 
@@ -102,13 +102,13 @@ control_plane
 workers
 ```
 
-Cette organisation permettra ultérieurement d'appliquer certaines tâches uniquement au Control Plane, uniquement aux Workers ou à l'ensemble du cluster.
+Cette organisation permet d'appliquer certaines tâches uniquement au Control Plane, uniquement aux Workers ou à l'ensemble du cluster. Le playbook du laboratoire s'en sert pour ses trois plays, comme décrit dans `06-roles.md`.
 
 ---
 
 ## 5. Structure de l'inventaire
 
-La structure cible est :
+La structure est la suivante :
 
 ```ini
 [control_plane]
@@ -122,13 +122,13 @@ control_plane
 workers
 ```
 
-Les paramètres de connexion seront associés aux machines.
+Les paramètres de connexion sont associés à chaque machine.
 
 ---
 
 ## 6. Adresse IP utilisée
 
-Les connexions Ansible utiliseront les adresses IP privées du laboratoire :
+Les connexions Ansible utilisent les adresses IP privées du laboratoire :
 
 ```text
 kube-control → 192.168.57.10
@@ -157,7 +157,7 @@ Vagrant peut également exposer SSH sur le localhost Windows avec des ports tels
 
 Ces ports sont attribués par Vagrant et peuvent changer d'une création à l'autre. Ils sont principalement utiles à Vagrant.
 
-Dans notre architecture Ansible, nous utiliserons les adresses privées.
+Dans notre architecture, Ansible utilise les adresses privées.
 
 ---
 
@@ -169,13 +169,13 @@ Les machines Vagrant utilisent l'utilisateur :
 vagrant
 ```
 
-Ansible devra donc utiliser :
+Ansible utilise donc :
 
 ```ini
 ansible_user=vagrant
 ```
 
-Cette information sera définie dans l'inventaire ou dans une configuration de groupe selon l'organisation retenue.
+Cette information est définie dans l'inventaire, pour chaque machine.
 
 ---
 
@@ -489,7 +489,7 @@ exit
 
 ## 14. Vérification de la connectivité SSH
 
-Une fois les tests directs réalisés, la chaîne suivante sera validée :
+Une fois les tests directs réalisés, la chaîne suivante est validée :
 
 ```text
 WSL2
@@ -677,22 +677,22 @@ Le répertoire suivant doit notamment rester hors du dépôt :
 
 Les fichiers `.vagrant/` ne doivent également pas être versionnés.
 
-Le projet devra disposer d'un `.gitignore` adapté.
+Le fichier `.gitignore` du projet les exclut.
 
-Exemple :
+Extrait :
 
 ```gitignore
 .vagrant/
 *.retry
 ```
 
-Les secrets futurs ne devront pas être stockés en clair dans l'inventaire.
+Aucun secret ne doit être stocké en clair dans l'inventaire.
 
 ---
 
 ## 20. Évolution de l'inventaire
 
-Au fur et à mesure de l'évolution du projet, certaines variables pourront être déplacées vers :
+Les variables de configuration des rôles ne sont pas placées dans l'inventaire. Elles se trouvent dans :
 
 ```text
 group_vars/
@@ -707,9 +707,9 @@ group_vars/
 └── workers.yml
 ```
 
-Cela permettra de ne pas surcharger l'inventaire avec des variables de configuration.
+Cela évite de surcharger l'inventaire avec des variables de configuration. Le contenu de ces fichiers est décrit dans `06-roles.md`.
 
-L'inventaire conservera principalement la description des machines et leur organisation logique.
+L'inventaire conserve la description des machines et leur organisation logique.
 
 ---
 

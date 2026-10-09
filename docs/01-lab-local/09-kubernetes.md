@@ -12,9 +12,9 @@ Les composants installés sont :
 
 L'installation est automatisée avec le rôle Ansible `kubernetes`.
 
-Cette étape prépare les machines au bootstrap du cluster, mais **ne crée pas encore le cluster Kubernetes**.
+Cette étape prépare les machines au bootstrap du cluster, mais **ne crée pas le cluster Kubernetes**.
 
-L'initialisation du Control Plane sera traitée dans `10-control-plane.md`.
+L'initialisation du Control Plane est traitée dans `10-control-plane.md`.
 
 ---
 
@@ -41,7 +41,7 @@ Les trois composants ont des responsabilités différentes.
 
 `kubeadm` est l'outil utilisé pour réaliser le bootstrap du cluster Kubernetes.
 
-Il permettra notamment de :
+Il permet notamment de :
 
 * initialiser le Control Plane avec `kubeadm init` ;
 * joindre un Worker au cluster avec `kubeadm join` ;
@@ -49,7 +49,7 @@ Il permettra notamment de :
 
 Dans cette étape, `kubeadm` est uniquement installé.
 
-Aucune initialisation ou jonction n'est encore effectuée.
+Aucune initialisation ni jonction n'est effectuée par ce rôle. Elles sont réalisées par les rôles `control_plane` et `worker`.
 
 ---
 
@@ -59,7 +59,7 @@ Aucune initialisation ou jonction n'est encore effectuée.
 
 Il assure notamment l'exécution des Pods demandés par le Control Plane et communique avec les composants Kubernetes nécessaires au fonctionnement du nœud.
 
-Il sera présent sur :
+Il est présent sur :
 
 ```text
 kube-control
@@ -81,7 +81,7 @@ Le service reste toutefois inactif tant que le nœud n'est pas initialisé ou jo
 
 `kubectl` est le client en ligne de commande permettant d'administrer Kubernetes.
 
-Il sera notamment utilisé pour :
+Il est notamment utilisé pour :
 
 ```bash
 kubectl get nodes
@@ -92,7 +92,7 @@ kubectl describe node
 
 Dans cette étape, `kubectl` est uniquement installé.
 
-Sa configuration pour communiquer avec le cluster sera réalisée après l'initialisation du Control Plane.
+Sa configuration pour communiquer avec le cluster est réalisée par le rôle `control_plane`, décrit dans `10-control-plane.md`.
 
 ---
 
@@ -429,7 +429,7 @@ enabled
 inactive
 ```
 
-Cet état est normal à ce stade du laboratoire.
+Cet état est celui obtenu à l'issue de ce rôle seul, avant toute initialisation ou jonction. Il est normal.
 
 Il faut distinguer :
 
@@ -447,11 +447,16 @@ active
 le processus est actuellement en fonctionnement
 ```
 
-Le `kubelet` n'a pas encore été intégré à un cluster Kubernetes.
+À l'issue de ce rôle, `kubelet` ne dispose d'aucune configuration de cluster : ni `kubeadm init` ni `kubeadm join` n'ont été exécutés.
 
-Aucune commande `kubeadm init` ou `kubeadm join` n'a encore été exécutée.
+Le service devient actif lorsque le nœud est initialisé ou joint, par les rôles `control_plane` et `worker`.
 
-Le service deviendra opérationnel dans le contexte du cluster lors des étapes suivantes.
+Résultat vérifié le 10 octobre 2026 sur le cluster construit par le playbook complet :
+
+```text
+kube-control : enabled active
+kube-worker  : enabled active
+```
 
 ---
 
@@ -602,31 +607,31 @@ kube-worker
 
 ---
 
-## 13. Ce qui n'est pas encore réalisé
+## 13. Périmètre de cette étape
 
-Cette étape ne réalise volontairement aucune opération de bootstrap.
+Cette étape installe les composants. Elle ne réalise volontairement aucune opération de bootstrap.
 
-Les opérations suivantes restent à effectuer :
+Les opérations suivantes n'en font pas partie. Elles sont réalisées par d'autres rôles et documentées séparément :
 
-* initialisation du Control Plane ;
-* configuration de l'accès `kubectl` au cluster ;
-* installation du plugin réseau CNI ;
-* génération de la commande `kubeadm join` ;
-* jonction du Worker ;
-* validation du cluster.
-
-La prochaine étape sera donc l'initialisation du Control Plane avec `kubeadm init`.
+| Opération                                    | Rôle Ansible    | Document              |
+| -------------------------------------------- | --------------- | --------------------- |
+| Initialisation du Control Plane              | `control_plane` | `10-control-plane.md` |
+| Configuration de l'accès `kubectl` au cluster | `control_plane` | `10-control-plane.md` |
+| Installation du plugin réseau CNI            | `calico`        | `11-calico.md`        |
+| Génération de la commande `kubeadm join`     | `worker`        | `12-worker.md`        |
+| Jonction du Worker                           | `worker`        | `12-worker.md`        |
+| Validation du cluster                        | —               | `12-worker.md`        |
 
 ---
 
-## 14. Limites de cette étape
+## 14. Ce que cette étape ne garantit pas
 
-La présence de `kubeadm`, `kubelet` et `kubectl` ne signifie pas que Kubernetes est déjà opérationnel.
+La présence de `kubeadm`, `kubelet` et `kubectl` ne signifie pas qu'un cluster Kubernetes fonctionne.
 
-À ce stade :
+À l'issue de ce rôle seul, l'état d'une machine est le suivant :
 
 ```text
-Machines préparées
+Machine préparée
         |
         v
 Runtime installé
@@ -635,40 +640,39 @@ Runtime installé
 Composants Kubernetes installés
         |
         X
-Cluster Kubernetes non initialisé
+Aucun cluster
 ```
 
-Le Control Plane n'existe pas encore et aucun Worker n'est encore membre d'un cluster.
+Le cluster n'existe qu'une fois les rôles `control_plane`, `calico` et `worker` appliqués.
 
 ---
 
-## 15. Prochaine étape
+## 15. État du laboratoire
 
-La prochaine étape sera documentée dans :
+Le rôle `kubernetes` fait partie du premier play de `site.yml`. Les deux plays suivants, décrits dans `06-roles.md`, construisent le cluster.
 
-```text
-docs/01-lab-local/10-control-plane.md
-```
+État vérifié le 10 octobre 2026 :
 
-Elle aura pour objectif d'initialiser le Control Plane sur :
+| Élément                                   | État                                      |
+| ----------------------------------------- | ----------------------------------------- |
+| Composants Kubernetes installés et figés  | ✅ Sur les deux nœuds                      |
+| Control Plane initialisé                  | ✅ Voir `10-control-plane.md`              |
+| Plugin réseau installé                    | ✅ Voir `11-calico.md`                     |
+| Worker joint au cluster                   | ✅ Voir `12-worker.md`                     |
+| Nœuds                                     | ✅ `kube-control` et `kube-worker` `Ready` |
 
-```text
-kube-control
-192.168.57.10
-```
+---
 
-avec :
+## 16. Étape suivante
 
-```bash
-kubeadm init
-```
+La prochaine étape consiste à initialiser le Control Plane sur `kube-control`, avec `kubeadm init`.
 
-Cette étape devra notamment traiter :
+Elle est documentée dans `10-control-plane.md` et traite notamment :
 
 * l'adresse de l'API Server ;
 * le réseau des Pods ;
-* les paramètres de `kubeadm init` ;
+* la configuration fournie à `kubeadm` ;
 * la configuration de `kubectl` ;
 * la validation du Control Plane.
 
-L'installation du CNI et la jonction du Worker seront réalisées dans les étapes suivantes.
+L'installation du plugin réseau et la jonction du Worker sont documentées dans `11-calico.md` et `12-worker.md`.
