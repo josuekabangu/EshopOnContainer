@@ -8,4 +8,18 @@
     - containerd
     - kubernetes
     
-    
+- name: Initialiser le Control Plane
+  hosts: control_plane
+  become: true
+
+  roles:
+    - control_plane
+    - calico
+
+- name: Joindre les Workers au cluster
+  hosts: workers
+  become: true
+
+  roles:
+    - worker
+

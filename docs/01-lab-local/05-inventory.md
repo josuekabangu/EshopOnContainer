@@ -294,16 +294,26 @@ ssh-keygen -R 192.168.57.11
 
 Cette commande supprime du fichier `~/.ssh/known_hosts` l'empreinte enregistrée pour l'adresse indiquée.
 
-À la connexion suivante, SSH demande de confirmer la nouvelle empreinte. Comme `host_key_checking` est activé dans `ansible.cfg`, cette question apparaît aussi lors de la première exécution d'Ansible :
+**Enregistrer les nouvelles empreintes** :
+
+```bash
+ssh-keyscan -H 192.168.57.10 192.168.57.11 >> ~/.ssh/known_hosts
+```
+
+Cette commande interroge les deux machines, récupère leur empreinte d'hôte et l'ajoute au fichier `~/.ssh/known_hosts`. L'option `-H` enregistre les adresses sous forme masquée, comme le fait SSH par défaut.
+
+Sans cette étape, SSH demande de confirmer chaque nouvelle empreinte à la première connexion. Comme `host_key_checking` est activé dans `ansible.cfg`, la question apparaît alors au milieu de l'exécution d'Ansible, une fois par machine :
 
 ```text
 The authenticity of host '192.168.57.11 (192.168.57.11)' can't be established.
 Are you sure you want to continue connecting (yes/no/[fingerprint])?
 ```
 
-Il faut répondre `yes` une fois par machine.
-
 Cette situation s'est produite le 8 octobre 2026 lors de la reconstruction des machines sous VMware Workstation. Elle est décrite dans `13-troubleshooting.md` (problème 5).
+
+Enregistrer les empreintes de cette façon revient à faire confiance aux machines telles qu'elles se présentent à cet instant. C'est acceptable pour des machines locales que l'on vient de créer soi-même. Sur un réseau non maîtrisé, l'empreinte devrait être vérifiée par un autre canal.
+
+La procédure complète, avec enregistrement préalable des empreintes, a été appliquée le 9 octobre 2026 : `ansible all -m ping` a répondu `pong` sur les deux machines et le playbook s'est exécuté sans aucune question.
 
 ---
 

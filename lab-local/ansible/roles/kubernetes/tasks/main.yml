@@ -66,3 +66,13 @@
     - kubelet
     - kubectl
     - cri-tools
+
+- name: Fixer l'adresse du nœud utilisée par kubelet
+  ansible.builtin.copy:
+    dest: /etc/default/kubelet
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      KUBELET_EXTRA_ARGS=--node-ip={{ node_ip }}
+  notify: Redémarrer kubelet

@@ -148,7 +148,14 @@ kube-control → 192.168.200.129
 kube-worker  → 192.168.200.130
 ```
 
-Ces adresses peuvent changer d'un démarrage à l'autre. Elles ne doivent donc pas être utilisées comme adresses de communication entre les nœuds Kubernetes.
+Ces adresses changent d'une création à l'autre. Après la reconstruction des machines le 9 octobre 2026, elles valaient :
+
+```text
+kube-control → 192.168.200.140
+kube-worker  → 192.168.200.141
+```
+
+Elles ne doivent donc pas être utilisées comme adresses de communication entre les nœuds Kubernetes.
 
 La route par défaut de chaque machine passe par cette interface :
 
@@ -156,7 +163,7 @@ La route par défaut de chaque machine passe par cette interface :
 default via 192.168.200.2 dev eth0
 ```
 
-Cette particularité devra être prise en compte lors de l'initialisation du cluster, afin que Kubernetes utilise l'adresse du réseau privé et non celle du réseau NAT. Ce point sera traité dans `10-control-plane.md`.
+Cette particularité impose de désigner explicitement l'adresse du réseau privé à Kubernetes, qui retiendrait sinon celle du réseau NAT. Ce point est traité dans `10-control-plane.md` (section 4).
 
 ### 5.2 Réseau privé
 
@@ -259,7 +266,18 @@ Le poste de contrôle est WSL2.
 * [x] Jonction du Worker.
 * [x] Validation du cluster.
 
-Les éléments cochés ont été vérifiés le 8 octobre 2026, après la reconstruction des machines virtuelles sous VMware Workstation. Les autres représentent la cible de construction du laboratoire et seront validés au fur et à mesure de leur mise en œuvre.
+### Automatisation
+
+* [x] Préparation des systèmes, `containerd` et composants Kubernetes automatisés avec Ansible.
+* [x] Initialisation du Control Plane automatisée avec Ansible.
+* [x] Installation du plugin réseau automatisée avec Ansible.
+* [x] Jonction du Worker automatisée avec Ansible.
+* [x] Reconstruction complète du cluster validée à partir de machines neuves.
+* [ ] Création des machines et remise en place des accès SSH automatisées.
+
+Le laboratoire a d'abord été construit à la main le 8 octobre 2026, puis automatisé le 9 octobre 2026. Les éléments cochés ont été vérifiés le 9 octobre 2026 sur le cluster reconstruit par Ansible, dont le résultat est présenté dans `06-roles.md` (section 8.3).
+
+La validation du cluster comprend des tests fonctionnels du réseau, réalisés le 8 octobre 2026 et restant à rejouer sur le cluster reconstruit, comme indiqué dans `12-worker.md`.
 
 ---
 

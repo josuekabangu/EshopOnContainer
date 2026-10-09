@@ -4,9 +4,10 @@
 
 Ce document décrit l'intégration du nœud `kube-worker` au cluster Kubernetes initialisé sur `kube-control`, puis la validation du cluster à deux nœuds.
 
+La jonction est automatisée par le rôle Ansible `worker`.
+
 Il couvre :
 
-* la configuration de l'adresse du nœud avant la jonction ;
 * la génération de la commande de jonction ;
 * la jonction avec `kubeadm join` ;
 * la validation du nœud ;
@@ -15,6 +16,7 @@ Il couvre :
 Les sujets suivants sont traités dans des documents séparés :
 
 * la préparation système et l'installation des composants, dans `07-kubernetes-prerequisites.md`, `08-containerd.md` et `09-kubernetes.md` ;
+* l'adresse du nœud imposée à `kubelet`, dans `09-kubernetes.md` (section 6.3) ;
 * l'initialisation du Control Plane, dans `10-control-plane.md` ;
 * le plugin réseau, dans `11-calico.md` ;
 * les incidents rencontrés, dans `13-troubleshooting.md`.
@@ -42,80 +44,42 @@ Un second nœud est aussi nécessaire pour vérifier que le réseau des Pods fon
 | Swap désactivé, modules et `sysctl` configurés         | `07-kubernetes-prerequisites.md` |
 | `containerd` actif                                     | `08-containerd.md`               |
 | `kubeadm`, `kubelet`, `kubectl` et `crictl` installés  | `09-kubernetes.md`               |
+| Adresse du nœud imposée à `kubelet`                    | `09-kubernetes.md` (section 6.3) |
 | Control Plane initialisé                               | `10-control-plane.md`            |
-| Plugin réseau installé                                 | `11-calico.md`                   |
+| Plugin réseau installé et disponible                   | `11-calico.md`                   |
 
-Ces prérequis sont appliqués aux deux machines par le même playbook Ansible. Le Worker est donc préparé de la même manière que le Control Plane.
+Les quatre premiers prérequis sont appliqués aux deux machines par le premier play de `site.yml`. Le Worker est donc préparé exactement comme le Control Plane.
 
-Les commandes de ce document sont exécutées soit sur `kube-worker`, soit sur `kube-control`. La machine concernée est précisée à chaque fois.
+Les deux derniers sont réalisés par le second play. Le rôle `worker` appartient au troisième : il ne s'exécute que lorsque le cluster et son réseau sont prêts.
 
-La connexion au Worker depuis WSL2 s'effectue avec :
+### Adresse du nœud
 
-```bash
-ssh -i ~/.ssh/vagrant/kube-worker vagrant@192.168.57.11
-```
+Le Worker possède les deux mêmes interfaces que le Control Plane, et sa route par défaut passe elle aussi par l'interface NAT. Son adresse doit donc être imposée à `kubelet` avant la jonction, sans quoi il s'enregistrerait avec son adresse NAT.
 
----
-
-## 4. Adresse du nœud
-
-### 4.1 Pourquoi la fixer avant la jonction ?
-
-Le Worker possède les deux mêmes interfaces que le Control Plane, et sa route par défaut passe elle aussi par l'interface NAT.
-
-Lors de l'initialisation du Control Plane, l'adresse du nœud n'avait pas été fixée et `kubelet` avait retenu l'adresse NAT. Cet incident est décrit dans `13-troubleshooting.md` (problème 9).
-
-Pour le Worker, l'adresse a donc été fixée **avant** la jonction. Le nœud s'enregistre ainsi directement avec la bonne adresse.
-
-### 4.2 Configuration
-
-Sur `kube-worker` :
-
-```bash
-sudo tee /etc/default/kubelet <<'EOF'
-KUBELET_EXTRA_ARGS=--node-ip=192.168.57.11
-EOF
-```
-
-Cette commande écrit dans le fichier lu par `kubelet` l'option qui lui impose l'adresse du réseau privé. La commande `tee` est utilisée avec `sudo`, car le fichier appartient à `root`.
-
-Le rôle de ce fichier et de l'option `--node-ip` est expliqué dans `10-control-plane.md` (section 4).
-
-Cette configuration a été réalisée le 8 octobre 2026 à 20:05 UTC, avant la jonction.
-
-### 4.3 État de kubelet avant la jonction
-
-Avant la jonction, le service `kubelet` n'est pas actif de façon stable. Cet état est normal : `kubelet` ne dispose pas encore de la configuration que `kubeadm join` lui fournira.
+Cette configuration n'est pas propre au Worker : elle est appliquée à tous les nœuds par le rôle `kubernetes`. Le rôle `worker` ne s'en occupe pas.
 
 ---
 
-## 5. Vérification du runtime avant la jonction
+## 4. Principe de la jonction
 
-`kubeadm join` s'appuie sur le runtime de conteneurs. Son état a été contrôlé sur `kube-worker` avec `crictl`, l'outil de diagnostic du runtime installé par le rôle `kubernetes`.
+La jonction fait intervenir les deux machines :
 
-```bash
-sudo crictl info | grep -E 'RuntimeReady|NetworkReady'
+```text
+        kube-control                              kube-worker
+             |                                         |
+  1. crée un jeton et produit                          |
+     la commande de jonction                           |
+             |                                         |
+             +------- commande de jonction ----------->|
+                                                       |
+                                          2. exécute kubeadm join
+                                                       |
+             |<-------- demande d'intégration ---------+
+             |                                         |
+  3. enregistre le nœud                                |
 ```
 
-Cette commande interroge `containerd` à travers l'interface CRI, comme le fait `kubelet`, et affiche les deux conditions qui indiquent si le runtime et le réseau sont prêts.
-
-Résultat vérifié le 8 octobre 2026, après la jonction : les deux conditions `RuntimeReady` et `NetworkReady` sont présentes.
-
-Avant l'installation du plugin réseau sur un nœud, la condition `NetworkReady` n'est pas satisfaite. Elle le devient lorsque le Pod `calico-node` du nœud est en exécution.
-
----
-
-## 6. Génération de la commande de jonction
-
-Sur `kube-control` :
-
-```bash
-kubeadm token create --print-join-command
-```
-
-Cette commande crée un nouveau jeton et affiche la commande `kubeadm join` complète à exécuter sur le nœud à intégrer.
-
-La commande produite a la forme suivante :
+La commande de jonction a la forme suivante :
 
 ```bash
 kubeadm join 192.168.57.10:6443 \
@@ -129,27 +93,67 @@ kubeadm join 192.168.57.10:6443 \
 | `--token`                        | Jeton qui autorise le nœud à demander son intégration                |
 | `--discovery-token-ca-cert-hash` | Empreinte qui permet au nœud de vérifier l'identité du Control Plane |
 
-Le jeton donne le droit de rejoindre le cluster. Il n'est reproduit ni dans la documentation ni dans le dépôt.
-
-Un jeton expire au bout de 24 heures. Les jetons existants peuvent être listés avec :
-
-```bash
-sudo kubeadm token list
-```
-
-Résultat vérifié le 8 octobre 2026 : trois jetons sont actifs, le dernier expirant le 9 octobre à 20:47 UTC. Passé ce délai, un nouveau jeton devra être créé pour intégrer un autre nœud.
+Le jeton donne le droit de rejoindre le cluster. Il n'est reproduit ni dans la documentation, ni dans le dépôt, ni dans la sortie d'Ansible.
 
 ---
 
-## 7. Jonction
+## 5. Mise en œuvre
 
-Sur `kube-worker`, la commande générée est exécutée avec les privilèges administrateur :
+Le rôle `worker` comporte quatre tâches, dans `lab-local/ansible/roles/worker/tasks/main.yml`.
 
-```bash
-sudo kubeadm join 192.168.57.10:6443 --token <JETON> --discovery-token-ca-cert-hash sha256:<EMPREINTE>
+Le rôle s'exécute dans un play qui cible le Worker. Deux de ses tâches doivent pourtant s'exécuter sur le Control Plane : elles utilisent pour cela la délégation, expliquée en section 5.5.
+
+### 5.1 Le nœud a-t-il déjà rejoint le cluster ?
+
+```yaml
+- name: Vérifier si le nœud a déjà rejoint le cluster
+  ansible.builtin.stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: kubelet_conf
 ```
 
-Cette commande :
+Le module `stat` examine un fichier sans le modifier. Le fichier `/etc/kubernetes/kubelet.conf` est créé par `kubeadm join` : sa présence indique que le nœud fait déjà partie d'un cluster.
+
+Le résultat est conservé dans la variable `kubelet_conf` et sert de garde aux deux tâches suivantes.
+
+### 5.2 Génération de la commande de jonction
+
+```yaml
+- name: Générer la commande de jonction sur le Control Plane
+  ansible.builtin.command:
+    cmd: kubeadm token create --ttl 10m --print-join-command
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  register: join_command
+  when: not kubelet_conf.stat.exists
+  changed_when: true
+  no_log: true
+```
+
+La commande `kubeadm token create --print-join-command` crée un nouveau jeton et affiche la commande `kubeadm join` complète.
+
+| Paramètre                           | Effet                                                                 |
+| ----------------------------------- | --------------------------------------------------------------------- |
+| `--ttl 10m`                         | Le jeton expire au bout de dix minutes, au lieu de 24 heures par défaut |
+| `delegate_to`                       | La tâche s'exécute sur le Control Plane                               |
+| `register: join_command`            | La commande produite est conservée pour la tâche suivante             |
+| `when: not kubelet_conf.stat.exists` | Aucun jeton n'est créé si le nœud a déjà rejoint le cluster          |
+| `changed_when: true`                | La tâche est comptée comme un changement, puisqu'elle crée un jeton   |
+| `no_log: true`                      | Ansible n'affiche ni la commande ni son résultat                      |
+
+Le jeton sert une seule fois, immédiatement. Une durée de vie de dix minutes limite la période pendant laquelle il pourrait être réutilisé.
+
+### 5.3 Jonction
+
+```yaml
+- name: Rejoindre le cluster
+  ansible.builtin.command:
+    cmd: "{{ join_command.stdout }}"
+    creates: /etc/kubernetes/kubelet.conf
+  when: not kubelet_conf.stat.exists
+  no_log: true
+```
+
+Cette tâche exécute sur le Worker la commande produite par la tâche précédente. Elle :
 
 1. effectue les vérifications préalables du système ;
 2. contacte l'API et vérifie l'identité du Control Plane avec l'empreinte ;
@@ -157,25 +161,69 @@ Cette commande :
 4. écrit la configuration de `kubelet` dans `/etc/kubernetes` ;
 5. démarre `kubelet`, qui enregistre le nœud auprès du cluster.
 
-Les privilèges administrateur sont nécessaires, car la commande écrit dans `/etc/kubernetes` et configure un service système. Une première tentative sans `sudo` a échoué ; elle est décrite dans `13-troubleshooting.md` (problème 10).
+La commande s'exécute avec les privilèges administrateur, demandés par le play. Lancée à la main sans `sudo`, elle échoue : ce cas est décrit dans `13-troubleshooting.md` (problème 10).
 
-Résultat obtenu :
+La tâche est protégée deux fois : par la condition `when`, et par `creates`, qui empêche la commande de s'exécuter si le fichier existe.
 
-```text
-This node has joined the cluster
+### 5.4 Attente de la disponibilité du nœud
+
+```yaml
+- name: Attendre que le nœud soit Ready
+  ansible.builtin.command:
+    cmd: "kubectl wait --for=condition=Ready node/{{ inventory_hostname }} --timeout=600s"
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false
 ```
 
-Un avertissement relatif à `kube-proxy` a été affiché pendant la jonction. Il est analysé dans `13-troubleshooting.md` (problème 11).
+Un nœud qui vient de rejoindre le cluster n'est pas immédiatement utilisable : le plugin réseau doit d'abord y être déployé. Cette tâche bloque le playbook jusqu'à ce que le nœud soit à l'état `Ready`.
 
-La jonction a été réalisée le 8 octobre 2026 à 20:53 UTC.
+Elle est déléguée au Control Plane, seule machine où `kubectl` est configuré.
+
+### 5.5 Délégation
+
+Le play cible le groupe `workers`. Par défaut, toutes ses tâches s'exécutent donc sur `kube-worker`.
+
+L'option `delegate_to` fait exécuter une tâche sur une autre machine, tout en restant dans le contexte de la machine du play. La variable `inventory_hostname` y désigne toujours `kube-worker`, ce qui permet à la tâche d'attente de surveiller le bon nœud.
+
+```yaml
+delegate_to: "{{ groups['control_plane'][0] }}"
+```
+
+Cette expression désigne la première machine du groupe `control_plane` de l'inventaire. Le nom `kube-control` n'est ainsi écrit nulle part dans le rôle.
+
+Dans la sortie d'Ansible, une tâche déléguée se reconnaît à la flèche :
+
+```text
+ok: [kube-worker -> kube-control(192.168.57.10)]
+```
+
+### 5.6 Diagnostic d'un échec
+
+L'option `no_log: true` masque le jeton, mais aussi le message d'erreur si la jonction échoue. Pour diagnostiquer, la jonction peut être rejouée à la main.
+
+Sur `kube-control` :
+
+```bash
+sudo kubeadm token create --ttl 10m --print-join-command
+```
+
+Puis, sur `kube-worker`, la commande obtenue, précédée de `sudo`.
+
+### 5.7 Exécution
+
+Le rôle est appelé par le troisième play de `site.yml`, décrit dans `06-roles.md`.
+
+La jonction a été réalisée par Ansible le **9 octobre 2026 à 20:17 UTC**, sur une machine recréée à neuf, moins d'une minute après l'initialisation du Control Plane.
 
 ---
 
-## 8. Vérification du nœud
+## 6. Vérification du nœud
 
-Les vérifications suivantes ont été relevées le 8 octobre 2026 à 21:29 UTC.
+Les résultats de cette section ont été vérifiés le **9 octobre 2026 à 20:26 UTC**, sur le cluster reconstruit.
 
-### 8.1 Présence, état et adresse
+### 6.1 Présence, état et adresse
 
 Sur `kube-control` :
 
@@ -189,8 +237,8 @@ Résultat vérifié :
 
 ```text
 NAME           STATUS   ROLES           AGE     VERSION   INTERNAL-IP     EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION              CONTAINER-RUNTIME
-kube-control   Ready    control-plane   6h16m   v1.36.5   192.168.57.10   <none>        Ubuntu 22.04.3 LTS   5.15.0-83-generic (amd64)   containerd://2.2.1
-kube-worker    Ready    <none>          36m     v1.36.5   192.168.57.11   <none>        Ubuntu 22.04.3 LTS   5.15.0-83-generic (amd64)   containerd://2.2.1
+kube-control   Ready    control-plane   9m38s   v1.36.5   192.168.57.10   <none>        Ubuntu 22.04.3 LTS   5.15.0-83-generic (amd64)   containerd://2.2.1
+kube-worker    Ready    <none>          8m58s   v1.36.5   192.168.57.11   <none>        Ubuntu 22.04.3 LTS   5.15.0-83-generic (amd64)   containerd://2.2.1
 ```
 
 Ce résultat valide quatre points :
@@ -202,7 +250,7 @@ Ce résultat valide quatre points :
 
 La colonne `ROLES` affiche `<none>` pour le Worker. C'est le comportement normal : `kubeadm` n'attribue un libellé de rôle qu'au Control Plane.
 
-### 8.2 Prise en compte de l'option kubelet
+### 6.2 Prise en compte de l'option kubelet
 
 Sur `kube-worker` :
 
@@ -218,7 +266,9 @@ Résultat vérifié :
 --node-ip=192.168.57.11
 ```
 
-### 8.3 Composants système du Worker
+L'adresse NAT du Worker valait `192.168.200.141` au moment de cette vérification, alors qu'elle valait `192.168.200.130` la veille. Ce changement confirme l'intérêt d'imposer l'adresse du réseau privé.
+
+### 6.3 Composants système du Worker
 
 Deux DaemonSets doivent avoir déployé un Pod sur le nouveau nœud : `kube-proxy` et `calico-node`.
 
@@ -233,23 +283,55 @@ Cette commande n'affiche que les Pods système hébergés sur le Worker.
 Résultat vérifié :
 
 ```text
-calico-node-bjnhw   1/1   Running   0   192.168.57.11   kube-worker
-kube-proxy-jn6wl    1/1   Running   0   192.168.57.11   kube-worker
+calico-node-vnwhp   1/1   Running   0   192.168.57.11   kube-worker
+kube-proxy-7r8tt    1/1   Running   0   192.168.57.11   kube-worker
 ```
 
 La configuration réseau obtenue sur le Worker (bloc d'adresses, routes, adresse utilisée par Calico) est détaillée dans `11-calico.md` (section 7).
 
+### 6.4 Jetons
+
+```bash
+sudo kubeadm token list
+```
+
+Cette commande liste les jetons de jonction existants et leur date d'expiration.
+
+Résultat vérifié, valeurs des jetons non reproduites :
+
+| Jeton                              | Expiration                  |
+| ---------------------------------- | --------------------------- |
+| Créé par `kubeadm init`            | 10 octobre 2026 à 20:16 UTC |
+| Créé par le rôle `worker`          | 9 octobre 2026 à 20:27 UTC  |
+
+Le jeton du rôle `worker` expire bien dix minutes après sa création.
+
+### 6.5 Idempotence
+
+Une seconde exécution du playbook ne doit ni créer de jeton ni relancer la jonction.
+
+Résultat vérifié :
+
+```text
+TASK [worker : Vérifier si le nœud a déjà rejoint le cluster]         ok
+TASK [worker : Générer la commande de jonction sur le Control Plane]  skipping
+TASK [worker : Rejoindre le cluster]                                  skipping
+TASK [worker : Attendre que le nœud soit Ready]                       ok
+```
+
+L'absence de création de jeton a aussi été contrôlée directement : le nombre de jetons listés sur le Control Plane est resté identique avant et après deux exécutions du playbook.
+
 ---
 
-## 9. Validation fonctionnelle du réseau
+## 7. Validation fonctionnelle du réseau
 
 Les vérifications précédentes montrent que le Worker est intégré. Elles ne prouvent pas qu'un Pod peut en joindre un autre.
 
-Une validation fonctionnelle a donc été réalisée dans un namespace temporaire `network-test`, avec des Pods Nginx.
+Une validation fonctionnelle a été réalisée dans un namespace temporaire `network-test`, avec des Pods Nginx.
 
-Les résultats de cette section ont été relevés pendant l'intervention. Les ressources de test ayant été supprimées ensuite, ils n'ont pas été rejoués lors de la relecture de ce document.
+**Ces tests ont été réalisés le 8 octobre 2026, sur la première construction du cluster. Ils n'ont pas été rejoués après la reconstruction du 9 octobre.** La configuration réseau obtenue étant identique (mêmes blocs, mêmes routes, voir `11-calico.md`), le résultat attendu est le même, mais il reste à confirmer.
 
-### 9.1 Communication entre Pods de nœuds différents
+### 7.1 Communication entre Pods de nœuds différents
 
 Un Pod a été placé sur chaque nœud :
 
@@ -269,9 +351,9 @@ Pod sur kube-control          Pod sur kube-worker
          |<-------- page Nginx ---------|
 ```
 
-Le réseau des Pods fonctionne donc entre les deux nœuds.
+Le réseau des Pods fonctionnait donc entre les deux nœuds.
 
-### 9.2 Accès par un Service
+### 7.2 Accès par un Service
 
 Un Service de type `ClusterIP` a été créé devant le Pod Nginx du Worker :
 
@@ -298,7 +380,7 @@ Pod  →  Service ClusterIP  →  Pod du Worker
 
 Ce test valide la traduction d'adresse réalisée par `kube-proxy`.
 
-### 9.3 Résolution DNS
+### 7.3 Résolution DNS
 
 Le service DNS du cluster est exposé par le Service `kube-dns` :
 
@@ -329,11 +411,11 @@ Name:     network-test-service.network-test.svc.cluster.local
 Address:  10.103.159.18
 ```
 
-CoreDNS résout donc le nom du Service vers son adresse.
+CoreDNS résolvait donc le nom du Service vers son adresse.
 
 La commande `nslookup` affiche aussi des réponses `NXDOMAIN`. Elles correspondent aux autres suffixes de recherche que le résolveur essaie automatiquement, et ne remettent pas en cause la résolution réussie.
 
-### 9.4 Nettoyage
+### 7.4 Nettoyage
 
 Les ressources de test ont été supprimées :
 
@@ -343,62 +425,64 @@ kubectl delete namespace network-test
 
 Cette commande supprime le namespace et toutes les ressources qu'il contient.
 
-Résultat vérifié le 8 octobre 2026 à 21:29 UTC : le namespace `network-test` n'existe plus dans le cluster.
+---
+
+## 8. Principes appliqués
+
+* **Préparer avant de joindre.** L'adresse du nœud est en place avant la jonction, grâce à l'ordre des plays.
+* **Un jeton à usage immédiat.** Le jeton de jonction ne vit que dix minutes.
+* **Aucun secret affiché.** L'option `no_log` tient le jeton hors de la sortie d'Ansible, et la documentation utilise des textes de substitution.
+* **Une garde sur toute action.** Ni jeton ni jonction si le nœud appartient déjà au cluster.
+* **Attendre l'état réel.** Le rôle ne se termine que lorsque le nœud est `Ready`.
+* **Distinguer intégration et fonctionnement.** Un nœud `Ready` ne prouve pas que le réseau fonctionne : des tests entre Pods de nœuds différents sont nécessaires.
+* **Aucun nom de machine en dur.** Le Control Plane est désigné par son groupe d'inventaire.
 
 ---
 
-## 10. Principes appliqués
+## 9. État et limites
 
-* **Tirer parti d'un incident précédent.** L'adresse du nœud a été fixée avant la jonction, parce que son absence avait posé problème sur le Control Plane.
-* **Distinguer intégration et fonctionnement.** Un nœud `Ready` ne prouve pas que le réseau fonctionne. Trois tests fonctionnels ont été réalisés : Pod à Pod, Service, DNS.
-* **Tester entre les nœuds.** Les Pods de test ont été placés sur deux nœuds différents, afin d'éprouver le tunnel entre les machines et non le réseau local d'un seul nœud.
-* **Nettoyer après les tests.** Les ressources temporaires ont été supprimées pour ne pas laisser d'état inutile dans le cluster.
-* **Aucun secret dans la documentation.** Le jeton et l'empreinte sont remplacés par des textes de substitution.
-* **Analyser un avertissement avant d'agir.** L'avertissement affiché pendant la jonction n'a entraîné aucune modification, faute de dysfonctionnement observé.
+### 9.1 État validé
 
----
+| Élément                                      | État    | Nature de la validation                                   |
+| -------------------------------------------- | ------- | --------------------------------------------------------- |
+| Worker joint par Ansible                     | ✅       | Vérifié le 9 octobre 2026 sur le cluster reconstruit      |
+| Worker `Ready`                               | ✅       | Vérifié le 9 octobre 2026 sur le cluster reconstruit      |
+| Adresse `192.168.57.11` enregistrée          | ✅       | Vérifié le 9 octobre 2026 sur le cluster reconstruit      |
+| Kubernetes `v1.36.5`, `containerd` `2.2.1`   | ✅       | Vérifié le 9 octobre 2026 sur le cluster reconstruit      |
+| `calico-node` et `kube-proxy` sur le Worker  | ✅       | Vérifié le 9 octobre 2026 sur le cluster reconstruit      |
+| Jeton de dix minutes                         | ✅       | Vérifié le 9 octobre 2026 sur le cluster reconstruit      |
+| Rôle idempotent                              | ✅       | Vérifié le 9 octobre 2026 sur le cluster reconstruit      |
+| Pod à Pod entre nœuds                        | ⏳       | Validé le 8 octobre 2026, à rejouer après reconstruction  |
+| Pod vers Service                             | ⏳       | Validé le 8 octobre 2026, à rejouer après reconstruction  |
+| Résolution DNS                               | ⏳       | Validé le 8 octobre 2026, à rejouer après reconstruction  |
 
-## 11. État et limites
+### 9.2 Limites connues
 
-### 11.1 État validé
-
-| Élément                                      | État au 8 octobre 2026 | Nature de la validation       |
-| -------------------------------------------- | ---------------------- | ----------------------------- |
-| Worker présent dans le cluster               | ✅                      | Vérifié sur le cluster        |
-| Worker `Ready`                               | ✅                      | Vérifié sur le cluster        |
-| Adresse `192.168.57.11` enregistrée          | ✅                      | Vérifié sur le cluster        |
-| Kubernetes `v1.36.5`, `containerd` `2.2.1`   | ✅                      | Vérifié sur le cluster        |
-| `calico-node` et `kube-proxy` sur le Worker  | ✅                      | Vérifié sur le cluster        |
-| Pod à Pod entre nœuds                        | ✅                      | Relevé pendant l'intervention |
-| Pod vers Service                             | ✅                      | Relevé pendant l'intervention |
-| Résolution DNS                               | ✅                      | Relevé pendant l'intervention |
-
-### 11.2 Limites connues
-
-| Limite                                                                                   | Conséquence                                                              |
-| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| L'option `--node-ip` est écrite à la main sur chaque nœud                                | Elle doit être refaite après une reconstruction des machines             |
-| La jonction est réalisée à la main, contrairement aux étapes 07 à 09 automatisées avec Ansible | La reconstruction du cluster n'est pas entièrement automatisée     |
-| Les tests fonctionnels ne sont pas conservés sous forme de fichiers dans le dépôt        | Ils doivent être réécrits pour être rejoués                              |
-| Le cluster ne comporte qu'un seul Worker                                                 | L'arrêt de ce nœud interrompt toutes les applications                    |
+| Limite                                                                            | Conséquence                                                          |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Les tests fonctionnels ne sont pas conservés sous forme de fichiers dans le dépôt | Ils doivent être réécrits pour être rejoués                          |
+| `no_log` masque aussi les erreurs de la jonction                                  | Un échec se diagnostique à la main, voir section 5.6                 |
+| Le rôle ne gère pas le retrait d'un nœud                                          | Un nœud à retirer doit l'être à la main                              |
+| Le cluster ne comporte qu'un seul Worker                                          | L'arrêt de ce nœud interrompt toutes les applications                |
 
 ---
 
-## 12. Documentation associée
+## 10. Documentation associée
 
 | Fichier                 | Lien avec ce document                                              |
 | ----------------------- | ------------------------------------------------------------------ |
 | `01-architecture.md`    | Machines, adresses et réseaux                                      |
-| `09-kubernetes.md`      | Installation de `kubeadm`, `kubelet`, `kubectl` et `crictl`        |
-| `10-control-plane.md`   | Adresse de l'API, option `--node-ip`, plages des Pods et Services  |
+| `06-roles.md`           | Organisation des rôles, ordre des plays, résultat de la reconstruction |
+| `09-kubernetes.md`      | Installation des composants et adresse du nœud                     |
+| `10-control-plane.md`   | Adresse de l'API, plages des Pods et des Services                  |
 | `11-calico.md`          | Configuration réseau obtenue sur chaque nœud                       |
 | `13-troubleshooting.md` | Jonction sans privilèges et avertissement `kube-proxy` (problèmes 10 et 11) |
 
 ---
 
-## 13. Étape suivante
+## 11. Étape suivante
 
-Le laboratoire local dispose maintenant d'un cluster Kubernetes fonctionnel à deux nœuds :
+Le laboratoire local dispose maintenant d'un cluster Kubernetes fonctionnel à deux nœuds, reconstructible par une seule commande Ansible :
 
 ```text
                  Cluster Kubernetes

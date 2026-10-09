@@ -48,10 +48,14 @@ Un problème n'est déclaré résolu que lorsque sa validation a été réelleme
 | 9  | Le nœud s'enregistre avec l'adresse NAT `192.168.200.129`        | `kubelet` choisit l'interface de la route par défaut    | Kubernetes        |
 | 10 | `kubeadm join` : `user is not running as root`                   | Commande lancée sans privilèges administrateur          | Kubernetes        |
 | 11 | Avertissement `bindAddress` de `kube-proxy` pendant la jonction  | Non investiguée, aucun dysfonctionnement observé        | Kubernetes        |
+| 12 | Vagrant déclare `not created` des machines qui tournent ; machines en double | Deux installations de Vagrant sur le même dossier | Vagrant           |
+| 13 | Ansible : `UNREACHABLE` alors que Windows joint les machines     | WSL2 en mode réseau `mirrored`                          | Réseau WSL2       |
+| 14 | Tâche `kubectl apply` en `changed` à chaque exécution            | `kubectl apply` annonce `configured` sans rien modifier | Ansible           |
+| 15 | Un play entier est ignoré, sans erreur                           | Nom de groupe mal orthographié dans `hosts`             | Ansible           |
 
-Tous ces problèmes ont été rencontrés le 8 octobre 2026.
+Les problèmes 1 à 11 ont été rencontrés le 8 octobre 2026, lors de la construction manuelle du laboratoire. Les problèmes 12 à 15 l'ont été le 9 octobre 2026, lors de son automatisation.
 
-Les problèmes 1 à 8 ont été diagnostiqués pas à pas, avec les résultats de commande relevés au moment de la panne. Pour le problème 9, le symptôme et l'état initial du fichier `/etc/default/kubelet` proviennent des notes prises lors de l'intervention ; la table de routage et la validation ont été vérifiées après correction. Pour les problèmes 10 et 11, les messages proviennent également des notes prises lors de l'intervention ; l'état final du nœud a été vérifié sur le cluster.
+Les problèmes 1 à 8 ont été diagnostiqués pas à pas, avec les résultats de commande relevés au moment de la panne. Pour le problème 9, le symptôme et l'état initial du fichier `/etc/default/kubelet` proviennent des notes prises lors de l'intervention ; la table de routage et la validation ont été vérifiées après correction. Pour les problèmes 10 et 11, les messages proviennent également des notes prises lors de l'intervention ; l'état final du nœud a été vérifié sur le cluster. Les problèmes 12 à 15 ont été diagnostiqués pas à pas, avec les résultats relevés au moment de l'incident.
 
 Un problème plus ancien, propre à la configuration de `containerd`, est documenté dans `08-containerd.md` (sections 15 à 17).
 
@@ -775,7 +779,20 @@ Cette adresse est attribuée en DHCP et peut changer. Un nœud enregistré avec 
 
 ### Correction
 
-L'option `--node-ip=192.168.57.10` a été ajoutée dans `/etc/default/kubelet`, puis `kubelet` a été redémarré. La procédure est décrite dans `10-control-plane.md` (section 6.3).
+La première correction a été manuelle. Le fichier `/etc/default/kubelet` a été modifié pour contenir :
+
+```text
+KUBELET_EXTRA_ARGS=--node-ip=192.168.57.10
+```
+
+Le service a ensuite été redémarré :
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart kubelet
+```
+
+La première commande demande à `systemd` de relire sa configuration. La seconde redémarre `kubelet`, qui prend alors en compte l'option `--node-ip`.
 
 ### Validation
 
@@ -790,15 +807,49 @@ L'option est bien reçue par le processus en cours d'exécution :
 --node-ip=192.168.57.10
 ```
 
-### Effet résiduel
+### Effet résiduel de la correction manuelle
 
-Quatre Pods statiques du Control Plane affichent encore l'adresse NAT dans leur statut. Les vérifications montrant que cet affichage est sans effet sont détaillées dans `10-control-plane.md` (section 8).
+Après cette correction, quatre Pods statiques du Control Plane affichaient encore l'adresse NAT dans leur statut :
+
+```text
+NAME                                   HOSTIP          PODIP
+etcd-kube-control                      192.168.57.10   192.168.200.129
+kube-apiserver-kube-control            192.168.57.10   192.168.200.129
+kube-controller-manager-kube-control   192.168.57.10   192.168.200.129
+kube-scheduler-kube-control            192.168.57.10   192.168.200.129
+```
+
+Les options des composants, les ports en écoute, le certificat de l'API et le Service `kubernetes` utilisaient tous `192.168.57.10`. L'écart se limitait à l'affichage du statut des Pods et n'avait pas d'effet fonctionnel.
+
+### Résolution à la racine
+
+La correction manuelle traitait le symptôme : elle intervenait après l'initialisation. Le 9 octobre 2026, l'option `--node-ip` a été intégrée au rôle Ansible `kubernetes`, appliqué à tous les nœuds **avant** l'initialisation et la jonction. La mise en œuvre est décrite dans `09-kubernetes.md` (section 6.3).
+
+Le cluster a ensuite été entièrement reconstruit.
+
+Validation sur le cluster reconstruit :
+
+```text
+NAME           STATUS   ROLES           VERSION   INTERNAL-IP
+kube-control   Ready    control-plane   v1.36.5   192.168.57.10
+kube-worker    Ready    <none>          v1.36.5   192.168.57.11
+```
+
+```text
+NAME                                   HOSTIP          PODIP
+etcd-kube-control                      192.168.57.10   192.168.57.10
+kube-apiserver-kube-control            192.168.57.10   192.168.57.10
+kube-controller-manager-kube-control   192.168.57.10   192.168.57.10
+kube-scheduler-kube-control            192.168.57.10   192.168.57.10
+```
+
+Les deux nœuds s'enregistrent directement avec l'adresse du réseau privé, et l'effet résiduel sur les Pods statiques a disparu.
 
 ### À retenir
 
-Sur une machine à plusieurs interfaces, l'adresse du nœud doit être fixée explicitement. Le Worker possède les deux mêmes interfaces : la précaution a été appliquée avant sa jonction, comme décrit dans `12-worker.md` (section 4), et il s'est enregistré directement avec `192.168.57.11`.
+Sur une machine à plusieurs interfaces, l'adresse du nœud doit être fixée explicitement, et **avant** que le nœud ne rejoigne ou n'initialise un cluster.
 
-Dans ce laboratoire, l'adresse a été corrigée après l'initialisation. Elle peut aussi être fournie dès l'initialisation, dans le fichier de configuration `kubeadm`, ce qui éviterait de passer par l'adresse NAT. Cette piste n'a pas été appliquée.
+Corriger après coup fonctionne, mais laisse des traces. Placer la configuration au bon endroit dans l'ordre de construction supprime le problème au lieu de le réparer.
 
 ---
 
@@ -881,7 +932,7 @@ kube-proxy-6k5xb   1/1   Running   0   192.168.57.10   kube-control
 kube-proxy-jn6wl   1/1   Running   0   192.168.57.11   kube-worker
 ```
 
-Le rôle de `kube-proxy`, l'accès aux Services, a par ailleurs été validé par le test décrit dans `12-worker.md` (section 9.2).
+Le rôle de `kube-proxy`, l'accès aux Services, a par ailleurs été validé par le test décrit dans `12-worker.md` (section 7.2).
 
 ### Cause
 
@@ -897,30 +948,443 @@ Un avertissement doit être lu et vérifié, mais il ne justifie pas à lui seul
 
 ---
 
-## 15. Points de vigilance non encore traités
+## 15. Problème 12 — Deux installations de Vagrant sur le même dossier
+
+### Symptôme
+
+Après une recréation des machines, plusieurs anomalies apparaissent en même temps :
+
+```powershell
+vagrant status
+```
+
+```text
+kube-control              not created (vmware_desktop)
+kube-worker               not created (vmware_desktop)
+```
+
+Vagrant annonce que les machines n'existent pas, alors qu'elles répondent en SSH sur leurs adresses.
+
+### Diagnostic
+
+Le diagnostic a été mené sans passer par Vagrant, en interrogeant directement VMware.
+
+```powershell
+& "C:\Program Files (x86)\VMware\VMware Workstation\vmrun.exe" list
+```
+
+Cette commande liste les machines virtuelles en cours d'exécution dans VMware, indépendamment de ce que Vagrant en sait.
+
+```text
+Total running VMs: 3
+...\kube-control\vmware_desktop\fb79a3e1-...\ubuntu-22.04-amd64.vmx
+...\kube-control\vmware_desktop\0f6bdd92-...\ubuntu-22.04-amd64.vmx
+...\kube-worker\vmware_desktop\d69a656f-...\ubuntu-22.04-amd64.vmx
+```
+
+Trois machines tournent, dont **deux `kube-control`**. Leur date de création diffère de plusieurs heures : la première est une machine orpheline, restée en fonctionnement après avoir été remplacée. Les deux portent la même adresse `192.168.57.10`.
+
+Le répertoire d'état de Vagrant a ensuite été examiné :
+
+```powershell
+Get-ChildItem -Force -Recurse lab-local\vagrant\.vagrant\machines
+```
+
+Constat pour chacune des trois machines :
+
+| Fichier                                | État     |
+| -------------------------------------- | -------- |
+| `id` (lien entre Vagrant et la machine) | Absent   |
+| `private_key`                          | Absent   |
+| Fichier `.vmx` de la machine           | Absent   |
+| Disques, journal                       | Présents, car verrouillés par la machine en cours d'exécution |
+
+Les machines tournaient donc sans leur fichier de définition, et Vagrant n'avait plus aucun moyen de les retrouver.
+
+La cause est apparue dans la configuration de WSL2 :
+
+```bash
+grep VAGRANT ~/.bashrc
+```
+
+```text
+export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1
+export VAGRANT_DEFAULT_PROVIDER=vmware_desktop
+```
+
+Ces deux lignes activent le Vagrant installé dans WSL2 et l'autorisent à piloter VMware sur Windows.
+
+### Cause
+
+Deux installations de Vagrant agissaient sur le même dossier `lab-local/vagrant` : celle de Windows, lancée depuis PowerShell, et celle de WSL2, lancée depuis le terminal Linux.
+
+Chacune enregistre les machines qu'elle crée à sa façon. Aucune ne reconnaît celles de l'autre.
+
+Or, lorsqu'un Vagrant considère qu'une machine n'existe pas, il efface le contenu de son répertoire d'état. C'est le comportement constaté ici : une simple commande `vagrant status`, lancée par l'installation qui n'avait pas créé les machines, a supprimé leurs fichiers `id`, `private_key` et `.vmx`. Seuls les fichiers verrouillés ont subsisté.
+
+L'incident s'est produit dans les deux sens au cours de la même journée :
+
+1. d'après les dates de création des machines, le Vagrant de WSL2 n'a pas reconnu une machine `kube-control` créée depuis Windows, l'a laissée tourner et en a créé une seconde ; cette première occurrence n'a pas été observée directement, elle est déduite de l'état constaté ;
+2. le Vagrant de Windows n'a pas reconnu les machines créées depuis WSL2 et a effacé leur état ; cette seconde occurrence a été observée, les fichiers ayant disparu au moment d'une commande `vagrant status` lancée depuis Windows.
+
+### Correction
+
+**Arrêt des machines orphelines.** Vagrant ne pouvant plus les piloter, leurs processus ont été arrêtés directement, dans PowerShell :
+
+```powershell
+Get-Process vmware-vmx
+Stop-Process -Id <identifiants> -Force
+```
+
+La première commande liste les processus des machines VMware en cours. La seconde arrête ceux dont l'identifiant est indiqué.
+
+**Suppression de l'état résiduel**, depuis `lab-local\vagrant` :
+
+```powershell
+Remove-Item -Recurse -Force .vagrant
+```
+
+**Retour à une seule installation.** Les deux lignes `VAGRANT_*` ont été retirées de `~/.bashrc`.
+
+**Recréation des machines**, depuis PowerShell, comme décrit dans `02-vagrant.md`.
+
+### Validation
+
+```text
+Total running VMs: 2
+```
+
+```text
+kube-control | SUCCESS => { ... "ping": "pong" }
+kube-worker  | SUCCESS => { ... "ping": "pong" }
+```
+
+### À retenir
+
+Un dossier Vagrant ne doit être piloté que par une seule installation de Vagrant. Dans ce laboratoire, la règle est :
+
+| Outil                                  | Terminal                              |
+| -------------------------------------- | ------------------------------------- |
+| `vagrant`                              | PowerShell, dans `lab-local\vagrant`  |
+| `ansible`, `ansible-playbook`, `ssh`   | WSL2                                  |
+
+Une commande `vagrant status` n'est pas sans effet : elle peut effacer l'état de machines qu'elle ne reconnaît pas. Pour diagnostiquer un doute sur l'état des machines, `vmrun list` et un test SSH direct sont plus sûrs.
+
+---
+
+## 16. Problème 13 — WSL2 ne joint plus les machines en mode réseau mirrored
+
+### Symptôme
+
+Depuis WSL2, Ansible ne joint plus les machines :
+
+```text
+kube-control | UNREACHABLE! => {"msg": "Failed to connect to the host via ssh:
+ssh: connect to host 192.168.57.10 port 22: Connection timed out"}
+```
+
+La commande `ssh-keyscan` vers les mêmes adresses ne retourne rien.
+
+Ce symptôme est le même que celui du problème 4, mais la cause est différente.
+
+### Diagnostic
+
+**Le poste Windows joint-il les machines ?**
+
+```powershell
+Test-NetConnection 192.168.57.10 -Port 22
+```
+
+```text
+TcpTestSucceeded : True
+InterfaceAlias   : VMware Network Adapter VMnet6
+```
+
+Windows joint les machines par la carte `VMnet6`, qui porte bien l'adresse `192.168.57.1`. Le problème 4 est donc écarté : le blocage se situe entre WSL2 et Windows.
+
+**Quel réseau voit WSL2 ?**
+
+```bash
+ip -4 -br addr
+ip route
+```
+
+Ces commandes affichent les interfaces de WSL2 et sa table de routage.
+
+```text
+eth1             UP             192.168.1.52/24
+default via 192.168.1.254 dev eth1
+```
+
+WSL2 ne possède plus son adresse habituelle en `172.26.x.x`. Il porte l'adresse du poste sur le réseau local, et sa route par défaut mène à la passerelle de ce réseau. Aucune route ne mène à `192.168.57.0/24`.
+
+**Comment WSL2 est-il configuré ?**
+
+```powershell
+Get-Content $env:USERPROFILE\.wslconfig
+```
+
+```text
+[wsl2]
+networkingMode=mirrored
+```
+
+### Cause
+
+En mode réseau `mirrored`, WSL2 ne passe plus par le poste Windows pour sortir : il reproduit directement les interfaces réseau de celui-ci.
+
+Dans ce laboratoire, seule la carte du réseau local a été reproduite. La carte `VMnet6` de VMware ne l'a pas été. WSL2 n'a donc aucun accès au réseau privé des machines, et le trafic destiné à `192.168.57.x` part vers la passerelle du réseau local, qui ne le connaît pas.
+
+Dans le mode par défaut, le trafic de WSL2 sort par le poste Windows, qui le transmet à la carte `VMnet6`, comme décrit dans `03-wsl.md`.
+
+### Correction
+
+La ligne `networkingMode=mirrored` a été retirée du fichier `.wslconfig`, puis WSL2 a été redémarré depuis PowerShell :
+
+```powershell
+wsl --shutdown
+```
+
+Cette commande arrête WSL2 et ferme tous ses terminaux. La nouvelle configuration est prise en compte au démarrage suivant.
+
+### Validation
+
+```text
+eth0             UP             172.26.3.27/20
+default via 172.26.0.1 dev eth0
+```
+
+```text
+kube-control | SUCCESS => { ... "ping": "pong" }
+kube-worker  | SUCCESS => { ... "ping": "pong" }
+```
+
+### À retenir
+
+Devant un `UNREACHABLE`, tester d'abord depuis Windows. Si Windows joint les machines et WSL2 non, la cause est dans la configuration réseau de WSL2, et non dans VMware.
+
+Le mode `mirrored` ne convient pas à ce laboratoire, qui repose sur un réseau privé VMware.
+
+---
+
+## 17. Problème 14 — kubectl apply annonce un changement à chaque exécution
+
+### Symptôme
+
+La tâche qui applique le fichier de définition de Calico répond `changed` à chaque exécution du playbook, y compris lorsque rien n'a changé :
+
+```text
+TASK [calico : Appliquer le fichier de définition de Calico]
+changed: [kube-control]
+```
+
+Le récapitulatif de la seconde exécution n'atteint donc jamais `changed=0` :
+
+```text
+kube-control : ok=28   changed=1
+```
+
+### Diagnostic
+
+La tâche décidait de son état d'après la sortie de `kubectl apply` :
+
+```yaml
+changed_when: "'created' in calico_apply.stdout or 'configured' in calico_apply.stdout"
+```
+
+La commande a été rejouée en simulation, pour lire cette sortie sans rien modifier :
+
+```bash
+kubectl apply --dry-run=server -f /etc/kubernetes/calico-v3.30.3.yaml | grep -v unchanged
+```
+
+L'option `--dry-run=server` demande au cluster de calculer le résultat sans l'enregistrer. Le filtre ne conserve que les ressources qui ne sont pas annoncées inchangées.
+
+```text
+poddisruptionbudget.policy/calico-kube-controllers configured (server dry run)
+customresourcedefinition.apiextensions.k8s.io/bgpconfigurations.crd.projectcalico.org configured (server dry run)
+...
+daemonset.apps/calico-node configured (server dry run)
+```
+
+Sur 39 ressources, 26 sont annoncées `configured` : 24 définitions de ressources personnalisées, le DaemonSet et le PodDisruptionBudget.
+
+**Ces ressources sont-elles réellement modifiées ?**
+
+```bash
+kubectl diff -f /etc/kubernetes/calico-v3.30.3.yaml
+echo $?
+```
+
+`kubectl diff` compare le fichier avec l'état du cluster. La seconde commande affiche son code de retour.
+
+Résultat : aucune sortie, et un code de retour égal à `0`. Il n'existe aucune différence.
+
+**Le DaemonSet a-t-il été redéployé ?**
+
+```bash
+kubectl -n kube-system get ds calico-node -o jsonpath='{.metadata.generation}'
+```
+
+Cette commande affiche le numéro de génération du DaemonSet, qui augmente à chaque modification de sa définition.
+
+Résultat : `1`. Le DaemonSet n'a jamais été modifié depuis sa création, et ses Pods n'ont pas redémarré.
+
+### Cause
+
+`kubectl apply` annonce `configured` dès qu'il envoie une modification au cluster, même lorsque l'état obtenu est identique à l'état existant. Pour ce fichier de définition, c'est le cas de 26 ressources à chaque exécution.
+
+Le mot `configured` dans la sortie n'est donc pas un indicateur fiable de changement. La tâche produisait un faux positif : le cluster n'était pas modifié, mais Ansible l'affirmait.
+
+### Correction
+
+L'idempotence ne repose plus sur la sortie de `kubectl apply`, mais sur le code de retour de `kubectl diff`, qui compare l'état final. La tâche d'application ne s'exécute que si une différence existe. Les tâches sont décrites dans `11-calico.md` (section 5.3).
+
+### Validation
+
+```text
+TASK [calico : Comparer le fichier de définition de Calico avec l'état du cluster]  ok
+TASK [calico : Appliquer le fichier de définition de Calico]                        skipping
+```
+
+```text
+kube-control : ok=28   changed=0    unreachable=0    failed=0    skipped=2
+```
+
+Sur un cluster neuf, la comparaison signale une différence et l'application a bien lieu : ce cas a été vérifié lors de la reconstruction du 9 octobre 2026.
+
+### À retenir
+
+Ce défaut n'est apparu qu'à la seconde exécution du playbook. Une seule exécution réussie ne prouve pas l'idempotence.
+
+Pour une commande, l'idempotence doit s'appuyer sur une comparaison de l'état réel, et non sur le texte affiché par l'outil.
+
+---
+
+## 18. Problème 15 — Un play est ignoré sans erreur
+
+### Symptôme
+
+Après l'ajout d'un play à `site.yml`, les rôles de ce play ne s'exécutent pas. Le playbook se termine pourtant normalement, sans tâche en échec.
+
+Trois signes le révèlent.
+
+À la vérification de syntaxe :
+
+```text
+[WARNING]: Could not match supplied host pattern, ignoring: Workers
+
+playbook: site.yml
+```
+
+Pendant l'exécution :
+
+```text
+PLAY [Joindre les Workers au cluster]
+skipping: no hosts matched
+```
+
+Dans le récapitulatif, où le nombre de tâches est inférieur à celui attendu :
+
+```text
+kube-worker : ok=19
+```
+
+au lieu de `ok=22`.
+
+### Diagnostic
+
+```bash
+grep -n "hosts:" site.yml
+grep -n "^\[" inventory.ini
+```
+
+La première commande affiche les machines ciblées par chaque play. La seconde affiche les groupes déclarés dans l'inventaire.
+
+```text
+hosts: Workers
+```
+
+```text
+[control_plane]
+[workers]
+[k8s_cluster:children]
+```
+
+### Cause
+
+Le play ciblait `Workers`, alors que le groupe de l'inventaire s'appelle `workers`. Les noms de groupes sont sensibles à la casse.
+
+Ansible ne considère pas un groupe introuvable comme une erreur : il estime que le play ne concerne aucune machine et passe au suivant. La vérification de syntaxe réussit, puisque le fichier est correctement écrit.
+
+Le même incident s'est produit avec `Control_plan` à la place de `control_plane`.
+
+### Correction
+
+Le nom du groupe a été corrigé dans `site.yml` :
+
+```yaml
+  hosts: workers
+```
+
+### Validation
+
+```bash
+ansible-playbook site.yml --list-hosts
+```
+
+Cette commande affiche les machines retenues par chaque play, sans rien exécuter.
+
+Résultat attendu : `kube-control` et `kube-worker` pour le premier play, `kube-control` pour le deuxième, `kube-worker` pour le troisième.
+
+```text
+kube-worker : ok=22   changed=0   skipped=3
+```
+
+### À retenir
+
+Un avertissement de `--syntax-check` doit être traité avant de lancer le playbook. Les commandes de validation se lancent une par une, et non en bloc : sinon l'exécution démarre malgré l'avertissement.
+
+Connaître à l'avance le nombre de tâches attendu dans le récapitulatif permet de repérer un play ou un rôle qui n'a pas tourné.
+
+---
+
+## 19. Points de vigilance
 
 Les points suivants ont été identifiés mais ne sont pas des pannes. Ils sont listés pour ne pas être oubliés.
 
+### 19.1 Points résolus
+
+| Point                                                                                       | Résolution                                                                  |
+| ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| L'option `--node-ip` était écrite à la main sur chaque nœud                                 | Intégrée au rôle `kubernetes` le 9 octobre 2026                             |
+| L'initialisation, l'installation de Calico et la jonction n'étaient pas dans le dépôt       | Automatisées par les rôles `control_plane`, `calico` et `worker`            |
+| La commande de jonction, jeton compris, figurait dans l'historique shell de `kube-worker`   | Machines détruites ; la jonction passe désormais par Ansible, sans affichage du jeton |
+
+### 19.2 Points ouverts
+
 | Point                                                                                         | Risque                                                              | Traitement prévu      |
 | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------- |
-| L'option `--node-ip` est écrite à la main dans `/etc/default/kubelet` sur les deux nœuds      | Après une reconstruction, un nœud s'enregistrerait de nouveau avec son adresse NAT (problème 9) | À décider |
-| L'initialisation du Control Plane, l'installation de Calico et la jonction du Worker ne sont pas dans le dépôt | La reconstruction du cluster n'est pas entièrement reproductible | À décider |
+| Les tests fonctionnels du réseau n'ont pas été rejoués après la reconstruction                | Le fonctionnement entre Pods n'est pas confirmé sur le cluster actuel | À rejouer, voir `12-worker.md` |
 | Le paquet `containerd` n'est pas figé, contrairement aux paquets Kubernetes                   | Une mise à jour du système pourrait changer la version du runtime   | À décider             |
-| La commande de jonction, jeton compris, figure dans l'historique shell de `kube-worker`       | Limité : le jeton expire le 9 octobre 2026 à 20:47 UTC              | Aucun                 |
 | Le `Vagrantfile` ne fixe pas de provider par défaut                                           | Un `vagrant up` sans option `--provider` peut choisir un autre hyperviseur | À décider             |
 | Les clés SSH doivent être recopiées après chaque recréation des machines                      | Étape manuelle facile à oublier                                     | À décider             |
+| Le script `lab-local/scripts/setup-ssh.sh` appelle `vagrant` depuis WSL2                      | Il reproduirait le problème 12                                      | À réécrire avant usage |
 | La plage `192.168.57.0/24` est partagée avec le laboratoire `cka-lab`                         | Les deux laboratoires ne peuvent pas fonctionner en même temps      | À décider             |
 
 ---
 
-## 16. Documentation associée
+## 20. Documentation associée
 
 | Fichier                          | Lien avec ce document                              |
 | -------------------------------- | -------------------------------------------------- |
 | `10-control-plane.md`            | Adresse du nœud (problème 9)                       |
 | `12-worker.md`                   | Jonction du Worker (problèmes 10 et 11)            |
+| `06-roles.md`                    | Noms de groupes, méthode de validation (problème 15) |
+| `11-calico.md`                   | Idempotence de l'installation de Calico (problème 14) |
+| `03-wsl.md`                      | Mode réseau de WSL2 (problème 13)                  |
 | `01-architecture.md`             | Choix de l'hyperviseur, réseaux                    |
-| `02-vagrant.md`                  | Prérequis VMware, réseau privé (problèmes 1 à 4)   |
+| `02-vagrant.md`                  | Prérequis VMware, réseau privé, installation unique de Vagrant (problèmes 1 à 4 et 12) |
 | `04-ansible.md`                  | Chargement de `ansible.cfg` (problème 8)           |
 | `05-inventory.md`                | Clés SSH après recréation (problème 5)             |
 | `07-kubernetes-prerequisites.md` | Désactivation du swap (problème 7)                 |

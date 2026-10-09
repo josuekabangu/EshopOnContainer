@@ -183,10 +183,13 @@ ansible/
 └── roles/
     ├── common/
     ├── containerd/
-    └── kubernetes/
+    ├── kubernetes/
+    ├── control_plane/
+    ├── calico/
+    └── worker/
 ```
 
-Cette organisation sera construite progressivement.
+Le rôle de chaque élément est décrit dans `06-roles.md`.
 
 ---
 
@@ -359,19 +362,19 @@ Le projet utilisera notamment un playbook principal :
 site.yml
 ```
 
-Il pourra orchestrer différents rôles :
+Il orchestre six rôles, répartis en trois plays :
 
 ```text
 site.yml
    |
-   +---- common
+   +---- common, containerd, kubernetes     (tous les nœuds)
    |
-   +---- containerd
+   +---- control_plane, calico              (Control Plane)
    |
-   +---- kubernetes
+   +---- worker                             (Workers)
 ```
 
-L'objectif est d'éviter un playbook monolithique contenant toutes les opérations.
+L'objectif est d'éviter un playbook monolithique contenant toutes les opérations. Le contenu du playbook est détaillé dans `06-roles.md`.
 
 ---
 
@@ -379,7 +382,7 @@ L'objectif est d'éviter un playbook monolithique contenant toutes les opératio
 
 Les rôles permettront de séparer les responsabilités.
 
-L'organisation prévue est :
+Les trois premiers rôles préparent les machines :
 
 ```text
 roles/
@@ -387,6 +390,8 @@ roles/
 ├── containerd/
 └── kubernetes/
 ```
+
+Trois autres rôles construisent ensuite le cluster : `control_plane`, `calico` et `worker`. Les six rôles sont présentés dans `06-roles.md`.
 
 ### `common`
 

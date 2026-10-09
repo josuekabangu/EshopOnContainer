@@ -1,0 +1,29 @@
+---
+- name: Vérifier si le nœud a déjà rejoint le cluster
+  ansible.builtin.stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: kubelet_conf
+
+- name: Générer la commande de jonction sur le Control Plane
+  ansible.builtin.command:
+    cmd: kubeadm token create --ttl 10m --print-join-command
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  register: join_command
+  when: not kubelet_conf.stat.exists
+  changed_when: true
+  no_log: true
+
+- name: Rejoindre le cluster
+  ansible.builtin.command:
+    cmd: "{{ join_command.stdout }}"
+    creates: /etc/kubernetes/kubelet.conf
+  when: not kubelet_conf.stat.exists
+  no_log: true
+
+- name: Attendre que le nœud soit Ready
+  ansible.builtin.command:
+    cmd: "kubectl wait --for=condition=Ready node/{{ inventory_hostname }} --timeout=600s"
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false

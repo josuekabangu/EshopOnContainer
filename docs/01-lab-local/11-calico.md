@@ -4,12 +4,12 @@
 
 Ce document décrit l'installation et la validation du plugin réseau du cluster Kubernetes du laboratoire local EshopOnContainer.
 
-Le plugin retenu est **Calico**.
+Le plugin retenu est **Calico**. Son installation est automatisée par le rôle Ansible `calico`.
 
 Il couvre :
 
 * la raison pour laquelle un plugin réseau est nécessaire ;
-* l'installation de Calico ;
+* l'installation de Calico par Ansible ;
 * la configuration réellement obtenue ;
 * la validation du réseau des Pods.
 
@@ -58,13 +58,13 @@ Calico prend en charge les **NetworkPolicies** Kubernetes, qui permettent de fil
 
 | Prérequis                                              | Document de référence |
 | ------------------------------------------------------ | --------------------- |
-| Control Plane initialisé, `kubectl` configuré          | `10-control-plane.md` |
+| Control Plane initialisé                               | `10-control-plane.md` |
 | Plage des Pods `10.244.0.0/16` déclarée à `kubeadm`    | `10-control-plane.md` |
 | Nœud enregistré avec son adresse du réseau privé       | `10-control-plane.md` |
 
 Les réseaux des machines sont décrits dans `01-architecture.md`. Les plages des Pods et des Services sont définies dans `10-control-plane.md`.
 
-Les commandes de ce document sont exécutées sur `kube-control`, avec l'utilisateur `vagrant`.
+Le rôle `calico` s'exécute sur le Control Plane, dans le même play que le rôle `control_plane` et juste après lui, comme décrit dans `06-roles.md`.
 
 ---
 
@@ -99,19 +99,103 @@ Calico peut s'installer de deux façons : par un opérateur, ou par un fichier d
 
 Le laboratoire utilise le **fichier de définition unique**. Ce mode crée toutes les ressources directement dans le namespace `kube-system`.
 
-### 5.2 Commande
+### 5.2 Variables
 
-```bash
-kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.30.3/manifests/calico.yaml
+La version et l'emplacement du fichier sont déclarés dans `lab-local/ansible/group_vars/control_plane.yml` :
+
+```yaml
+calico_version: "v3.30.3"
+calico_manifest_url: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/calico.yaml"
+calico_manifest_path: "/etc/kubernetes/calico-{{ calico_version }}.yaml"
 ```
 
-Cette commande télécharge le fichier de définition de Calico et crée dans le cluster toutes les ressources qu'il décrit.
+La version n'est écrite qu'une fois. L'adresse de téléchargement et le nom du fichier local en sont déduits. Changer de version revient à modifier une seule ligne.
 
-L'adresse contient le numéro de version `v3.30.3`. La version est ainsi figée : relancer la commande plus tard installe la même version.
+### 5.3 Tâches
 
-L'installation a été réalisée le 8 octobre 2026 à 15:53 UTC.
+Le rôle comporte cinq tâches, dans `lab-local/ansible/roles/calico/tasks/main.yml`.
 
-### 5.3 Ressources créées
+**Téléchargement du fichier de définition.**
+
+```yaml
+- name: Télécharger le fichier de définition de Calico
+  ansible.builtin.get_url:
+    url: "{{ calico_manifest_url }}"
+    dest: "{{ calico_manifest_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+```
+
+Le fichier est conservé sur le Control Plane plutôt qu'appliqué directement depuis Internet. Il reste ainsi consultable, et les tâches suivantes travaillent sur une copie connue.
+
+**Comparaison avec l'état du cluster.**
+
+```yaml
+- name: Comparer le fichier de définition de Calico avec l'état du cluster
+  ansible.builtin.command:
+    cmd: "kubectl diff -f {{ calico_manifest_path }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: calico_diff
+  changed_when: false
+  failed_when: calico_diff.rc > 1
+```
+
+`kubectl diff` compare le fichier avec ce qui existe dans le cluster, sans rien modifier. Son code de retour indique le résultat :
+
+| Code de retour  | Signification            | Effet dans le rôle                                  |
+| --------------- | ------------------------ | --------------------------------------------------- |
+| `0`             | Aucune différence        | La tâche d'application est ignorée                  |
+| `1`             | Des différences existent | La tâche d'application s'exécute                    |
+| supérieur à `1` | Erreur de `kubectl`      | La tâche échoue                                     |
+
+Par défaut, Ansible traite tout code de retour non nul comme un échec. La ligne `failed_when: calico_diff.rc > 1` lui indique que le code `1` est ici un résultat normal.
+
+La ligne `changed_when: false` signale que cette tâche ne modifie jamais rien.
+
+**Application.**
+
+```yaml
+- name: Appliquer le fichier de définition de Calico
+  ansible.builtin.command:
+    cmd: "kubectl apply -f {{ calico_manifest_path }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: calico_diff.rc == 1
+```
+
+`kubectl apply` crée dans le cluster les ressources décrites par le fichier. La tâche ne s'exécute que si la comparaison a signalé une différence.
+
+La raison pour laquelle l'idempotence repose sur `kubectl diff`, et non sur la sortie de `kubectl apply`, est expliquée dans `13-troubleshooting.md` (problème 14).
+
+**Attente de la disponibilité du réseau.**
+
+```yaml
+- name: Attendre que calico-node soit prêt
+  ansible.builtin.command:
+    cmd: kubectl -n kube-system rollout status daemonset/calico-node --timeout=600s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false
+
+- name: Attendre que le nœud soit Ready
+  ansible.builtin.command:
+    cmd: "kubectl wait --for=condition=Ready node/{{ inventory_hostname }} --timeout=600s"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false
+```
+
+`kubectl apply` rend la main dès que les ressources sont enregistrées, bien avant que les Pods ne soient en fonctionnement. Ces deux tâches bloquent le playbook jusqu'à ce que le réseau soit réellement disponible.
+
+Cette attente est nécessaire à la suite : sans elle, le play suivant ferait rejoindre le Worker à un cluster dont le réseau n'est pas encore en place.
+
+### 5.4 Variable KUBECONFIG
+
+Les tâches s'exécutent avec les privilèges administrateur. L'utilisateur `root` ne dispose pas de configuration `kubectl`. La variable d'environnement `KUBECONFIG` lui désigne celle créée par `kubeadm init`.
+
+### 5.5 Ressources créées
 
 | Ressource                 | Type       | Rôle                                                              |
 | ------------------------- | ---------- | ----------------------------------------------------------------- |
@@ -120,9 +204,13 @@ L'installation a été réalisée le 8 octobre 2026 à 15:53 UTC.
 
 Un DaemonSet garantit la présence d'un Pod sur chaque nœud. Un nœud qui rejoint le cluster reçoit donc automatiquement son Pod `calico-node`.
 
+L'installation a été réalisée par Ansible le **9 octobre 2026 à 20:16 UTC**, quelques secondes après l'initialisation du Control Plane.
+
 ---
 
 ## 6. Vérification de l'installation
+
+Les résultats de cette section et de la suivante ont été vérifiés le **9 octobre 2026 à 20:26 UTC**, sur le cluster reconstruit, après la jonction du Worker.
 
 ### 6.1 Composants déployés
 
@@ -132,7 +220,7 @@ kubectl -n kube-system get daemonset,deployment
 
 Cette commande liste les DaemonSets et les Deployments du namespace système, avec le nombre de Pods attendus et prêts.
 
-Résultat vérifié le 8 octobre 2026 à 21:29 UTC, après la jonction du Worker, présenté ici sous forme résumée :
+Résultat vérifié, présenté sous forme résumée :
 
 | Ressource                            | Pods attendus | Pods prêts |
 | ------------------------------------ | ------------- | ---------- |
@@ -152,18 +240,16 @@ Cette commande affiche les Pods Calico avec leur adresse et le nœud qui les hé
 Résultat vérifié :
 
 ```text
-calico-kube-controllers-7d598bd8b5-p2l5f   1/1   Running   0   10.244.222.1    kube-control
-calico-node-6tj7b                          1/1   Running   0   192.168.57.10   kube-control
-calico-node-bjnhw                          1/1   Running   0   192.168.57.11   kube-worker
+calico-kube-controllers-7d598bd8b5-8x8fd   1/1   Running   0   10.244.222.3    kube-control
+calico-node-gb2lm                          1/1   Running   0   192.168.57.10   kube-control
+calico-node-vnwhp                          1/1   Running   0   192.168.57.11   kube-worker
 ```
 
 Les Pods `calico-node` portent l'adresse de leur nœud, car ils utilisent directement le réseau de la machine. Le Pod `calico-kube-controllers` porte une adresse de la plage des Pods.
 
 ### 6.3 Namespace des composants
 
-Lors de l'installation, les Pods ont d'abord été cherchés dans le namespace `calico-system`. Ce namespace n'existe que lorsque Calico est installé par l'opérateur.
-
-Avec le mode d'installation retenu, les composants se trouvent dans `kube-system`. Les namespaces du cluster le confirment :
+Avec le mode d'installation retenu, les composants se trouvent dans `kube-system`. Le namespace `calico-system` n'existe que lorsque Calico est installé par l'opérateur.
 
 ```bash
 kubectl get namespaces
@@ -184,21 +270,49 @@ L'installation du plugin réseau doit faire passer le nœud à l'état `Ready` e
 
 ```bash
 kubectl get nodes
-kubectl get pods -n kube-system | grep coredns
+kubectl get pods -n kube-system -o wide | grep coredns
 ```
 
 Résultat vérifié :
 
 ```text
 kube-control   Ready    control-plane   v1.36.5
+kube-worker    Ready    <none>          v1.36.5
 ```
 
 ```text
-coredns-589f44dc88-9fqkg   1/1   Running   0
-coredns-589f44dc88-bphp6   1/1   Running   0
+coredns-589f44dc88-6n5cw   1/1   Running   0   10.244.222.2   kube-control
+coredns-589f44dc88-gk6l2   1/1   Running   0   10.244.222.1   kube-control
 ```
 
-Les deux Pods CoreDNS ont reçu les adresses `10.244.222.2` et `10.244.222.3`, prises dans la plage des Pods.
+Les deux Pods CoreDNS ont reçu une adresse prise dans la plage des Pods.
+
+### 6.5 Idempotence
+
+Une seconde exécution du playbook ne doit pas réappliquer le fichier de définition.
+
+Résultat vérifié :
+
+```text
+TASK [calico : Télécharger le fichier de définition de Calico]                      ok
+TASK [calico : Comparer le fichier de définition de Calico avec l'état du cluster]  ok
+TASK [calico : Appliquer le fichier de définition de Calico]                        skipping
+TASK [calico : Attendre que calico-node soit prêt]                                  ok
+TASK [calico : Attendre que le nœud soit Ready]                                     ok
+```
+
+La comparaison ne détecte aucune différence, donc l'application est ignorée.
+
+La comparaison peut aussi être lancée à la main sur le Control Plane :
+
+```bash
+kubectl diff -f /etc/kubernetes/calico-v3.30.3.yaml
+echo $?
+```
+
+La seconde commande affiche le code de retour de la première.
+
+Résultat vérifié : aucune sortie, et un code de retour égal à `0`.
 
 ---
 
@@ -238,10 +352,12 @@ Cette commande affiche le bloc d'adresses réservé à chaque nœud. L'option `-
 
 Résultat vérifié :
 
-| Nœud           | Bloc               | Adresse du tunnel |
-| -------------- | ------------------ | ----------------- |
-| `kube-control` | `10.244.222.0/26`  | `10.244.222.0`    |
-| `kube-worker`  | `10.244.73.128/26` | `10.244.73.128`   |
+| Nœud           | Bloc               |
+| -------------- | ------------------ |
+| `kube-control` | `10.244.222.0/26`  |
+| `kube-worker`  | `10.244.73.128/26` |
+
+Ces deux blocs sont identiques à ceux attribués lors de la première construction, le 8 octobre 2026.
 
 ### 7.3 Adresse utilisée par Calico sur chaque nœud
 
@@ -263,7 +379,7 @@ kube-worker    192.168.57.11/24   192.168.57.11
 
 Calico utilise bien le réseau privé sur les deux nœuds.
 
-Cette adresse est choisie par détection automatique : le fichier de définition contient `IP=autodetect`, sans méthode de détection précisée. Le résultat est correct, mais il n'est pas imposé par la configuration.
+Cette adresse est choisie par détection automatique : le fichier de définition contient `IP=autodetect`, sans méthode de détection précisée. Le résultat a été identique lors des deux constructions du cluster, mais il n'est pas imposé par la configuration.
 
 ### 7.4 Routes entre les nœuds
 
@@ -297,7 +413,7 @@ La route `blackhole` concerne le bloc du nœud lui-même : elle écarte le trafi
 
 Les vérifications précédentes montrent que Calico est installé et configuré. Elles ne prouvent pas qu'un Pod peut réellement en joindre un autre.
 
-La validation fonctionnelle du réseau des Pods demande au moins deux nœuds. Elle a été réalisée après la jonction du Worker et est décrite dans `12-worker.md` :
+La validation fonctionnelle du réseau des Pods demande au moins deux nœuds. Elle est décrite dans `12-worker.md` :
 
 * communication entre deux Pods situés sur des nœuds différents ;
 * accès à un Pod à travers un Service ;
@@ -307,8 +423,10 @@ La validation fonctionnelle du réseau des Pods demande au moins deux nœuds. El
 
 ## 9. Principes appliqués
 
-* **Une version explicite.** La commande d'installation désigne la version `v3.30.3` et non la dernière version disponible. Le laboratoire reste reproductible.
+* **Une version explicite.** Le rôle installe la version `v3.30.3` et non la dernière version disponible. Le laboratoire reste reproductible.
 * **Une plage unique.** La plage des Pods est définie une seule fois, dans la configuration `kubeadm`. Calico la reprend au lieu de la redéfinir.
+* **Comparer avant d'appliquer.** L'application n'a lieu que si le cluster diffère du fichier de définition.
+* **Attendre l'état réel.** Le rôle ne se termine que lorsque le réseau est disponible, et non lorsque la commande d'installation a rendu la main.
 * **Vérifier la configuration obtenue.** Aucun paramètre n'ayant été fourni à Calico, les valeurs par défaut ont été relevées sur le cluster plutôt que supposées.
 * **Vérifier l'interface utilisée.** Sur des machines à deux interfaces, l'adresse retenue par Calico a été contrôlée sur chaque nœud.
 
@@ -318,23 +436,25 @@ La validation fonctionnelle du réseau des Pods demande au moins deux nœuds. El
 
 ### 10.1 État validé
 
-| Élément                                         | État au 8 octobre 2026 |
-| ----------------------------------------------- | ---------------------- |
-| Calico `v3.30.3` installé                       | ✅                      |
-| Un Pod `calico-node` prêt sur chaque nœud       | ✅                      |
-| `calico-kube-controllers` prêt                  | ✅                      |
-| Plage des Pods cohérente avec `kubeadm`         | ✅                      |
-| Calico utilise le réseau privé sur les deux nœuds | ✅                    |
-| Routes entre les blocs des deux nœuds           | ✅                      |
-| CoreDNS en exécution                            | ✅                      |
+| Élément                                           | État au 9 octobre 2026 |
+| ------------------------------------------------- | ---------------------- |
+| Calico `v3.30.3` installé par Ansible             | ✅                      |
+| Un Pod `calico-node` prêt sur chaque nœud         | ✅                      |
+| `calico-kube-controllers` prêt                    | ✅                      |
+| Plage des Pods cohérente avec `kubeadm`           | ✅                      |
+| Calico utilise le réseau privé sur les deux nœuds | ✅                      |
+| Routes entre les blocs des deux nœuds             | ✅                      |
+| CoreDNS en exécution                              | ✅                      |
+| Rôle idempotent                                   | ✅                      |
+| Validé par reconstruction complète                | ✅ — voir `06-roles.md` |
 
 ### 10.2 Limites connues
 
 | Limite                                                                                       | Conséquence                                                                        |
 | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| L'installation est réalisée à la main et n'est pas dans le dépôt                             | Elle doit être refaite manuellement après une reconstruction du cluster            |
 | L'adresse utilisée par Calico repose sur la détection automatique                            | Sur une autre machine, Calico pourrait retenir l'interface NAT                     |
 | La compatibilité de Calico `v3.30.3` avec Kubernetes `v1.36.5` n'a pas été vérifiée dans la documentation de Calico | Le fonctionnement est constaté dans ce laboratoire, mais n'est pas garanti par l'éditeur |
+| Le fichier de définition est téléchargé depuis Internet à chaque reconstruction               | La reconstruction échoue si l'adresse de téléchargement est indisponible           |
 | Aucune NetworkPolicy n'est définie                                                           | Tous les Pods peuvent communiquer entre eux                                        |
 
 ---
@@ -344,9 +464,10 @@ La validation fonctionnelle du réseau des Pods demande au moins deux nœuds. El
 | Fichier                 | Lien avec ce document                                   |
 | ----------------------- | ------------------------------------------------------- |
 | `01-architecture.md`    | Réseaux des machines                                    |
+| `06-roles.md`           | Organisation des rôles, ordre des plays                 |
 | `10-control-plane.md`   | Plage des Pods, adresse du nœud                         |
 | `12-worker.md`          | Validation fonctionnelle du réseau entre deux nœuds     |
-| `13-troubleshooting.md` | Diagnostic des problèmes                                |
+| `13-troubleshooting.md` | Fausse détection de changement par `kubectl apply` (problème 14) |
 
 ---
 

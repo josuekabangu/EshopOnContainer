@@ -1,0 +1,10 @@
+---
+kubernetes_release: "v{{ kubernetes_version.split('-')[0] }}"
+api_server_port: 6443
+pod_subnet: "10.244.0.0/16"
+service_subnet: "10.96.0.0/12"
+cluster_dns_domain: "cluster.local"
+
+calico_version: "v3.30.3"
+calico_manifest_url: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/calico.yaml"
+calico_manifest_path: "/etc/kubernetes/calico-{{ calico_version }}.yaml"

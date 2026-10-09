@@ -58,6 +58,14 @@ Vagrant pilote VMware Workstation à travers deux composants supplémentaires : 
 
 Le choix de VMware Workstation est expliqué dans `01-architecture.md`.
 
+### Une seule installation de Vagrant
+
+Le poste dispose de deux installations de Vagrant : celle de Windows, et celle de la distribution Ubuntu de WSL2.
+
+Dans ce laboratoire, **seule celle de Windows est utilisée**, depuis PowerShell. Toutes les commandes `vagrant` de ce document se lancent dans PowerShell.
+
+Deux installations qui agissent sur le même dossier ne reconnaissent pas les machines l'une de l'autre et effacent leur état. Cet incident s'est produit et est décrit dans `13-troubleshooting.md` (problème 12).
+
 ### 3.1 Installation du plugin
 
 Le Vagrant VMware Utility s'installe avec son programme d'installation Windows.
@@ -380,6 +388,21 @@ Ansible n'utilise pas ces ports redirigés. Il se connecte aux adresses du rése
 La commande `destroy` supprime les machines virtuelles et doit être utilisée avec précaution.
 
 Après une destruction suivie d'une recréation, Vagrant génère de nouvelles clés SSH. Les clés utilisées par Ansible doivent alors être recopiées, comme indiqué dans `05-inventory.md`.
+
+### Reconstruction complète du laboratoire
+
+Détruire puis recréer les machines permet de repartir de systèmes neufs. Le cluster est ensuite reconstruit par Ansible.
+
+| Étape | Commande                               | Terminal   | Document de référence |
+| ----- | -------------------------------------- | ---------- | --------------------- |
+| 1     | `vagrant destroy -f`                   | PowerShell | Ce document           |
+| 2     | `vagrant up --provider vmware_desktop` | PowerShell | Ce document           |
+| 3     | Remise en place des accès SSH          | WSL2       | `05-inventory.md` (section 11.1) |
+| 4     | `ansible-playbook site.yml`            | WSL2       | `06-roles.md`         |
+
+L'option `-f` de `vagrant destroy` supprime les machines sans demander de confirmation.
+
+Les étapes 2 à 4 ont été réalisées le 9 octobre 2026 : la création des deux machines a pris 2 minutes 36, et la construction du cluster par Ansible 2 minutes 31. Ce jour-là, les machines précédentes n'ont pas été supprimées par `vagrant destroy`, mais arrêtées à la main à la suite de l'incident décrit dans `13-troubleshooting.md` (problème 12).
 
 ---
 

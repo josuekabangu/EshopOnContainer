@@ -303,6 +303,74 @@ Cette commande interroge le runtime et affiche les conditions qui indiquent si l
 
 Résultat vérifié sur les deux nœuds : les conditions `RuntimeReady` et `NetworkReady` sont présentes, ce qui confirme que `crictl` communique avec `containerd`.
 
+### 6.3 Adresse du nœud
+
+#### Pourquoi fixer l'adresse dans ce rôle ?
+
+Chaque machine possède deux interfaces. Sans indication, `kubelet` enregistre le nœud avec l'adresse de l'interface NAT au lieu de celle du réseau privé. Les deux adresses en jeu et leur rôle sont expliqués dans `10-control-plane.md` (section 4).
+
+L'adresse doit être en place **avant** que le nœud ne soit initialisé ou joint au cluster. Elle est donc fixée ici, dans le rôle appliqué à tous les nœuds, et non dans les rôles qui créent le cluster. Lorsqu'elle était corrigée après coup, le nœud passait d'abord par l'adresse NAT : c'est le problème 9 de `13-troubleshooting.md`.
+
+#### Variable
+
+L'adresse de chaque nœud figure déjà dans l'inventaire. Elle est réutilisée au lieu d'être écrite une seconde fois, dans `lab-local/ansible/group_vars/all.yml` :
+
+```yaml
+node_ip: "{{ ansible_host }}"
+```
+
+#### Tâche
+
+```yaml
+- name: Fixer l'adresse du nœud utilisée par kubelet
+  ansible.builtin.copy:
+    dest: /etc/default/kubelet
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      KUBELET_EXTRA_ARGS=--node-ip={{ node_ip }}
+  notify: Redémarrer kubelet
+```
+
+Le fichier `/etc/default/kubelet` est lu par le service `kubelet` au démarrage. L'option `--node-ip` lui impose l'adresse sous laquelle il enregistre le nœud.
+
+#### Handler
+
+Le rôle dispose d'un handler, dans `roles/kubernetes/handlers/main.yml` :
+
+```yaml
+---
+- name: Redémarrer kubelet
+  ansible.builtin.systemd_service:
+    name: kubelet
+    state: restarted
+    daemon_reload: true
+```
+
+`kubelet` n'est redémarré que si le contenu du fichier change. Sur un nœud déjà configuré, la tâche répond `ok` et le service n'est pas touché.
+
+Sur une machine neuve, ce redémarrage a lieu avant l'initialisation du cluster. `kubelet` ne dispose alors d'aucune configuration et redémarre en boucle jusqu'à ce que `kubeadm` la lui fournisse. Ce comportement est normal.
+
+#### Vérification
+
+```bash
+ansible all -m shell -a 'cat /etc/default/kubelet'
+```
+
+Cette commande affiche le fichier d'options de `kubelet` sur chaque nœud.
+
+Résultat vérifié le 9 octobre 2026 :
+
+```text
+kube-control | KUBELET_EXTRA_ARGS=--node-ip=192.168.57.10
+kube-worker  | KUBELET_EXTRA_ARGS=--node-ip=192.168.57.11
+```
+
+La prise en compte par le processus et l'effet sur l'enregistrement du nœud sont vérifiés dans `10-control-plane.md` et `12-worker.md`.
+
+Cette tâche a d'abord été appliquée sur le cluster existant, où les fichiers avaient été écrits à la main : elle a répondu `ok` sur les deux nœuds, ce qui confirme qu'elle reproduit exactement la configuration manuelle.
+
 ---
 
 ## 7. Pourquoi installer les composants sur les deux nœuds ?
@@ -483,6 +551,8 @@ kube-worker  : ok=18   changed=0    unreachable=0    failed=0    skipped=1
 ```
 
 Aucun écart n'est détecté : les nœuds sont conformes au rôle. Le mode `--check` est ici pertinent, car les machines sont déjà configurées.
+
+Le 9 octobre 2026, les deux machines ont été détruites puis recréées, et le playbook complet a été rejoué sur des systèmes neufs. Le rôle `kubernetes` compte alors neuf tâches et un handler. Le résultat de cette reconstruction porte sur l'ensemble du playbook et est présenté dans `06-roles.md` (section 8.3).
 
 Cette vérification confirme l'idempotence de la configuration.
 

@@ -230,7 +230,17 @@ Poste Windows
 kube-control / kube-worker
 ```
 
-La connectivité réseau a été vérifiée depuis WSL2 le 8 octobre 2026.
+Ce fonctionnement est celui du mode réseau par défaut de WSL2. Il ne doit pas être remplacé par le mode `mirrored`, dans lequel WSL2 perd l'accès au réseau privé des machines. Cet incident s'est produit et est décrit dans `13-troubleshooting.md` (problème 13).
+
+Le mode en vigueur se vérifie dans le fichier de configuration de WSL2, depuis PowerShell :
+
+```powershell
+Get-Content $env:USERPROFILE\.wslconfig
+```
+
+Cette commande affiche la configuration de WSL2. Le fichier ne doit pas contenir la ligne `networkingMode=mirrored`.
+
+La connectivité réseau a été vérifiée depuis WSL2 le 8 octobre 2026, puis de nouveau le 9 octobre 2026 après la recréation des machines.
 
 ### Test vers le Control Plane
 
@@ -355,6 +365,12 @@ L'environnement de contrôle pourra notamment contenir :
 Tous ces outils ne sont pas nécessairement installés au même moment.
 
 Ils seront ajoutés au fur et à mesure de la construction du laboratoire.
+
+### Vagrant n'est pas utilisé depuis WSL2
+
+La distribution Ubuntu de WSL2 contient une installation de Vagrant, mais elle n'est pas utilisée dans ce laboratoire. Les machines sont créées et gérées par le Vagrant de Windows, depuis PowerShell, comme décrit dans `02-vagrant.md`.
+
+Le fichier `~/.bashrc` ne doit donc pas contenir de variable `VAGRANT_WSL_ENABLE_WINDOWS_ACCESS`. La raison est expliquée dans `13-troubleshooting.md` (problème 12).
 
 ---
 

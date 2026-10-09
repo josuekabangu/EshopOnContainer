@@ -4,3 +4,9 @@
 *.csv
 .env
 *.retry
+
+# Clés privées SSH
+*.pem
+id_rsa
+id_ed25519
+private_key

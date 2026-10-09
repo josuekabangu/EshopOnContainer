@@ -1,0 +1,38 @@
+---
+- name: Télécharger le fichier de définition de Calico
+  ansible.builtin.get_url:
+    url: "{{ calico_manifest_url }}"
+    dest: "{{ calico_manifest_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Comparer le fichier de définition de Calico avec l'état du cluster
+  ansible.builtin.command:
+    cmd: "kubectl diff -f {{ calico_manifest_path }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: calico_diff
+  changed_when: false
+  failed_when: calico_diff.rc > 1
+
+- name: Appliquer le fichier de définition de Calico
+  ansible.builtin.command:
+    cmd: "kubectl apply -f {{ calico_manifest_path }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: calico_diff.rc == 1
+
+- name: Attendre que calico-node soit prêt
+  ansible.builtin.command:
+    cmd: kubectl -n kube-system rollout status daemonset/calico-node --timeout=600s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false
+
+- name: Attendre que le nœud soit Ready
+  ansible.builtin.command:
+    cmd: "kubectl wait --for=condition=Ready node/{{ inventory_hostname }} --timeout=600s"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false
