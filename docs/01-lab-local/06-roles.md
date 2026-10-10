@@ -210,6 +210,8 @@ La seconde exécution vérifie l'idempotence : elle doit se terminer avec `chang
 
 Le mode `--check` n'est pas une validation fiable sur des machines neuves. La raison est expliquée dans `13-troubleshooting.md` (problème 6).
 
+Sur un cluster déjà construit, `--check` reste utile pour repérer un écart, avec une réserve : il annonce `changed` pour la tâche « Télécharger le fichier de définition de Calico », alors que l'exécution réelle répond `ok`. En simulation, le module de téléchargement ne peut pas comparer le fichier distant au fichier présent. Les tâches `command` du playbook sont par ailleurs ignorées en simulation. Ce comportement a été constaté le 10 octobre 2026 ; le critère d'idempotence reste donc la seconde exécution réelle.
+
 ### 8.2 Validation sur le cluster existant
 
 Les rôles `control_plane`, `calico` et `worker` ont été écrits le 9 octobre 2026, alors que le cluster avait été construit à la main la veille.

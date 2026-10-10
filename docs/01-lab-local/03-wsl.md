@@ -169,17 +169,13 @@ Codename: noble
 
 L'environnement WSL2 utilise un compte utilisateur Linux dédié.
 
-Le compte actuel est :
-
-```text
-ajkabs
-```
-
-L'utilisateur peut être vérifié avec :
+Son nom est propre à chaque poste. Il s'affiche avec :
 
 ```bash
 whoami
 ```
+
+Dans ces guides, ce compte est noté `<utilisateur>` et son répertoire personnel `~`.
 
 Les opérations nécessitant des privilèges administrateur utilisent `sudo`.
 
@@ -195,18 +191,20 @@ sudo -v
 
 WSL2 permet d'accéder aux lecteurs Windows via `/mnt`.
 
-Le projet EshopOnContainer se trouve actuellement sur le lecteur `F:`.
+Un chemin Windows s'y traduit de façon régulière : `F:\dossier\EshopOnContainer` devient `/mnt/f/dossier/EshopOnContainer`.
 
-Son chemin depuis WSL2 est :
+Dans ces guides, l'emplacement du dépôt vu depuis WSL2 est noté :
 
 ```text
-/mnt/f/Users/x/Documents/apprentissage/EshopOnContainer
+/chemin/absolu/vers/EshopOnContainer
 ```
 
-Le répertoire peut être atteint avec :
+Il est à remplacer par l'emplacement réel du dépôt. Sur le poste où le laboratoire a été construit, le dépôt se trouve sur le lecteur `F:` : son chemin commence donc par `/mnt/f/`.
+
+Le répertoire s'atteint avec :
 
 ```bash
-cd /mnt/f/Users/x/Documents/apprentissage/EshopOnContainer
+cd /chemin/absolu/vers/EshopOnContainer
 ```
 
 Cette possibilité permet de travailler sur le même dépôt depuis Windows et depuis WSL2.

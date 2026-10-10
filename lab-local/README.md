@@ -113,6 +113,14 @@ Ce script copie les clés générées par Vagrant, renouvelle les empreintes
 des machines et teste la connexion. Il est à relancer après chaque
 recréation des machines, car leurs clés changent.
 
+> **Précaution de sécurité.** Le script enregistre l'empreinte SSH que
+> chaque machine présente au moment de son exécution, sans la vérifier
+> par un autre moyen. Cette confiance est acceptable pour des machines
+> locales que l'on vient de créer soi-même sur un réseau privé. Elle ne
+> l'est pas en production : ce script ne doit pas y être réutilisé tel
+> quel. La limite est expliquée dans
+> [05-inventory.md](../docs/01-lab-local/05-inventory.md), section 11.1.
+
 Résultat attendu :
 
 ```text

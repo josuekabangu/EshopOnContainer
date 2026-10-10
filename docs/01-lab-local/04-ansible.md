@@ -251,8 +251,10 @@ ignoring it as an ansible.cfg source.
 Pour qu'Ansible utilise malgré tout le fichier du projet, son chemin est indiqué explicitement par une variable d'environnement, définie dans `~/.bashrc` :
 
 ```bash
-export ANSIBLE_CONFIG="/mnt/f/Users/x/Documents/apprentissage/EshopOnContainer/lab-local/ansible/ansible.cfg"
+export ANSIBLE_CONFIG="/chemin/absolu/vers/EshopOnContainer/lab-local/ansible/ansible.cfg"
 ```
+
+Le chemin est à remplacer par l'emplacement réel du dépôt, selon la convention décrite dans `03-wsl.md` (section 8).
 
 Lorsque cette variable est définie, Ansible charge le fichier désigné quel que soit le répertoire courant.
 
@@ -269,7 +271,7 @@ Cette commande affiche la version d'Ansible ainsi que le fichier de configuratio
 Résultat attendu :
 
 ```text
-config file = /mnt/f/Users/x/Documents/apprentissage/EshopOnContainer/lab-local/ansible/ansible.cfg
+config file = /chemin/absolu/vers/EshopOnContainer/lab-local/ansible/ansible.cfg
 ```
 
 Résultat vérifié le 8 octobre 2026 : conforme lorsque `ANSIBLE_CONFIG` est définie. Sans cette variable, la ligne affichée est `config file = None`.

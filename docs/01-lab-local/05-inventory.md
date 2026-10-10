@@ -253,7 +253,7 @@ chmod 700 ~/.ssh/vagrant
 Depuis le répertoire :
 
 ```bash
-cd /mnt/f/Users/x/Documents/apprentissage/EshopOnContainer/lab-local/ansible
+cd /chemin/absolu/vers/EshopOnContainer/lab-local/ansible
 ```
 
 les clés Vagrant peuvent être copiées avec :
@@ -342,6 +342,7 @@ Le script s'arrête à la première anomalie, avec un message qui indique quoi v
 #### Principes retenus
 
 * **Une seule source de vérité.** Le script ne contient ni nom de machine, ni adresse, ni chemin de clé. Il lit ces informations dans `inventory.ini` : `ansible_host`, `ansible_user` et `ansible_ssh_private_key_file`. Ajouter une machine à l'inventaire suffit pour qu'il la prenne en compte.
+* **Les mêmes chemins qu'Ansible.** Le script dépose chaque clé à l'emplacement exact où l'inventaire la déclare. Comme l'inventaire utilise `~`, et que `bash` ne remplace pas un `~` contenu dans une variable, le script le remplace lui-même par le répertoire personnel, dans sa fonction `inventory_key`. Sans cela, il créerait un répertoire nommé littéralement `~`.
 * **Aucun appel à Vagrant.** Le script lit les clés que Vagrant a produites, mais ne lance aucune commande `vagrant`. Les machines sont créées au préalable depuis PowerShell, comme décrit dans `02-vagrant.md`. Cette séparation évite l'incident décrit dans `13-troubleshooting.md` (problème 12).
 * **Les adresses du réseau privé.** Le script teste les machines sur leurs adresses `192.168.57.x`, celles qu'utilise Ansible, et non sur les ports redirigés par Vagrant.
 * **Vérifier l'identité de la machine.** La comparaison du nom d'hôte détecterait une machine qui répondrait à la place d'une autre sur la même adresse.
@@ -356,15 +357,15 @@ bash lab-local/scripts/setup-ssh.sh
 
 Cette commande exécute le script avec `bash`. Le script ne modifie rien sur les machines : il n'agit que sur le répertoire `~/.ssh` du poste de contrôle.
 
-Résultat vérifié le 9 octobre 2026 :
+Résultat vérifié le 9 octobre 2026. Le nom du compte y est remplacé par `<utilisateur>` :
 
 ```text
 === 1. Vérification des prérequis ===
 Machines de l'inventaire : kube-control kube-worker
 
 === 2. Copie des clés privées ===
-Clé copiée : kube-control -> /home/ajkabs/.ssh/vagrant/kube-control
-Clé copiée : kube-worker -> /home/ajkabs/.ssh/vagrant/kube-worker
+Clé copiée : kube-control -> /home/<utilisateur>/.ssh/vagrant/kube-control
+Clé copiée : kube-worker -> /home/<utilisateur>/.ssh/vagrant/kube-worker
 
 === 3. Attente du service SSH ===
 Port 22 ouvert : kube-control (192.168.57.10)
@@ -520,10 +521,10 @@ Le fichier `inventory.ini` du projet contient :
 
 ```ini
 [control_plane]
-kube-control ansible_host=192.168.57.10 ansible_user=vagrant ansible_ssh_private_key_file=/home/ajkabs/.ssh/vagrant/kube-control
+kube-control ansible_host=192.168.57.10 ansible_user=vagrant ansible_ssh_private_key_file=~/.ssh/vagrant/kube-control
 
 [workers]
-kube-worker ansible_host=192.168.57.11 ansible_user=vagrant ansible_ssh_private_key_file=/home/ajkabs/.ssh/vagrant/kube-worker
+kube-worker ansible_host=192.168.57.11 ansible_user=vagrant ansible_ssh_private_key_file=~/.ssh/vagrant/kube-worker
 
 [k8s_cluster:children]
 control_plane
@@ -536,6 +537,33 @@ Cette configuration permet à Ansible de connaître :
 * son adresse IP ;
 * l'utilisateur SSH ;
 * la clé privée à utiliser.
+
+### Portabilité du chemin des clés
+
+Le chemin de chaque clé commence par `~`, qui désigne le répertoire personnel de l'utilisateur qui lance Ansible. L'inventaire ne contient ainsi aucun nom de compte et fonctionne tel quel sur un autre poste.
+
+L'inventaire a d'abord contenu un chemin absolu, de la forme `/home/<utilisateur>/.ssh/vagrant/kube-control`. Il ne fonctionnait que pour ce compte. Il a été remplacé le 10 octobre 2026.
+
+Ansible remplace lui-même le `~` par le répertoire personnel. La valeur lue dans l'inventaire se vérifie avec :
+
+```bash
+ansible all -m debug -a "var=ansible_ssh_private_key_file"
+```
+
+Le module `debug` affiche la valeur d'une variable pour chaque machine, sans rien modifier.
+
+Résultat vérifié le 10 octobre 2026 :
+
+```text
+kube-control | SUCCESS => {
+    "ansible_ssh_private_key_file": "~/.ssh/vagrant/kube-control"
+}
+kube-worker | SUCCESS => {
+    "ansible_ssh_private_key_file": "~/.ssh/vagrant/kube-worker"
+}
+```
+
+La commande `ansible all -m ping` a ensuite répondu `pong` sur les deux machines : Ansible retrouve bien les clés à partir de ce chemin.
 
 ---
 

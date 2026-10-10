@@ -30,6 +30,13 @@ inventory_var() {
         }' "$INVENTORY" | tr -d '\r'
 }
 
+# Lit le chemin de la clé d'une machine et remplace un ~ initial par $HOME.
+inventory_key() {
+    local path
+    path="$(inventory_var "$1" ansible_ssh_private_key_file)"
+    printf '%s\n' "${path/#\~/$HOME}"
+}
+
 # ==================================================
 # 1. VÉRIFIER LES PRÉREQUIS
 # ==================================================
@@ -63,7 +70,7 @@ echo "=== 2. Copie des clés privées ==="
 
 for machine in "${MACHINES[@]}"; do
     source_key="$VAGRANT_STATE/$machine/$PROVIDER/private_key"
-    target_key="$(inventory_var "$machine" ansible_ssh_private_key_file)"
+    target_key="$(inventory_key "$machine")"
 
     [[ -n "$target_key" ]] || fail "ansible_ssh_private_key_file absent pour $machine."
 
@@ -132,7 +139,7 @@ echo "=== 5. Vérification des connexions SSH ==="
 for machine in "${MACHINES[@]}"; do
     ip="$(inventory_var "$machine" ansible_host)"
     user="$(inventory_var "$machine" ansible_user)"
-    key="$(inventory_var "$machine" ansible_ssh_private_key_file)"
+    key="$(inventory_key "$machine")"
 
     remote_name="$(ssh -o BatchMode=yes -o ConnectTimeout=10 -i "$key" "$user@$ip" hostname)" \
         || fail "connexion SSH impossible à $machine ($ip)."

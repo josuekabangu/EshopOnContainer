@@ -68,7 +68,7 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] Reconstruction complète du cluster validée à partir de machines neuves.
 * [x] Tests du réseau du cluster : Pod à Pod entre nœuds, Service et DNS.
 * [x] Documentation du laboratoire, en treize guides.
-* [ ] Amélioration de la portabilité de l’inventaire Ansible.
+* [x] Inventaire Ansible portable, sans chemin lié à un compte utilisateur.
 * [ ] Enchaînement de la reconstruction en une seule commande.
 
 ### Suite du projet

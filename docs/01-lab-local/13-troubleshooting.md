@@ -651,13 +651,15 @@ Depuis le répertoire `lab-local/ansible`, Ansible ne trouve aucune machine :
 
 ```text
 [WARNING]: Ansible is being run in a world writable directory
-(/mnt/f/Users/x/Documents/apprentissage/EshopOnContainer/lab-local/ansible),
+(/chemin/absolu/vers/EshopOnContainer/lab-local/ansible),
 ignoring it as an ansible.cfg source.
 [WARNING]: No inventory was parsed, only implicit localhost is available
 [WARNING]: provided hosts list is empty, only localhost is available.
 ```
 
 Ce symptôme apparaît lorsque Ansible est lancé depuis un shell qui n'a pas chargé le profil de l'utilisateur.
+
+Dans les sorties de cette section, l'emplacement réel du dépôt est remplacé par `/chemin/absolu/vers/EshopOnContainer`, selon la convention décrite dans `03-wsl.md` (section 8).
 
 ### Diagnostic
 
@@ -672,13 +674,13 @@ config file = None
 ```
 
 ```bash
-stat -c "%A %n" /mnt/f/Users/x/Documents/apprentissage/EshopOnContainer/lab-local/ansible
+stat -c "%A %n" /chemin/absolu/vers/EshopOnContainer/lab-local/ansible
 ```
 
 Cette commande affiche les permissions du répertoire.
 
 ```text
-drwxrwxrwx /mnt/f/Users/x/Documents/apprentissage/EshopOnContainer/lab-local/ansible
+drwxrwxrwx /chemin/absolu/vers/EshopOnContainer/lab-local/ansible
 ```
 
 ### Cause
@@ -694,7 +696,7 @@ Le chemin du fichier est indiqué explicitement par la variable d'environnement 
 ### Validation
 
 ```text
-config file = /mnt/f/Users/x/Documents/apprentissage/EshopOnContainer/lab-local/ansible/ansible.cfg
+config file = /chemin/absolu/vers/EshopOnContainer/lab-local/ansible/ansible.cfg
 ```
 
 ```bash
