@@ -33,36 +33,46 @@ Le projet est organisé autour de trois domaines principaux :
 
 ### Technologies
 
-| Domaine                | Technologies prévues ou utilisées |
-| ---------------------- | --------------------------------- |
-| Virtualisation         | VMware Workstation                |
-| Provisionnement local  | Vagrant                           |
-| Configuration système  | Ansible                           |
-| Conteneurs             | Docker et containerd              |
-| Orchestration          | Kubernetes                        |
-| Réseau Kubernetes      | Calico                            |
-| Déploiement applicatif | Helm                              |
-| CI/CD                  | GitHub Actions                    |
-| GitOps                 | Argo CD                           |
-| Observabilité          | Prometheus, Grafana et Loki       |
-| Sécurité               | Trivy et SonarQube                |
-| Infrastructure as Code | Terraform                         |
-| Cloud                  | AWS, dans une phase ultérieure    |
+| Domaine                 | Technologie                 | État    |
+| ----------------------- | --------------------------- | ------- |
+| Virtualisation          | VMware Workstation          | Utilisé |
+| Provisionnement local   | Vagrant                     | Utilisé |
+| Poste de contrôle       | WSL2 Ubuntu                 | Utilisé |
+| Configuration système   | Ansible                     | Utilisé |
+| Runtime de conteneurs   | containerd                  | Utilisé |
+| Orchestration           | Kubernetes (kubeadm)        | Utilisé |
+| Réseau Kubernetes       | Calico                      | Utilisé |
+| Construction des images | Docker                      | Prévu   |
+| Déploiement applicatif  | Helm                        | Prévu   |
+| CI/CD                   | GitHub Actions              | Prévu   |
+| GitOps                  | Argo CD                     | Prévu   |
+| Observabilité           | Prometheus, Grafana et Loki | Prévu   |
+| Sécurité                | Trivy et SonarQube          | Prévu   |
+| Infrastructure as Code  | Terraform                   | Prévu   |
+| Cloud                   | AWS                         | Prévu   |
 
-Les technologies prévues ne signifient pas que tous les composants sont déjà intégrés ou opérationnels.
+« Utilisé » signifie que la technologie est en place, testée et documentée dans ce dépôt. « Prévu » signifie qu'elle fait partie de la feuille de route, sans être encore intégrée.
 
 ## État d’avancement
 
-Le premier objectif est de construire un laboratoire Kubernetes local reproductible.
+Le premier objectif était de construire un laboratoire Kubernetes local reproductible. Il est atteint : le cluster se reconstruit à partir de machines neuves avec trois commandes, décrites dans la [documentation du laboratoire local](lab-local/README.md).
+
+### Laboratoire local
 
 * [x] Création des machines virtuelles avec Vagrant et VMware.
 * [x] Automatisation de la configuration avec Ansible.
 * [x] Préparation des nœuds pour Kubernetes.
-* [x] Initialisation du Control Plane.
-* [x] Configuration du réseau des pods avec Calico.
-* [x] Intégration du Worker au cluster.
+* [x] Initialisation du Control Plane, automatisée avec Ansible.
+* [x] Configuration du réseau des pods avec Calico, automatisée avec Ansible.
+* [x] Intégration du Worker au cluster, automatisée avec Ansible.
+* [x] Reconstruction complète du cluster validée à partir de machines neuves.
+* [x] Tests du réseau du cluster : Pod à Pod entre nœuds, Service et DNS.
+* [x] Documentation du laboratoire, en treize guides.
 * [ ] Amélioration de la portabilité de l’inventaire Ansible.
-* [ ] Finalisation de la documentation et des tests d’acceptation.
+* [ ] Enchaînement de la reconstruction en une seule commande.
+
+### Suite du projet
+
 * [ ] Intégration et validation de l’application e-commerce.
 * [ ] Déploiement applicatif avec Helm.
 * [ ] Mise en place de GitHub Actions et d’Argo CD.
@@ -77,11 +87,12 @@ EshopOnContainer/
 │   └── 01-lab-local/
 │       ├── 01-architecture.md
 │       ├── 02-vagrant.md
-│       ├── 03-wsl2.md
+│       ├── 03-wsl.md
 │       ├── 04-ansible.md
 │       ├── 05-inventory.md
 │       ├── 06-roles.md
-│       └── ...
+│       ├── ...
+│       └── 13-troubleshooting.md
 │
 ├── lab-local/
 │   ├── README.md
@@ -99,17 +110,29 @@ Cette structure évoluera avec l’intégration de l’application et des compos
 
 ## Documentation
 
-* [Documentation du laboratoire local](lab-local/README.md)
-* [Architecture du laboratoire](docs/01-lab-local/01-architecture.md)
-* [Configuration Vagrant](docs/01-lab-local/02-vagrant.md)
-* [Environnement WSL2](docs/01-lab-local/03-wsl2.md)
-* [Configuration Ansible](docs/01-lab-local/04-ansible.md)
-* [Inventaire Ansible](docs/01-lab-local/05-inventory.md)
-* [Organisation des rôles Ansible](docs/01-lab-local/06-roles.md)
+Pour démarrer : [guide du laboratoire local](lab-local/README.md).
+
+Les guides techniques se lisent dans l'ordre de construction du laboratoire :
+
+| Guide | Sujet |
+| ----- | ----- |
+| [01 — Architecture](docs/01-lab-local/01-architecture.md) | Machines, réseaux, état du laboratoire |
+| [02 — Vagrant](docs/01-lab-local/02-vagrant.md) | Création et gestion des machines |
+| [03 — WSL2](docs/01-lab-local/03-wsl.md) | Poste de contrôle |
+| [04 — Ansible](docs/01-lab-local/04-ansible.md) | Installation et configuration |
+| [05 — Inventaire](docs/01-lab-local/05-inventory.md) | Inventaire et accès SSH |
+| [06 — Rôles](docs/01-lab-local/06-roles.md) | Rôles, playbook et validation |
+| [07 — Prérequis Kubernetes](docs/01-lab-local/07-kubernetes-prerequisites.md) | Préparation des systèmes |
+| [08 — containerd](docs/01-lab-local/08-containerd.md) | Runtime de conteneurs |
+| [09 — Kubernetes](docs/01-lab-local/09-kubernetes.md) | Installation des composants |
+| [10 — Control Plane](docs/01-lab-local/10-control-plane.md) | Initialisation du cluster |
+| [11 — Calico](docs/01-lab-local/11-calico.md) | Réseau des Pods |
+| [12 — Worker](docs/01-lab-local/12-worker.md) | Jonction du Worker et tests réseau |
+| [13 — Dépannage](docs/01-lab-local/13-troubleshooting.md) | Problèmes rencontrés et corrections |
 
 ## Feuille de route
 
-1. **Fondations :** finaliser et fiabiliser le laboratoire Kubernetes local.
+1. **Fondations :** construire un laboratoire Kubernetes local reproductible. Étape réalisée.
 2. **Application :** intégrer et valider l’application e-commerce.
 3. **Déploiement :** conteneuriser les services et préparer les charts Helm.
 4. **Automatisation :** construire la chaîne CI/CD avec GitHub Actions.
