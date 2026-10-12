@@ -42,7 +42,7 @@ Le projet est organisé autour de trois domaines principaux :
 | Runtime de conteneurs   | containerd                  | Utilisé |
 | Orchestration           | Kubernetes (kubeadm)        | Utilisé |
 | Réseau Kubernetes       | Calico                      | Utilisé |
-| Construction des images | Docker                      | Prévu   |
+| Construction des images | Docker                      | En cours |
 | Déploiement applicatif  | Helm                        | Prévu   |
 | CI/CD                   | GitHub Actions              | Prévu   |
 | GitOps                  | Argo CD                     | Prévu   |
@@ -51,7 +51,7 @@ Le projet est organisé autour de trois domaines principaux :
 | Infrastructure as Code  | Terraform                   | Prévu   |
 | Cloud                   | AWS                         | Prévu   |
 
-« Utilisé » signifie que la technologie est en place, testée et documentée dans ce dépôt. « Prévu » signifie qu'elle fait partie de la feuille de route, sans être encore intégrée.
+« Utilisé » signifie que la technologie est en place, testée et documentée dans ce dépôt. « En cours » signifie qu'elle est partiellement en place : pour Docker, l'image d'un premier service, Catalog.API, est construite et testée. « Prévu » signifie qu'elle fait partie de la feuille de route, sans être encore intégrée.
 
 ## État d’avancement
 
@@ -71,9 +71,16 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] Inventaire Ansible portable, sans chemin lié à un compte utilisateur.
 * [x] Enchaînement de la reconstruction en une seule commande.
 
+### Application et conteneurisation
+
+* [x] Import des sources de l’application eShop dans le dépôt, à une version identifiée.
+* [x] Image Docker du service `Catalog.API` construite et testée avec PostgreSQL et RabbitMQ.
+* [ ] Images Docker des autres services.
+* [ ] Démarrage de l’ensemble des services avec Docker Compose.
+
 ### Suite du projet
 
-* [ ] Intégration et validation de l’application e-commerce.
+* [ ] Validation de l’application e-commerce complète.
 * [ ] Déploiement applicatif avec Helm.
 * [ ] Mise en place de GitHub Actions et d’Argo CD.
 * [ ] Intégration de l’observabilité et des contrôles de sécurité.
@@ -83,16 +90,21 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 
 ```text
 EshopOnContainer/
+├── application/
+│   ├── README.md
+│   └── eShop/
+│
+├── docker/
+│   └── src/
+│       └── Catalog.API/
+│
 ├── docs/
-│   └── 01-lab-local/
-│       ├── 01-architecture.md
-│       ├── 02-vagrant.md
-│       ├── 03-wsl.md
-│       ├── 04-ansible.md
-│       ├── 05-inventory.md
-│       ├── 06-roles.md
-│       ├── ...
-│       └── 13-troubleshooting.md
+│   ├── 01-lab-local/
+│   │   ├── 01-architecture.md
+│   │   ├── ...
+│   │   └── 13-troubleshooting.md
+│   └── 02-docker/
+│       └── 01-catalog-api.md
 │
 ├── lab-local/
 │   ├── README.md
@@ -129,6 +141,13 @@ Les guides techniques se lisent dans l'ordre de construction du laboratoire :
 | [11 — Calico](docs/01-lab-local/11-calico.md) | Réseau des Pods |
 | [12 — Worker](docs/01-lab-local/12-worker.md) | Jonction du Worker et tests réseau |
 | [13 — Dépannage](docs/01-lab-local/13-troubleshooting.md) | Problèmes rencontrés et corrections |
+
+Conteneurisation de l'application :
+
+| Guide | Sujet |
+| ----- | ----- |
+| [Application eShop](application/README.md) | Provenance et version du code source |
+| [01 — Catalog.API](docs/02-docker/01-catalog-api.md) | Image Docker du premier service, test avec ses dépendances |
 
 ## Feuille de route
 
