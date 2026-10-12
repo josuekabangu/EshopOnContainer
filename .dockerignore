@@ -1,0 +1,17 @@
+# Tout exclure par défaut : seul ce qui est autorisé ci-dessous entre dans le contexte.
+*
+
+# Sources de l'application, nécessaires à la construction des images.
+!application/eShop
+
+# Dans les sources, ce qui ne sert pas à construire une image.
+application/eShop/.git
+application/eShop/.github
+application/eShop/tests
+application/eShop/e2e
+application/eShop/img
+
+# Produits de compilation locaux : ils fausseraient la restauration dans l'image.
+**/bin
+**/obj
+**/node_modules

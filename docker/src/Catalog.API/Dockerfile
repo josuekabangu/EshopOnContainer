@@ -30,4 +30,7 @@ COPY --from=build /app/publish/ ./
 ENV ASPNETCORE_HTTP_PORTS=8080
 EXPOSE 8080
 
+# Exécution avec l'utilisateur non privilégié fourni par l'image de base
+USER $APP_UID
+
 ENTRYPOINT [ "dotnet", "Catalog.API.dll" ]

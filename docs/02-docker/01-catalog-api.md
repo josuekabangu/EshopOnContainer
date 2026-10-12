@@ -116,6 +116,9 @@ COPY --from=build /app/publish/ ./
 ENV ASPNETCORE_HTTP_PORTS=8080
 EXPOSE 8080
 
+# Exécution avec l'utilisateur non privilégié fourni par l'image de base
+USER $APP_UID
+
 ENTRYPOINT [ "dotnet", "Catalog.API.dll" ]
 ```
 
@@ -125,6 +128,7 @@ ENTRYPOINT [ "dotnet", "Catalog.API.dll" ]
 - `COPY --from=build` récupère uniquement les fichiers publiés dans l’étape précédente.
 - `ASPNETCORE_HTTP_PORTS=8080` configure le port HTTP écouté par l’application.
 - `EXPOSE 8080` documente le port utilisé par le conteneur ; cette instruction ne publie pas le port sur l’hôte.
+- `USER $APP_UID` fait exécuter l’application par un utilisateur sans privilèges, au lieu de `root`. La variable `APP_UID` est définie par l’image `aspnet:10.0` : elle vaut `1654` et désigne l’utilisateur `app`, déjà créé dans cette image. Aucun utilisateur n’est donc à créer, et aucun numéro n’est écrit en dur.
 - `ENTRYPOINT` définit la commande exécutée au démarrage du conteneur.
 
 Cette approche réduit le contenu de l’image finale en évitant d’y conserver les outils de compilation et l’ensemble du code source.
@@ -159,6 +163,48 @@ docker build --progress=plain \
 - `-t` attribue le nom et le tag `eshop/catalog-api:dev` à l’image.
 - `.` définit la racine du dépôt comme contexte de construction.
 - `--progress=plain` facilite la lecture des étapes et des erreurs.
+
+### Contexte de construction
+
+Le contexte de construction est la racine du dépôt. Sans précaution, Docker pourrait y prendre tout ce qu’elle contient : l’historique Git, la documentation, et les fichiers du laboratoire, dont les disques des machines virtuelles.
+
+Un fichier `.dockerignore`, placé à la racine du dépôt, limite le contexte à ce qui sert à construire les images :
+
+```text
+# Tout exclure par défaut : seul ce qui est autorisé ci-dessous entre dans le contexte.
+*
+
+# Sources de l'application, nécessaires à la construction des images.
+!application/eShop
+
+# Dans les sources, ce qui ne sert pas à construire une image.
+application/eShop/.git
+application/eShop/.github
+application/eShop/tests
+application/eShop/e2e
+application/eShop/img
+
+# Produits de compilation locaux : ils fausseraient la restauration dans l'image.
+**/bin
+**/obj
+**/node_modules
+```
+
+Le fichier fonctionne par liste d’autorisation : la première règle exclut tout, la deuxième rouvre les sources d’eShop, et les suivantes en retirent ce qui est inutile. Un répertoire ajouté plus tard au dépôt reste ainsi exclu sans autre intervention. Le fichier s’appliquera tel quel aux Dockerfiles des autres services.
+
+Les répertoires `bin` et `obj` sont exclus parce qu’une compilation faite sur le poste y laisse des fichiers propres à ce poste, qui perturberaient la restauration des dépendances dans l’image.
+
+Le volume transmis à Docker s’affiche pendant la construction, sur la ligne `transferring context`.
+
+Résultat vérifié le 12 octobre 2026 :
+
+```text
+transferring context: 15.39MB
+```
+
+Seules les sources d’eShop sont transmises, et la construction réussit.
+
+### Vérification de l’image
 
 Vérifier ensuite la présence de l’image :
 
@@ -407,6 +453,47 @@ Ce point devra être tranché avant de configurer des probes Kubernetes. Deux pi
 | Exécuter le conteneur avec `ASPNETCORE_ENVIRONMENT=Development` | Active les routes de santé, mais aussi tous les comportements réservés au développement |
 | Modifier le code pour déclarer ces routes dans tous les environnements | Introduit un écart avec le code d’origine d’eShop, à tracer |
 
+### Exécution sans privilèges
+
+Un programme hérite des droits du compte qui le lance. Si l’application présentait une faille, un attaquant disposerait dans le conteneur des droits de ce compte. Un conteneur partage en outre le noyau de la machine qui l’héberge. L’application est donc exécutée par un compte ordinaire, et non par `root`.
+
+L’image d’origine ne précisait aucun utilisateur. Le compte utilisé a été contrôlé :
+
+```bash
+docker run --rm --entrypoint id eshop/catalog-api:dev
+```
+
+Cette commande lance la commande `id` à la place de l’application. Elle affiche le compte sous lequel un conteneur de cette image s’exécute.
+
+Résultat constaté avant correction :
+
+```text
+uid=0(root) gid=0(root) groups=0(root)
+```
+
+L’instruction `USER $APP_UID` a alors été ajoutée au Dockerfile, comme décrit en section 4, et l’image reconstruite.
+
+Résultat vérifié le 12 octobre 2026, après correction :
+
+```text
+uid=1654(app) gid=1654(app) groups=1654(app)
+```
+
+Changer de compte peut empêcher une application d’écrire là où elle en a besoin. Le fonctionnement a donc été revérifié avec un conteneur démarré à partir de la nouvelle image :
+
+| Contrôle | Résultat |
+|---|---|
+| Compte du processus dans le conteneur en fonctionnement | `uid=1654(app)` |
+| Endpoint `catalogTypes` | HTTP 200 |
+| Endpoint `items` | HTTP 200 |
+| Image d’un article, lue dans les fichiers de l’application | HTTP 200 |
+| Erreurs de permission dans les journaux | Aucune |
+| Redémarrages du conteneur | Aucun |
+
+`Catalog.API` fonctionne sans privilèges : elle lit ses fichiers, accessibles en lecture à tous, et écoute sur le port `8080`, qui n’exige pas de droits d’administration.
+
+Le compte peut aussi être imposé au lancement, avec `docker run --user 1654`. Cette option ne remplace pas l’instruction du Dockerfile : elle doit être répétée à chaque lancement, et l’image resterait en `root` par défaut.
+
 ## 9. Tableau de validation
 
 | Contrôle | Résultat |
@@ -422,9 +509,10 @@ Ce point devra être tranché avant de configurer des probes Kubernetes. Deux pi
 | Connexion à RabbitMQ | Établie, vérifiée côté broker |
 | Publication et consommation de messages | Non testées |
 | Endpoints `/health` et `/alive` | Absents en `Production`, cause identifiée |
-| Exécution non privilégiée | Non : le conteneur s’exécute en `root` |
+| Exécution non privilégiée | Oui : `uid=1654(app)`, API fonctionnelle |
+| Contexte de construction limité par `.dockerignore` | Oui : 15,39 Mo transmis |
 | Sources complètes dans un clone du dépôt | Vérifié, voir section 11 |
-| Construction de l’image à partir d’un clone neuf | Non rejouée |
+| Construction de l’image à partir du contenu commité | Réussie, image testée, voir section 11 |
 | Tests de charge et de résilience | Non réalisés |
 
 ## 10. Bonnes pratiques et améliorations
@@ -432,12 +520,13 @@ Ce point devra être tranché avant de configurer des probes Kubernetes. Deux pi
 Les points suivants seront traités progressivement, sans compliquer inutilement le premier test :
 
 1. **Optimiser le cache de construction.** Séparer la copie des fichiers de projet et la copie du code source afin d’éviter de restaurer toutes les dépendances à chaque modification du code.
-2. **Exécuter le conteneur sans privilèges.** L’identité a été vérifiée avec `docker run --rm --entrypoint id eshop/catalog-api:dev` : le conteneur s’exécute en `uid=0(root)`. L’image de base fournit pourtant un utilisateur non privilégié, désigné par la variable `APP_UID`. Une instruction `USER $APP_UID` placée avant l’`ENTRYPOINT` suffirait, le port `8080` ne demandant aucun privilège. Cette correction n’est pas encore appliquée.
+2. **Exécuter le conteneur sans privilèges.** Fait le 12 octobre 2026 : l’instruction `USER $APP_UID` est dans le Dockerfile, voir section 8. Cette instruction sera reprise dans le Dockerfile de chaque service, et vérifiée service par service, certains pouvant avoir besoin d’écrire sur le disque.
 3. **Fiabiliser la configuration.** Éviter les valeurs de connexion locales telles que `localhost` lorsqu’un service est exécuté dans un conteneur distinct.
 4. **Ajouter un contrôle de santé.** Définir un endpoint et un test adaptés à l’application.
 5. **Sécuriser les secrets.** Utiliser une solution adaptée à l’environnement au lieu de versionner les chaînes de connexion.
 6. **Stabiliser les images.** Évaluer les stratégies de versionnement et de mise à jour des images de base. L’image `ankane/pgvector:latest` a été publiée il y a trois ans et porte l’étiquette `latest` : elle fournit PostgreSQL `15.4` et ne garantit pas une version stable dans le temps.
-7. **Ajouter un fichier `.dockerignore`.** Le contexte de construction est la racine du dépôt, qui contient aussi `.git`, la documentation et les fichiers du laboratoire, dont les disques des machines virtuelles. Le constructeur utilisé ne transfère que les chemins désignés par les instructions `COPY`, mais un fichier `.dockerignore` rendrait ce comportement explicite et indépendant du constructeur.
+7. **Ajouter un fichier `.dockerignore`.** Fait le 12 octobre 2026, voir section 5.
+8. **Interdire l’exécution en `root` au niveau du cluster.** Lors du déploiement sur Kubernetes, le réglage `runAsNonRoot` permettra au cluster de refuser un conteneur qui s’exécuterait en `root`, en complément de l’instruction du Dockerfile.
 
 Ces améliorations doivent être validées par des tests, et non appliquées toutes simultanément.
 
@@ -515,7 +604,32 @@ Les vérifications suivantes ont été réalisées le 12 octobre 2026.
 
 Le seul fichier différent est `.github/workflows/pr-validation-maui.yml`. Son contenu est identique : seules ses fins de ligne diffèrent, Git les ayant normalisées lors de l’ajout.
 
-La construction de l’image à partir d’un clone neuf n’a pas été rejouée. Seule la présence de tous les fichiers nécessaires a été vérifiée.
+#### Construction à partir du contenu commité
+
+La présence des fichiers dans un clone ne prouve pas que l’image se construit. La construction a donc été rejouée à partir du seul contenu enregistré dans Git, sans utiliser les fichiers du répertoire de travail :
+
+```bash
+git archive --format=tar HEAD | docker build \
+  -f docker/src/Catalog.API/Dockerfile \
+  -t eshop/catalog-api:verif-commit \
+  -
+```
+
+`git archive` produit une archive de ce que contient le dernier commit, c’est-à-dire exactement ce qu’obtiendrait un clone. Le tiret final indique à `docker build` de lire son contexte de construction dans cette archive, reçue sur son entrée standard.
+
+Cette méthode évite de créer un clone temporaire, et garantit qu’aucun fichier non commité n’intervient dans la construction.
+
+Résultat vérifié le 12 octobre 2026 :
+
+| Contrôle | Résultat |
+|---|---|
+| Dépôt local et dépôt GitHub | Au même commit, `ae0e5ef` |
+| Construction de l’image | Réussie, 381 Mo, comme l’image d’origine |
+| Démarrage du conteneur sur le réseau `eshop-test` | Réussi, sans redémarrage |
+| Endpoint `catalogTypes` | HTTP 200, huit types retournés |
+| Endpoint `items` | HTTP 200 |
+
+Le conteneur et l’image de vérification ont été supprimés après le test.
 
 #### Deux points à connaître
 
