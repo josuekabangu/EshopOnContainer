@@ -51,7 +51,7 @@ Le projet est organisé autour de trois domaines principaux :
 | Infrastructure as Code  | Terraform                   | Prévu   |
 | Cloud                   | AWS                         | Prévu   |
 
-« Utilisé » signifie que la technologie est en place, testée et documentée dans ce dépôt. « En cours » signifie qu'elle est partiellement en place : pour Docker, l'image d'un premier service, Catalog.API, est construite et testée. « Prévu » signifie qu'elle fait partie de la feuille de route, sans être encore intégrée.
+« Utilisé » signifie que la technologie est en place, testée et documentée dans ce dépôt. « En cours » signifie qu'elle est partiellement en place : pour Docker, les images des neuf services sont construites et testées une par une, mais leur démarrage d'ensemble avec Docker Compose reste à faire. « Prévu » signifie qu'elle fait partie de la feuille de route, sans être encore intégrée.
 
 ## État d’avancement
 
@@ -75,7 +75,7 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 
 * [x] Import des sources de l’application eShop dans le dépôt, à une version identifiée.
 * [x] Image Docker du service `Catalog.API` construite et testée avec PostgreSQL et RabbitMQ.
-* [ ] Images Docker des autres services.
+* [x] Images Docker des huit autres services construites et testées.
 * [ ] Démarrage de l’ensemble des services avec Docker Compose.
 
 ### Suite du projet
@@ -96,7 +96,9 @@ EshopOnContainer/
 │
 ├── docker/
 │   └── src/
-│       └── Catalog.API/
+│       ├── Catalog.API/
+│       ├── ...
+│       └── Webhooks.API/
 │
 ├── docs/
 │   ├── 01-lab-local/
@@ -104,7 +106,8 @@ EshopOnContainer/
 │   │   ├── ...
 │   │   └── 13-troubleshooting.md
 │   └── 02-docker/
-│       └── 01-catalog-api.md
+│       ├── 01-catalog-api.md
+│       └── 02-autres-services.md
 │
 ├── lab-local/
 │   ├── README.md
@@ -148,6 +151,7 @@ Conteneurisation de l'application :
 | ----- | ----- |
 | [Application eShop](application/README.md) | Provenance et version du code source |
 | [01 — Catalog.API](docs/02-docker/01-catalog-api.md) | Image Docker du premier service, test avec ses dépendances |
+| [02 — Autres services](docs/02-docker/02-autres-services.md) | Images des huit autres services, test de démarrage, configuration attendue |
 
 ## Feuille de route
 

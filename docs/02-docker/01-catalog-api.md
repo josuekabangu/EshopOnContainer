@@ -204,6 +204,8 @@ transferring context: 15.39MB
 
 Seules les sources d’eShop sont transmises, et la construction réussit.
 
+Depuis le 14 octobre 2026, le fichier contient une autorisation supplémentaire, `!docker/src/WebApp/Extensions.cs`, propre à l’image de `WebApp` : voir [02 — Images Docker des autres services](02-autres-services.md), section 8.
+
 ### Vérification de l’image
 
 Vérifier ensuite la présence de l’image :
@@ -533,6 +535,8 @@ Ces améliorations doivent être validées par des tests, et non appliquées tou
 ## 11. Étape suivante
 
 La prochaine étape consiste à préparer une configuration Docker Compose permettant de décrire et de démarrer ensemble l’API, PostgreSQL et RabbitMQ, avec un réseau commun et une configuration reproductible.
+
+Avant cela, la même méthode a été appliquée aux huit autres services : voir [02 — Images Docker des autres services](02-autres-services.md).
 
 ### Intégration des sources d’eShop au dépôt
 

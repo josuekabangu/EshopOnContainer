@@ -33,6 +33,8 @@ Le raisonnement et la correction du défaut qui a précédé ce choix sont décr
 |---|---|---|---|
 | Aucune à ce jour | | | |
 
+Une modification est appliquée en dehors de ce répertoire : à la construction de l'image de `WebApp`, le fichier `eShop/src/WebApp/Extensions/Extensions.cs` est remplacé par `docker/src/WebApp/Extensions.cs`. Les sources ne changent pas, seule l'image est concernée. Voir [docs/02-docker/02-autres-services.md](../docs/02-docker/02-autres-services.md), section 8.
+
 Une différence existe avec le dépôt d'origine sans être une adaptation : le fichier `eShop/.github/workflows/pr-validation-maui.yml` a les mêmes lignes, mais ses fins de ligne ont été normalisées par Git lors de l'import.
 
 ## Mettre à jour le code
