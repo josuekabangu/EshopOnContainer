@@ -82,6 +82,7 @@ services:
       ConnectionStrings__identitydb: "Host=postgres;Port=5432;Database=identitydb;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       ASPNETCORE_HTTP_PORTS: "5223"
       WebAppClient: "http://localhost:5045"
+      WebhooksWebClient: "http://localhost:5062"
     ports:
       - "127.0.0.1:5223:5223"
     depends_on:
@@ -261,6 +262,31 @@ services:
       basket-api:
         condition: service_started
       ordering-api:
+        condition: service_started
+    networks:
+      - eshop-network
+
+  # =====================================================================
+  # WEBHOOKCLIENT
+  # =====================================================================
+  webhook-client:
+    image: webhook-client
+    pull_policy: build
+    build:
+      context: ..
+      dockerfile: docker/src/WebhookClient/Dockerfile
+    container_name: webhook-client
+    environment:
+      IdentityUrl: "http://identity-api:5223"
+      CallBackUrl: "http://localhost:5062"
+      WebhookClientOptions__SelfUrl: "http://webhook-client:8080/"
+      services__webhooks-api__http__0: "http://webhooks-api:8080"
+    ports:
+      - "127.0.0.1:5062:8080"
+    depends_on:
+      identity-api:
+        condition: service_started
+      webhooks-api:
         condition: service_started
     networks:
       - eshop-network
