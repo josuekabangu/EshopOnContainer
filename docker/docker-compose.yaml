@@ -67,6 +67,26 @@ services:
       retries: 5
     networks:
       - eshop-network 
+
+  # =====================================================================
+  # IDENTITY.API
+  # =====================================================================
+  identity-api:
+    image: identity-api
+    pull_policy: build 
+    build:
+      context: ..
+      dockerfile: docker/src/Identity.API/Dockerfile
+    container_name: identity-api
+    environment:
+      ConnectionStrings__identitydb: "Host=postgres;Port=5432;Database=identitydb;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+    ports:
+      - "127.0.0.1:5223:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - eshop-network
   
 volumes:
   pg_data:
