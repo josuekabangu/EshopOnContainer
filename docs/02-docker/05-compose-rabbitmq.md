@@ -284,7 +284,7 @@ docker compose -f docker/docker-compose.yaml up -d
 
 ## 13. Étape suivante
 
-Les trois dépendances sont en place. L’étape suivante consiste à ajouter les neuf services au fichier Compose, avec la configuration relevée dans le guide 02, section 6, et à les faire attendre que leurs dépendances soient `healthy`.
+Les trois dépendances sont en place. L’étape suivante consiste à ajouter les neuf services au fichier Compose, avec la configuration relevée dans le guide 02, section 6, et à les faire attendre que leurs dépendances soient `healthy`. Les deux premiers sont traités dans [06 — Docker Compose : Identity.API](06-compose-identity.md) et [07 — Docker Compose : Catalog.API](07-compose-catalog.md).
 
 Les services joindront RabbitMQ avec une chaîne de connexion de la forme :
 

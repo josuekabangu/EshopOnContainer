@@ -79,6 +79,7 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] PostgreSQL démarré avec Docker Compose.
 * [x] Redis démarré avec Docker Compose.
 * [x] RabbitMQ démarré avec Docker Compose.
+* [x] Identity.API et Catalog.API démarrés avec Docker Compose.
 * [ ] Démarrage de l’ensemble des services avec Docker Compose.
 
 ### Suite du projet
@@ -113,7 +114,9 @@ EshopOnContainer/
 │       ├── 02-autres-services.md
 │       ├── 03-compose-postgres.md
 │       ├── 04-compose-redis.md
-│       └── 05-compose-rabbitmq.md
+│       ├── 05-compose-rabbitmq.md
+│       ├── 06-compose-identity.md
+│       └── 07-compose-catalog.md
 │
 ├── lab-local/
 │   ├── README.md
@@ -161,6 +164,8 @@ Conteneurisation de l'application :
 | [03 — Compose : PostgreSQL](docs/02-docker/03-compose-postgres.md) | Base de données décrite dans Docker Compose, identifiants hors du dépôt |
 | [04 — Compose : Redis](docs/02-docker/04-compose-redis.md) | Stockage des paniers, mot de passe et persistance |
 | [05 — Compose : RabbitMQ](docs/02-docker/05-compose-rabbitmq.md) | Messagerie entre services, nom de nœud fixe, interface d'administration locale |
+| [06 — Compose : Identity.API](docs/02-docker/06-compose-identity.md) | Premier service, construction de l'image par Compose, attente de PostgreSQL |
+| [07 — Compose : Catalog.API](docs/02-docker/07-compose-catalog.md) | Catalogue, connexion à RabbitMQ, attente de la réponse du service |
 
 ## Feuille de route
 
