@@ -283,7 +283,7 @@ Ce réglage est perdu au redémarrage de WSL2. Il modifie aussi le comportement 
 
 ## 12. Étape suivante
 
-Ajouter RabbitMQ, la dernière dépendance, avec son mot de passe et son contrôle de santé.
+Ajouter RabbitMQ, la dernière dépendance, avec son mot de passe et son contrôle de santé : voir [05 — Docker Compose : RabbitMQ](05-compose-rabbitmq.md).
 
 `Basket.API` devra ensuite recevoir le mot de passe de Redis dans sa chaîne de connexion, sous la forme :
 
