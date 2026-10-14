@@ -76,6 +76,7 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] Import des sources de l’application eShop dans le dépôt, à une version identifiée.
 * [x] Image Docker du service `Catalog.API` construite et testée avec PostgreSQL et RabbitMQ.
 * [x] Images Docker des huit autres services construites et testées.
+* [x] PostgreSQL démarré avec Docker Compose.
 * [ ] Démarrage de l’ensemble des services avec Docker Compose.
 
 ### Suite du projet
@@ -107,7 +108,8 @@ EshopOnContainer/
 │   │   └── 13-troubleshooting.md
 │   └── 02-docker/
 │       ├── 01-catalog-api.md
-│       └── 02-autres-services.md
+│       ├── 02-autres-services.md
+│       └── 03-compose-postgres.md
 │
 ├── lab-local/
 │   ├── README.md
@@ -152,6 +154,7 @@ Conteneurisation de l'application :
 | [Application eShop](application/README.md) | Provenance et version du code source |
 | [01 — Catalog.API](docs/02-docker/01-catalog-api.md) | Image Docker du premier service, test avec ses dépendances |
 | [02 — Autres services](docs/02-docker/02-autres-services.md) | Images des huit autres services, test de démarrage, configuration attendue |
+| [03 — Compose : PostgreSQL](docs/02-docker/03-compose-postgres.md) | Base de données décrite dans Docker Compose, identifiants hors du dépôt |
 
 ## Feuille de route
 

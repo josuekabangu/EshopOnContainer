@@ -461,6 +461,8 @@ diff --strip-trailing-cr \
 
 Les services se démarrent ici un par un, à la main, avec une douzaine de variables. L’étape suivante consiste à décrire cet ensemble dans `docker/docker-compose.yaml` : les dépendances, les neuf services, leur configuration et leur ordre de démarrage, notamment `Ordering.API` avant `OrderProcessor`.
 
+Ce travail commence par PostgreSQL : voir [03 — Docker Compose : PostgreSQL](03-compose-postgres.md).
+
 ## 12. Commandes de référence
 
 ```bash
