@@ -186,6 +186,24 @@ services:
     networks:
       - eshop-network
 
+  # =====================================================================
+  # PAYMENTPROCESSOR
+  # =====================================================================
+  payment-processor:
+    image: payment-processor
+    pull_policy: build
+    build:
+      context: ..
+      dockerfile: docker/src/PaymentProcessor/Dockerfile
+    container_name: payment-processor
+    environment:
+      ConnectionStrings__eventbus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - eshop-network
+
 
 volumes:
   pg_data:
