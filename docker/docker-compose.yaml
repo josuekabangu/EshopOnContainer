@@ -163,6 +163,29 @@ services:
     networks:
       - eshop-network
 
+  # =====================================================================
+  # ORDERPROCESSOR
+  # =====================================================================
+  order-processor:
+    image: order-processor
+    pull_policy: build
+    build:
+      context: ..
+      dockerfile: docker/src/OrderProcessor/Dockerfile
+    container_name: order-processor
+    environment:
+      ConnectionStrings__orderingdb: "Host=postgres;Port=5432;Database=orderingdb;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__eventbus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      ordering-api:
+        condition: service_started
+    networks:
+      - eshop-network
+
 
 volumes:
   pg_data:
