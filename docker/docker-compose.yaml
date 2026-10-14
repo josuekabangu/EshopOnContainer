@@ -1,0 +1,28 @@
+services:
+  # =====================================================================
+  # POSTGRES PGVECTOR
+  # =====================================================================
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata 
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./scripts/postgres/init-db.sh:/docker-entrypoint-initdb.d/01-init-db.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      - eshop-network 
+  
+volumes:
+  pg_data:
+
+networks:
+  eshop-network:
+    driver: bridge
