@@ -204,6 +204,32 @@ services:
     networks:
       - eshop-network
 
+  # =====================================================================
+  # WEBHOOKS.API
+  # =====================================================================
+  webhooks-api:
+    image: webhooks-api
+    pull_policy: build
+    build:
+      context: ..
+      dockerfile: docker/src/Webhooks.API/Dockerfile
+    container_name: webhooks-api
+    environment:
+      ConnectionStrings__webhooksdb: "Host=postgres;Port=5432;Database=webhooksdb;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__eventbus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/"
+      Identity__Url: "http://identity-api:8080"
+    ports:
+      - "127.0.0.1:5227:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      identity-api:
+        condition: service_started
+    networks:
+      - eshop-network
+
 
 volumes:
   pg_data:
