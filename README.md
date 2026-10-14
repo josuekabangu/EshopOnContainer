@@ -77,6 +77,7 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] Image Docker du service `Catalog.API` construite et testée avec PostgreSQL et RabbitMQ.
 * [x] Images Docker des huit autres services construites et testées.
 * [x] PostgreSQL démarré avec Docker Compose.
+* [x] Redis démarré avec Docker Compose.
 * [ ] Démarrage de l’ensemble des services avec Docker Compose.
 
 ### Suite du projet
@@ -109,7 +110,8 @@ EshopOnContainer/
 │   └── 02-docker/
 │       ├── 01-catalog-api.md
 │       ├── 02-autres-services.md
-│       └── 03-compose-postgres.md
+│       ├── 03-compose-postgres.md
+│       └── 04-compose-redis.md
 │
 ├── lab-local/
 │   ├── README.md
@@ -155,6 +157,7 @@ Conteneurisation de l'application :
 | [01 — Catalog.API](docs/02-docker/01-catalog-api.md) | Image Docker du premier service, test avec ses dépendances |
 | [02 — Autres services](docs/02-docker/02-autres-services.md) | Images des huit autres services, test de démarrage, configuration attendue |
 | [03 — Compose : PostgreSQL](docs/02-docker/03-compose-postgres.md) | Base de données décrite dans Docker Compose, identifiants hors du dépôt |
+| [04 — Compose : Redis](docs/02-docker/04-compose-redis.md) | Stockage des paniers, mot de passe et persistance |
 
 ## Feuille de route
 

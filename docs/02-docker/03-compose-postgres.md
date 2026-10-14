@@ -372,6 +372,8 @@ Après chaque correction de l’utilisateur, du mot de passe ou du script, le vo
 
 Ajouter au même fichier les deux autres dépendances, RabbitMQ et Redis, chacune avec son contrôle de santé. Les neuf services pourront ensuite être ajoutés, en attendant que leurs dépendances soient `healthy`.
 
+Redis est traité dans [04 — Docker Compose : Redis](04-compose-redis.md).
+
 ## 12. Commandes de référence
 
 ```bash
