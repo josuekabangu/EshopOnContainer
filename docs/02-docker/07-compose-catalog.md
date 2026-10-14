@@ -212,7 +212,7 @@ Résultats vérifiés : une seule ligne, `127.0.0.1:5102`, puis le compte `1654`
 
 ## 8. Étape suivante
 
-Ajouter les services qui dépendent d’`Identity.API` : `Basket.API`, `Ordering.API` et `Webhooks.API`. `Basket.API` utilisera aussi Redis, avec le mot de passe défini dans le guide 04.
+Ajouter les services qui dépendent d’`Identity.API` : `Basket.API`, `Ordering.API` et `Webhooks.API`. `Basket.API` utilisera aussi Redis, avec le mot de passe défini dans le guide 04 : voir [08 — Docker Compose : Basket.API](08-compose-basket.md).
 
 ## 9. Commandes de référence
 

@@ -80,6 +80,8 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] Redis démarré avec Docker Compose.
 * [x] RabbitMQ démarré avec Docker Compose.
 * [x] Identity.API et Catalog.API démarrés avec Docker Compose.
+* [x] Basket.API démarré avec Docker Compose (accès à Redis à vérifier avec un utilisateur connecté).
+* [x] Ordering.API démarré avec Docker Compose.
 * [ ] Démarrage de l’ensemble des services avec Docker Compose.
 
 ### Suite du projet
@@ -116,7 +118,9 @@ EshopOnContainer/
 │       ├── 04-compose-redis.md
 │       ├── 05-compose-rabbitmq.md
 │       ├── 06-compose-identity.md
-│       └── 07-compose-catalog.md
+│       ├── 07-compose-catalog.md
+│       ├── 08-compose-basket.md
+│       └── 09-compose-ordering.md
 │
 ├── lab-local/
 │   ├── README.md
@@ -166,6 +170,8 @@ Conteneurisation de l'application :
 | [05 — Compose : RabbitMQ](docs/02-docker/05-compose-rabbitmq.md) | Messagerie entre services, nom de nœud fixe, interface d'administration locale |
 | [06 — Compose : Identity.API](docs/02-docker/06-compose-identity.md) | Premier service, construction de l'image par Compose, attente de PostgreSQL |
 | [07 — Compose : Catalog.API](docs/02-docker/07-compose-catalog.md) | Catalogue, connexion à RabbitMQ, attente de la réponse du service |
+| [08 — Compose : Basket.API](docs/02-docker/08-compose-basket.md) | Panier, Redis, gRPC en HTTP/2, dépendance à Identity.API |
+| [09 — Compose : Ordering.API](docs/02-docker/09-compose-ordering.md) | Commandes, tables partagées avec OrderProcessor, contrôle d'accès |
 
 ## Feuille de route
 
