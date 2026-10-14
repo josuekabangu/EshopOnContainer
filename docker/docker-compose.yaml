@@ -88,6 +88,30 @@ services:
     networks:
       - eshop-network
   
+  # =====================================================================
+  # CATALOG.API
+  # =====================================================================
+  catalog-api:
+    image: catalog-api
+    pull_policy: build
+    build: 
+      context: ..
+      dockerfile: docker/src/Catalog.API/Dockerfile 
+    container_name: catalog-api
+    environment:
+      ConnectionStrings__catalogdb: "Host=postgres;Port=5432;Database=catalogdb;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__eventbus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/"
+    ports:
+      - "127.0.0.1:5102:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - eshop-network
+
+
 volumes:
   pg_data:
   redis_data:
