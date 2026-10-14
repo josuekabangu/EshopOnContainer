@@ -39,7 +39,7 @@ Les objectifs sont de :
     environment:
       ConnectionStrings__orderingdb: "Host=postgres;Port=5432;Database=orderingdb;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       ConnectionStrings__eventbus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/"
-      Identity__Url: "http://identity-api:8080"
+      Identity__Url: "http://identity-api:5223"
     ports:
       - "127.0.0.1:5224:8080"
     depends_on:
@@ -57,7 +57,7 @@ Les objectifs sont de :
 |---|---|---|
 | `ConnectionStrings__orderingdb` | Base `orderingdb` sur `postgres` | Guide 06, section 4 |
 | `ConnectionStrings__eventbus` | RabbitMQ sur `rabbitmq:5672` | Guide 07, section 3 |
-| `Identity__Url` | `http://identity-api:8080` | Guide 08, section 3 |
+| `Identity__Url` | `http://identity-api:5223`, depuis le 15 octobre 2026 (auparavant `:8080`) | Guide 08, section 3, et guide 13, section 3 |
 | `depends_on` | PostgreSQL et RabbitMQ `healthy`, Identity.API démarré | Guide 08, section 3 |
 | Port | `127.0.0.1:5224`, celui d’eShop en développement, pour les tests | Guide 07, section 3 |
 
@@ -201,7 +201,7 @@ warn: LuckyPennySoftware.MediatR.License[0]
 
 1. **Le service n’a pas de contrôle de santé.** `OrderProcessor`, qui a besoin des tables créées par `Ordering.API`, ne pourra attendre que son démarrage, et non la fin de ses migrations. Ce point est traité avec `OrderProcessor`.
 2. **Le port publié n’est utile qu’aux tests.**
-3. **La création d’une commande n’est pas testée.** Elle demande un utilisateur connecté et un panier, donc `WebApp`.
+3. ~~La création d’une commande n’est pas testée~~ : testée le 15 octobre 2026 depuis le navigateur, une fois `WebApp` en place. La commande n° 1 est passée de `Submitted` à `Paid`, voir le guide 13, section 6.
 
 ## 6. Tableau de validation
 
@@ -216,7 +216,7 @@ warn: LuckyPennySoftware.MediatR.License[0]
 | Erreurs dans le journal | 1, attendue au premier démarrage |
 | Port publié | `127.0.0.1:5224` seulement |
 | Compte d’exécution | `1654` |
-| Création d’une commande | Non testée |
+| Création d’une commande | Testée le 15 octobre 2026, commande n° 1 menée jusqu’à `Paid` (guide 13) |
 
 ## 7. Étape suivante
 

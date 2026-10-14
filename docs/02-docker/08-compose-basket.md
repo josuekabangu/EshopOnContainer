@@ -20,7 +20,7 @@ Les objectifs sont de :
 
 **Périmètre :** `Basket.API` seul. La construction de l’image par Compose fonctionne comme pour `Identity.API` : voir le guide 06, section 3.
 
-**État au 14 octobre 2026 :** `Basket.API` démarre avec Docker Compose, répond aux appels gRPC et est abonné à RabbitMQ. Son accès à Redis ne peut pas encore être vérifié, voir section 5.
+**État au 14 octobre 2026 :** `Basket.API` démarre avec Docker Compose, répond aux appels gRPC et est abonné à RabbitMQ. Son accès à Redis, invérifiable sans utilisateur connecté, a été vérifié le 15 octobre 2026 après l’ajout de `WebApp`, voir section 5.
 
 ## 2. Le service dans le fichier Compose
 
@@ -38,7 +38,7 @@ Les objectifs sont de :
     environment:
       ConnectionStrings__redis: "redis:6379,password=${REDIS_PASSWORD}"
       ConnectionStrings__eventbus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/"
-      Identity__Url: "http://identity-api:8080"
+      Identity__Url: "http://identity-api:5223"
     ports:
       - "127.0.0.1:5221:8080"
     depends_on:
@@ -78,12 +78,14 @@ Identique à celle de `Catalog.API`, décrite dans le guide 07, section 3.
 ### L’adresse d’Identity.API
 
 ```yaml
-      Identity__Url: "http://identity-api:8080"
+      Identity__Url: "http://identity-api:5223"
 ```
 
 `Basket.API` vérifie le jeton de chaque utilisateur. Pour cela, il télécharge les clés de signature publiées par `Identity.API`, à cette adresse.
 
-Le service est joint par son nom sur le réseau Docker, `identity-api`, et par son port interne, `8080`. Le port publié sur le poste, `5223`, ne sert qu’au navigateur.
+Le service est joint par son nom sur le réseau Docker, `identity-api`, et par le port `5223`. C’est la même adresse que celle qu’utilise le navigateur : un jeton n’est accepté que si l’adresse de son émetteur correspond à celle-ci. Le guide 13, section 3, explique ce choix.
+
+> **Mise à jour du 15 octobre 2026.** La première version de ce guide utilisait `http://identity-api:8080`. Elle permettait au service de démarrer, mais aurait fait refuser les jetons des utilisateurs. L’adresse a été changée dans les trois API avec l’ajout de `WebApp`.
 
 Le nom de la variable compte. Les API lisent `Identity__Url`, alors que `WebApp` et `WebhookClient` lisent `IdentityUrl`, sans séparateur. Le guide 02, section 6, donne la liste complète.
 
@@ -249,9 +251,26 @@ Il a donné deux enseignements :
 - **`WRONGPASS`** : la valeur saisie ne correspondait pas. `read -rs` masque la saisie, et une faute de frappe ne se voit pas. Le message ne mettait donc pas en cause `Basket.API`.
 - **Avec le bon mot de passe, la liste ne contient que la commande elle-même**, pour la raison donnée ci-dessus. Ce contrôle ne pouvait pas réussir avant la connexion d’un utilisateur.
 
+### Vérifié le 15 octobre 2026, avec un utilisateur connecté
+
+Une fois `WebApp` en place, l’utilisateur `alice` s’est connecté, a ajouté un article à son panier, puis a passé commande (guide 13, section 6). Le journal de `Basket.API` contient alors :
+
+```text
+info: eShop.Basket.API.Repositories.RedisBasketRepository[0]
+      Basket item persisted successfully.
+info: eShop.Basket.API.IntegrationEvents.EventHandling.OrderStartedIntegrationEventHandler[0]
+```
+
+| Constat | Ce qu’il prouve |
+|---|---|
+| `Basket item persisted successfully` | Le panier a été écrit dans Redis : la connexion et le mot de passe fonctionnent |
+| Connexions à Redis ouvertes depuis l’adresse de `basket-api` | La connexion est restée ouverte après la première écriture |
+| `OrderStartedIntegrationEventHandler`, puis `0` clé dans Redis | À la commande, `Basket.API` a reçu l’événement d’`Ordering.API` et vidé le panier |
+| Requêtes d’`alice` acceptées | Le jeton émis par `Identity.API` est reconnu par `Basket.API` |
+
 ## 6. Points ouverts
 
-1. **L’accès à Redis n’est pas vérifié**, voir section 5.
+1. ~~L’accès à Redis n’est pas vérifié~~ : vérifié le 15 octobre 2026, voir section 5.
 2. **Le service n’a pas de contrôle de santé.** De plus, un contrôle HTTP ordinaire échouerait sur ce service, qui refuse HTTP/1.1. Il faudra en tenir compte au moment de traiter la question de `/health`.
 3. **Le port publié n’est utile qu’aux tests.**
 
@@ -269,7 +288,7 @@ Il a donné deux enseignements :
 | Port publié | `127.0.0.1:5221` seulement |
 | Compte d’exécution | `1654` |
 | Mot de passe Redis transmis | Identique à celui de Redis |
-| Connexion effective à Redis | Non vérifiable sans utilisateur connecté |
+| Connexion effective à Redis | Vérifiée le 15 octobre 2026 avec un utilisateur connecté : panier écrit, puis vidé à la commande |
 
 ## 8. Étape suivante
 
@@ -294,4 +313,4 @@ printf '\0\0\0\0\0' | curl -s --http2-prior-knowledge \
 docker compose -f docker/docker-compose.yaml logs basket-api
 ```
 
-**Bilan :** `Basket.API` démarre avec Docker Compose, attend ses dépendances, répond aux appels gRPC et s’abonne au bus de messages. Son accès à Redis reste à vérifier avec un utilisateur connecté.
+**Bilan :** `Basket.API` démarre avec Docker Compose, attend ses dépendances, répond aux appels gRPC et s’abonne au bus de messages. Son accès à Redis a été vérifié avec un utilisateur connecté, une fois `WebApp` en place.

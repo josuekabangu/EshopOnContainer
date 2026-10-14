@@ -222,7 +222,7 @@ Après le test, l’ensemble a été redémarré avec `docker compose up -d` : l
 ## 5. Points ouverts
 
 1. **Le service n’a pas de contrôle de santé**, comme les autres services d’eShop. Un contrôle HTTP n’aurait d’ailleurs pas de sens pour lui : il ne sert aucune page.
-2. **Le traitement d’une commande n’est pas testé.** Il demande une commande à l’état `Submitted`, donc un utilisateur connecté et `WebApp`.
+2. ~~Le traitement d’une commande n’est pas testé~~ : testé le 15 octobre 2026. Pour la commande n° 1, `OrderProcessor` a publié `GracePeriodConfirmed` 83 secondes après sa création, soit au premier passage suivant la fin du délai de grâce d’une minute. Voir le guide 13, section 6.
 
 ## 6. Tableau de validation
 
@@ -237,7 +237,7 @@ Après le test, l’ensemble a été redémarré avec `docker compose up -d` : l
 | Démarrage avant les tables | Une erreur toutes les 30 s, aucun arrêt |
 | Rétablissement après création des tables | Automatique, aucune nouvelle erreur |
 | Compte d’exécution | `1654` |
-| Traitement d’une commande | Non testé |
+| Traitement d’une commande | Testé le 15 octobre 2026, `GracePeriodConfirmed` publié pour la commande n° 1 (guide 13) |
 
 ## 7. Étape suivante
 

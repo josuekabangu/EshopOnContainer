@@ -32,8 +32,10 @@ Les objectifs sont de :
     container_name: identity-api
     environment:
       ConnectionStrings__identitydb: "Host=postgres;Port=5432;Database=identitydb;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      ASPNETCORE_HTTP_PORTS: "5223"
+      WebAppClient: "http://localhost:5045"
     ports:
-      - "127.0.0.1:5223:8080"
+      - "127.0.0.1:5223:5223"
     depends_on:
       postgres:
         condition: service_healthy
@@ -42,6 +44,8 @@ Les objectifs sont de :
 ```
 
 Aucune variable nouvelle n’est à ajouter au fichier `.env` : le service réutilise celles de PostgreSQL.
+
+> **Mise à jour du 15 octobre 2026.** Ce bloc est la version actuelle. La première version publiait le port `"127.0.0.1:5223:8080"` et ne contenait ni `ASPNETCORE_HTTP_PORTS` ni `WebAppClient`. Les deux lignes ont été ajoutées pour la connexion des utilisateurs, avec l’ajout de `WebApp` : voir [13 — Docker Compose : WebApp](13-compose-webapp.md), section 3. Les sections 3 à 5 de ce guide restent valables.
 
 ## 3. La construction de l’image par Compose
 
@@ -111,13 +115,16 @@ La sortie de `docker compose up` montre cette attente :
 ### Le port
 
 ```yaml
+      ASPNETCORE_HTTP_PORTS: "5223"
     ports:
-      - "127.0.0.1:5223:8080"
+      - "127.0.0.1:5223:5223"
 ```
 
-Le port est publié parce que le navigateur devra joindre `Identity.API` : pendant la connexion, l’utilisateur est redirigé vers sa page d’identification. Il n’est ouvert que sur l’adresse locale, pour la raison donnée dans le guide 05, section 5.
+Le port est publié parce que le navigateur doit joindre `Identity.API` : pendant la connexion, l’utilisateur est redirigé vers sa page d’identification. Il n’est ouvert que sur l’adresse locale, pour la raison donnée dans le guide 05, section 5.
 
-`5223` est le port qu’eShop utilise en développement, dans `Identity.API/Properties/launchSettings.json`.
+`5223` est le port qu’eShop utilise en développement, dans `Identity.API/Properties/launchSettings.json`. Contrairement aux autres services, `Identity.API` écoute aussi sur ce port **dans** le conteneur : `ASPNETCORE_HTTP_PORTS` remplace, pour ce seul service, la valeur `8080` fixée par le Dockerfile. Le navigateur et les conteneurs le joignent ainsi à la même adresse, `http://identity-api:5223`. Le guide 13, section 3, explique pourquoi c’est indispensable.
+
+`WebAppClient` est l’adresse de la boutique, telle que le navigateur la voit. `Identity.API` ne renvoie un utilisateur, après sa connexion, que vers une adresse déclarée.
 
 ## 5. Démarrer et vérifier
 
@@ -137,6 +144,8 @@ Résultat vérifié le 14 octobre 2026 :
 NAME           IMAGE          ...   STATUS         PORTS
 identity-api   identity-api   ...   Up 8 seconds   127.0.0.1:5223->8080/tcp
 ```
+
+Depuis le 15 octobre 2026, la colonne `PORTS` affiche `127.0.0.1:5223->5223/tcp, 8080/tcp`. Le port `8080` reste annoncé par l’instruction `EXPOSE` du Dockerfile, mais plus rien n’y écoute.
 
 Le service n’affiche pas d’état de santé : il n’a pas de contrôle de santé, voir section 6.
 
@@ -175,15 +184,15 @@ Résultats vérifiés : une seule ligne, `127.0.0.1:5223`, puis le compte `1654`
 ## 6. Points ouverts
 
 1. **Le service n’a pas de contrôle de santé.** `/health` répond `404`, pour la raison donnée dans le guide 01, section 8. Un service qui dépendra d’`Identity.API` ne pourra attendre que son démarrage (`condition: service_started`), et non son bon fonctionnement.
-2. **L’adresse d’émission des jetons dépend de l’adresse d’appel.** `Identity.API` signe chaque jeton avec son adresse, appelée « émetteur » (`issuer`), qu’il déduit de l’adresse utilisée pour le joindre :
+2. **L’adresse d’émission des jetons dépend de l’adresse d’appel.** `Identity.API` signe chaque jeton avec son adresse, appelée « émetteur » (`issuer`), qu’il déduit de l’adresse utilisée pour le joindre. Avec la première version de ce guide, l’émetteur différait selon l’appelant :
 
    | Joint par | `issuer` annoncé |
    |---|---|
    | Le navigateur, `http://127.0.0.1:5223` | `http://127.0.0.1:5223` |
    | Un conteneur, `http://identity-api:8080` | `http://identity-api:8080` |
 
-   Un utilisateur obtiendra son jeton par le navigateur, puis les API le vérifieront en joignant `identity-api:8080`. Les deux adresses différeront, et les API refuseront le jeton. Ce point sera traité avec `WebApp`.
-3. **Le service ne connaît pas encore les adresses de ses clients.** Les variables `WebAppClient`, `WebhooksWebClient`, `BasketApiClient`, `OrderingApiClient` et `WebhooksApiClient` lui seront transmises à l’ajout de ces services.
+   **Résolu le 15 octobre 2026** : tous les acteurs joignent désormais `http://identity-api:5223`, et l’émetteur est le même pour tous. Voir le guide 13, section 3.
+3. **Le service ne connaît pas encore toutes les adresses de ses clients.** `WebAppClient` est défini depuis l’ajout de `WebApp`. `WebhooksWebClient`, `BasketApiClient`, `OrderingApiClient` et `WebhooksApiClient` restent à transmettre ; les trois derniers ne servent qu’aux pages de documentation des API, absentes hors développement.
 
 ## 7. Tableau de validation
 

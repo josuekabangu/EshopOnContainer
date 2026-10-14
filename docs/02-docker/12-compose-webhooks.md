@@ -35,7 +35,7 @@ Ce guide met en avant deux points propres à ce service : une valeur incorrecte 
     environment:
       ConnectionStrings__webhooksdb: "Host=postgres;Port=5432;Database=webhooksdb;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       ConnectionStrings__eventbus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/"
-      Identity__Url: "http://identity-api:8080"
+      Identity__Url: "http://identity-api:5223"
     ports:
       - "127.0.0.1:5227:8080"
     depends_on:
@@ -179,7 +179,7 @@ Résultats vérifiés le 15 octobre 2026 :
 ## 6. Points ouverts
 
 1. **Le service n’a pas de contrôle de santé**, comme les autres services d’eShop.
-2. **L’envoi d’un webhook n’est pas testé.** Il demande d’enregistrer un abonnement, donc un utilisateur connecté. C’est le rôle de `WebhookClient`, le site de démonstration ajouté ensuite.
+2. **L’envoi d’un webhook n’est pas testé.** Il demande d’enregistrer un abonnement, donc un utilisateur connecté. C’est le rôle de `WebhookClient`, le site de démonstration ajouté ensuite. La réception des événements est en revanche vérifiée : lors de la commande du 15 octobre 2026, le service a reçu l’événement « payée » et constaté `0 subscriptions to process` (guide 13, section 6). Le message de son journal nomme par erreur l’événement `OrderStatusChangedToShippedIntegrationEvent` : c’est une coquille du code d’eShop, dans `OrderStatusChangedToPaidIntegrationEventHandler.cs`.
 3. **Le port publié n’est utile qu’aux tests.**
 
 ## 7. Tableau de validation
@@ -188,7 +188,7 @@ Résultats vérifiés le 15 octobre 2026 :
 |---|---|
 | Image construite par Compose | `webhooks-api:latest`, 360 Mo |
 | Attente de PostgreSQL et RabbitMQ `healthy`, et d’Identity.API démarré | Oui |
-| `Identity:Url` d’origine remplacé | Oui, par `http://identity-api:8080` |
+| `Identity:Url` d’origine remplacé | Oui, par `http://identity-api:5223` depuis le 15 octobre 2026 (auparavant `:8080`, voir guide 13) |
 | `/api/webhooks` sans jeton | `401` |
 | Base créée | Table `Subscriptions`, 1 migration |
 | File `Webhooks` | 1 consommateur |
@@ -200,7 +200,7 @@ Résultats vérifiés le 15 octobre 2026 :
 
 ## 8. Étape suivante
 
-Tous les services sans interface sont en place. Restent les deux sites web, `WebhookClient` et `WebApp`. Avec eux se posent les questions laissées ouvertes depuis le guide 06 : les adresses des clients connues d’`Identity.API`, l’adresse d’émission des jetons, et la connexion d’un utilisateur depuis le navigateur.
+Tous les services sans interface sont en place. Restent les deux sites web, `WebhookClient` et `WebApp`. Avec eux se posent les questions laissées ouvertes depuis le guide 06 : les adresses des clients connues d’`Identity.API`, l’adresse d’émission des jetons, et la connexion d’un utilisateur depuis le navigateur. `WebApp` est traité dans [13 — Docker Compose : WebApp](13-compose-webapp.md).
 
 ## 9. Commandes de référence
 
