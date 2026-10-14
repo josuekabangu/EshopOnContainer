@@ -370,7 +370,7 @@ C’est la première vérification de bout en bout du projet. Il confirme aussi 
 
 ## 7. Points ouverts
 
-1. **`WebhookClient` reste à ajouter**, avec la variable `WebhooksWebClient` d’`Identity.API`.
+1. ~~`WebhookClient` reste à ajouter~~ : ajouté le 15 octobre 2026, voir le guide 14.
 2. **Les services n’ont pas de contrôle de santé.** `WebApp` ne peut attendre que le démarrage des services qu’il appelle.
 3. **Les ports de `Catalog.API`, `Basket.API`, `Ordering.API` et `Webhooks.API` ne sont plus utiles qu’aux tests.** `WebApp` les joint par le réseau Docker.
 4. **Le fichier `hosts` est à préparer sur chaque poste**, voir section 4.
@@ -394,7 +394,7 @@ C’est la première vérification de bout en bout du projet. Il confirme aussi 
 
 ## 9. Étape suivante
 
-Ajouter `WebhookClient`, le dernier service d’eShop. Ce site de démonstration permet d’enregistrer un abonnement auprès de `Webhooks.API`, puis de recevoir ses notifications.
+Ajouter `WebhookClient`, le dernier service d’eShop. Ce site de démonstration permet d’enregistrer un abonnement auprès de `Webhooks.API`, puis de recevoir ses notifications. Voir [14 — Docker Compose : WebhookClient](14-compose-webhook-client.md).
 
 ## 10. Commandes de référence
 

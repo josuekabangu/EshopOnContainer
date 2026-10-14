@@ -179,7 +179,7 @@ Résultats vérifiés le 15 octobre 2026 :
 ## 6. Points ouverts
 
 1. **Le service n’a pas de contrôle de santé**, comme les autres services d’eShop.
-2. **L’envoi d’un webhook n’est pas testé.** Il demande d’enregistrer un abonnement, donc un utilisateur connecté. C’est le rôle de `WebhookClient`, le site de démonstration ajouté ensuite. La réception des événements est en revanche vérifiée : lors de la commande du 15 octobre 2026, le service a reçu l’événement « payée » et constaté `0 subscriptions to process` (guide 13, section 6). Le message de son journal nomme par erreur l’événement `OrderStatusChangedToShippedIntegrationEvent` : c’est une coquille du code d’eShop, dans `OrderStatusChangedToPaidIntegrationEventHandler.cs`.
+2. ~~L’envoi d’un webhook n’est pas testé~~ : testé le 15 octobre 2026 avec `WebhookClient`, voir le guide 14, section 5. La réception des événements est en revanche vérifiée : lors de la commande du 15 octobre 2026, le service a reçu l’événement « payée » et constaté `0 subscriptions to process` (guide 13, section 6). Le message de son journal nomme par erreur l’événement `OrderStatusChangedToShippedIntegrationEvent` : c’est une coquille du code d’eShop, dans `OrderStatusChangedToPaidIntegrationEventHandler.cs`.
 3. **Le port publié n’est utile qu’aux tests.**
 
 ## 7. Tableau de validation
@@ -196,7 +196,7 @@ Résultats vérifiés le 15 octobre 2026 :
 | Erreurs dans le journal | 1, attendue au premier démarrage |
 | Port publié | `127.0.0.1:5227` seulement |
 | Compte d’exécution | `1654` |
-| Envoi d’un webhook | Non testé |
+| Envoi d’un webhook | Testé le 15 octobre 2026 : abonnement vérifié, notification reçue (guide 14) |
 
 ## 8. Étape suivante
 

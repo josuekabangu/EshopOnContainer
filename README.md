@@ -42,7 +42,7 @@ Le projet est organisé autour de trois domaines principaux :
 | Runtime de conteneurs   | containerd                  | Utilisé |
 | Orchestration           | Kubernetes (kubeadm)        | Utilisé |
 | Réseau Kubernetes       | Calico                      | Utilisé |
-| Construction des images | Docker                      | En cours |
+| Construction des images | Docker et Docker Compose    | Utilisé |
 | Déploiement applicatif  | Helm                        | Prévu   |
 | CI/CD                   | GitHub Actions              | Prévu   |
 | GitOps                  | Argo CD                     | Prévu   |
@@ -51,7 +51,7 @@ Le projet est organisé autour de trois domaines principaux :
 | Infrastructure as Code  | Terraform                   | Prévu   |
 | Cloud                   | AWS                         | Prévu   |
 
-« Utilisé » signifie que la technologie est en place, testée et documentée dans ce dépôt. « En cours » signifie qu'elle est partiellement en place : pour Docker, les images des neuf services sont construites et testées une par une, mais leur démarrage d'ensemble avec Docker Compose reste à faire. « Prévu » signifie qu'elle fait partie de la feuille de route, sans être encore intégrée.
+« Utilisé » signifie que la technologie est en place, testée et documentée dans ce dépôt. « En cours » signifie qu'elle est partiellement en place. « Prévu » signifie qu'elle fait partie de la feuille de route, sans être encore intégrée.
 
 ## État d’avancement
 
@@ -86,7 +86,8 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] PaymentProcessor démarré avec Docker Compose, échange de messages vérifié avec Ordering.API.
 * [x] Webhooks.API démarré avec Docker Compose.
 * [x] WebApp démarrée avec Docker Compose : connexion d'un utilisateur et commande menée jusqu'au paiement depuis le navigateur.
-* [ ] Démarrage de l’ensemble des services avec Docker Compose : reste WebhookClient.
+* [x] WebhookClient démarré avec Docker Compose : abonnement et notification vérifiés.
+* [x] Démarrage de l’ensemble des services avec Docker Compose : 9 services et 3 dépendances.
 
 ### Suite du projet
 
@@ -131,7 +132,8 @@ EshopOnContainer/
 │       ├── 10-compose-order-processor.md
 │       ├── 11-compose-payment-processor.md
 │       ├── 12-compose-webhooks.md
-│       └── 13-compose-webapp.md
+│       ├── 13-compose-webapp.md
+│       └── 14-compose-webhook-client.md
 │
 ├── lab-local/
 │   ├── README.md
@@ -187,6 +189,7 @@ Conteneurisation de l'application :
 | [11 — Compose : PaymentProcessor](docs/02-docker/11-compose-payment-processor.md) | Paiement simulé, liaisons RabbitMQ, événement de test à travers le bus |
 | [12 — Compose : Webhooks.API](docs/02-docker/12-compose-webhooks.md) | Abonnements des applications extérieures, valeur d'origine remplacée, trois événements |
 | [13 — Compose : WebApp](docs/02-docker/13-compose-webapp.md) | Boutique, adresse unique d'Identity.API, fichier `hosts`, parcours de commande de bout en bout |
+| [14 — Compose : WebhookClient](docs/02-docker/14-compose-webhook-client.md) | Site de démonstration des webhooks, adresse vue du réseau Docker, notification reçue |
 
 ## Feuille de route
 
