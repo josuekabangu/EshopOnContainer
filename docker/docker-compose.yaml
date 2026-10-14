@@ -137,6 +137,31 @@ services:
     networks:
       - eshop-network
 
+  # =====================================================================
+  # ORDERING.API
+  # =====================================================================
+  ordering-api:
+    image: ordering-api
+    pull_policy: build
+    build:
+      context: ..
+      dockerfile: docker/src/Ordering.API/Dockerfile
+    container_name: ordering-api
+    environment:
+      ConnectionStrings__orderingdb: "Host=postgres;Port=5432;Database=orderingdb;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__eventbus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/"
+      Identity__Url: "http://identity-api:8080"
+    ports:
+      - "127.0.0.1:5224:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      identity-api:
+        condition: service_started
+    networks:
+      - eshop-network
 
 
 volumes:
