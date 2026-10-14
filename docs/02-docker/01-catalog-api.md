@@ -20,7 +20,7 @@ L’environnement de test utilise trois conteneurs :
 
 | Conteneur | Image | Rôle | Port hôte |
 |---|---|---|---|
-| `catalog-api-new-test` | `eshop/catalog-api:dev` | Image construite dans ce guide | `8081` |
+| `catalog-api-new-test` | `catalog-api:latest` | Image construite dans ce guide | `8081` |
 | `catalog-postgres` | `ankane/pgvector:latest` | Base de données PostgreSQL avec l’extension `vector` | Non publié |
 | `catalog-rabbitmq` | `rabbitmq:4-management` | Broker de messages RabbitMQ | Non publié |
 
@@ -153,14 +153,14 @@ Depuis la racine du dépôt, dans Ubuntu sous WSL :
 ```bash
 docker build --progress=plain \
   -f docker/src/Catalog.API/Dockerfile \
-  -t eshop/catalog-api:dev \
+  -t catalog-api:latest \
   .
 ```
 
 **À retenir :**
 
 - `-f` indique le chemin du Dockerfile.
-- `-t` attribue le nom et le tag `eshop/catalog-api:dev` à l’image.
+- `-t` attribue le nom et le tag `catalog-api:latest` à l’image.
 - `.` définit la racine du dépôt comme contexte de construction.
 - `--progress=plain` facilite la lecture des étapes et des erreurs.
 
@@ -211,7 +211,7 @@ Depuis le 14 octobre 2026, le fichier contient une autorisation supplémentaire,
 Vérifier ensuite la présence de l’image :
 
 ```bash
-docker image ls eshop/catalog-api
+docker image ls catalog-api
 ```
 
 ### Résultat observé
@@ -323,7 +323,7 @@ docker run -d \
   --network eshop-test \
   -p 8081:8080 \
   --env-file "$ENV_FILE" \
-  eshop/catalog-api:dev
+  catalog-api:latest
 ```
 
 Dans cet exemple, `ENV_FILE` doit désigner un fichier local contenant les variables `ConnectionStrings__catalogdb` et `ConnectionStrings__eventbus`, avec leurs valeurs valides.
@@ -462,7 +462,7 @@ Un programme hérite des droits du compte qui le lance. Si l’application prés
 L’image d’origine ne précisait aucun utilisateur. Le compte utilisé a été contrôlé :
 
 ```bash
-docker run --rm --entrypoint id eshop/catalog-api:dev
+docker run --rm --entrypoint id catalog-api:latest
 ```
 
 Cette commande lance la commande `id` à la place de l’application. Elle affiche le compte sous lequel un conteneur de cette image s’exécute.
@@ -501,7 +501,7 @@ Le compte peut aussi être imposé au lancement, avec `docker run --user 1654`. 
 | Contrôle | Résultat |
 |---|---|
 | Construction de l’image | Réussi |
-| Image `eshop/catalog-api:dev` créée | Confirmé |
+| Image `catalog-api:latest` créée | Confirmé |
 | Démarrage du nouveau conteneur | Réussi |
 | Réseau Docker `eshop-test` | Utilisé |
 | Endpoint `catalogTypes` | HTTP 200 |
@@ -615,7 +615,7 @@ La présence des fichiers dans un clone ne prouve pas que l’image se construit
 ```bash
 git archive --format=tar HEAD | docker build \
   -f docker/src/Catalog.API/Dockerfile \
-  -t eshop/catalog-api:verif-commit \
+  -t catalog-api:verif-commit \
   -
 ```
 
@@ -655,11 +655,11 @@ Cette commande autorise Git à créer des chemins de plus de 260 caractères. Le
 # Construire l'image
 docker build --progress=plain \
   -f docker/src/Catalog.API/Dockerfile \
-  -t eshop/catalog-api:dev \
+  -t catalog-api:latest \
   .
 
 # Vérifier l'image
-docker image ls eshop/catalog-api
+docker image ls catalog-api
 
 # Vérifier les conteneurs
 docker ps --filter name=catalog

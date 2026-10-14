@@ -21,15 +21,15 @@ L’application compte neuf services. Trois d’entre eux n’exposent aucune in
 
 | Service | Rôle | Image | Dépendances |
 |---|---|---|---|
-| `Catalog.API` | Catalogue des articles | `eshop/catalog-api:dev` | PostgreSQL, RabbitMQ |
-| `Identity.API` | Authentification des utilisateurs | `eshop/identity-api:dev` | PostgreSQL |
-| `Basket.API` | Panier, en gRPC | `eshop/basket-api:dev` | Redis, RabbitMQ, Identity.API |
-| `Ordering.API` | Commandes | `eshop/ordering-api:dev` | PostgreSQL, RabbitMQ, Identity.API |
-| `OrderProcessor` | Traitement différé des commandes | `eshop/order-processor:dev` | PostgreSQL, RabbitMQ |
-| `PaymentProcessor` | Simulation du paiement | `eshop/payment-processor:dev` | RabbitMQ |
-| `Webhooks.API` | Abonnements aux notifications | `eshop/webhooks-api:dev` | PostgreSQL, RabbitMQ, Identity.API |
-| `WebhookClient` | Site de démonstration des notifications | `eshop/webhook-client:dev` | Identity.API, Webhooks.API |
-| `WebApp` | Boutique en ligne | `eshop/webapp:dev` | Identity.API, Catalog.API, Basket.API, Ordering.API, RabbitMQ |
+| `Catalog.API` | Catalogue des articles | `catalog-api:latest` | PostgreSQL, RabbitMQ |
+| `Identity.API` | Authentification des utilisateurs | `identity-api:latest` | PostgreSQL |
+| `Basket.API` | Panier, en gRPC | `basket-api:latest` | Redis, RabbitMQ, Identity.API |
+| `Ordering.API` | Commandes | `ordering-api:latest` | PostgreSQL, RabbitMQ, Identity.API |
+| `OrderProcessor` | Traitement différé des commandes | `order-processor:latest` | PostgreSQL, RabbitMQ |
+| `PaymentProcessor` | Simulation du paiement | `payment-processor:latest` | RabbitMQ |
+| `Webhooks.API` | Abonnements aux notifications | `webhooks-api:latest` | PostgreSQL, RabbitMQ, Identity.API |
+| `WebhookClient` | Site de démonstration des notifications | `webhook-client:latest` | Identity.API, Webhooks.API |
+| `WebApp` | Boutique en ligne | `webapp:latest` | Identity.API, Catalog.API, Basket.API, Ordering.API, RabbitMQ |
 
 Ces dépendances sont celles que déclare l’application elle-même, dans le fichier `application/eShop/src/eShop.AppHost/AppHost.cs`. Ce fichier décrit l’assemblage des services pour l’outil de développement de Microsoft, Aspire. Il n’est pas utilisé pour construire les images, mais il sert de référence : il indique quel service a besoin de quoi.
 
@@ -89,32 +89,50 @@ for pair in Basket.API:basket-api Identity.API:identity-api \
             Webhooks.API:webhooks-api WebApp:webapp; do
   docker build \
     -f "docker/src/${pair%%:*}/Dockerfile" \
-    -t "eshop/${pair##*:}:dev" \
+    -t "${pair##*:}:latest" \
     . || break
 done
 ```
 
 Chaque élément de la liste associe le nom du répertoire au nom de l’image, séparés par deux-points. `${pair%%:*}` en extrait la partie gauche, `${pair##*:}` la partie droite. `|| break` arrête la boucle à la première construction en échec, pour que l’erreur reste visible à l’écran.
 
+### Convention de nommage des images
+
+Chaque image porte le nom du service en minuscules, avec un tiret, et l’étiquette `latest` : `catalog-api:latest`, `identity-api:latest`, `webapp:latest`. Le fichier Docker Compose reprend les mêmes noms.
+
+Cette convention a été fixée le 14 octobre 2026. Les images avaient d’abord été construites sous la forme `eshop/<service>:dev`, qui figure dans les sorties de commande enregistrées avant cette date. Il s’agit des mêmes images : seul leur nom a changé. Pour renommer une image existante sans la reconstruire :
+
+```bash
+docker tag eshop/catalog-api:dev catalog-api:latest
+docker rmi eshop/catalog-api:dev
+```
+
+`docker tag` ajoute un second nom à la même image ; `docker rmi` retire ensuite l’ancien nom, sans supprimer l’image tant qu’un autre nom la désigne.
+
+Deux conséquences de ce choix sont à connaître :
+
+- **Un nom sans préfixe désigne Docker Hub.** Pour Docker, `identity-api:latest` signifie `docker.io/library/identity-api:latest`, l’espace des images officielles. Si l’image n’existe pas sur le poste, Docker tente de la télécharger. Dans le fichier Compose, le réglage `pull_policy: build` l’en empêche : l’image est toujours construite, jamais téléchargée.
+- **L’étiquette `latest` ne désigne pas une version.** Chaque construction remplace l’image précédente sous le même nom. Pour le travail sur le poste, c’est le comportement voulu. Pour le déploiement sur Kubernetes, les images devront être poussées vers un registre, avec un préfixe et une étiquette de version.
+
 Vérifier ensuite les images :
 
 ```bash
-docker image ls 'eshop/*'
+docker image ls --format '{{.Repository}}:{{.Tag}}  {{.Size}}' | grep -E '^(basket-api|catalog-api|identity-api|order-processor|ordering-api|payment-processor|webapp|webhook-client|webhooks-api):'
 ```
 
 Résultat vérifié le 13 octobre 2026 :
 
 | Image | Construction | Taille |
 |---|---|---|
-| `eshop/basket-api:dev` | Réussie | 354 Mo |
-| `eshop/catalog-api:dev` | Réussie (guide 01) | 381 Mo |
-| `eshop/identity-api:dev` | Réussie | 399 Mo |
-| `eshop/order-processor:dev` | Réussie | 352 Mo |
-| `eshop/ordering-api:dev` | Réussie | 361 Mo |
-| `eshop/payment-processor:dev` | Réussie | 350 Mo |
-| `eshop/webhook-client:dev` | Réussie | 351 Mo |
-| `eshop/webhooks-api:dev` | Réussie | 360 Mo |
-| `eshop/webapp:dev` | Réussie le 14 octobre 2026, après correction (section 8) | 370 Mo |
+| `basket-api:latest` | Réussie | 354 Mo |
+| `catalog-api:latest` | Réussie (guide 01) | 381 Mo |
+| `identity-api:latest` | Réussie | 399 Mo |
+| `order-processor:latest` | Réussie | 352 Mo |
+| `ordering-api:latest` | Réussie | 361 Mo |
+| `payment-processor:latest` | Réussie | 350 Mo |
+| `webhook-client:latest` | Réussie | 351 Mo |
+| `webhooks-api:latest` | Réussie | 360 Mo |
+| `webapp:latest` | Réussie le 14 octobre 2026, après correction (section 8) | 370 Mo |
 
 Une fois les couches communes en cache, chaque construction a pris entre 8 et 29 secondes.
 
@@ -126,7 +144,7 @@ Le guide 01, section 8, explique pourquoi une image ne doit pas s’exécuter en
 for tag in basket-api identity-api order-processor ordering-api \
            payment-processor webhook-client webhooks-api webapp; do
   printf '%s : ' "$tag"
-  docker run --rm --entrypoint id "eshop/$tag:dev"
+  docker run --rm --entrypoint id "$tag:latest"
 done
 ```
 
@@ -200,7 +218,7 @@ docker run -d --network eshop-verify --name ordering-api \
   -e "ConnectionStrings__orderingdb=Host=v-postgres;Username=postgres;Password=$PW;Database=orderingdb" \
   -e "ConnectionStrings__eventbus=amqp://eshop:$PW@v-rabbit:5672" \
   -e Identity__Url=http://identity-api:8080 \
-  eshop/ordering-api:dev
+  ordering-api:latest
 ```
 
 Le nom donné au conteneur compte : c’est par ce nom que les autres services le joignent sur le réseau Docker.
@@ -372,7 +390,7 @@ Le fichier `.dockerignore` autorise ce fichier, et lui seul, à entrer dans le c
 Construire l’image :
 
 ```bash
-docker build -f docker/src/WebApp/Dockerfile -t eshop/webapp:dev .
+docker build -f docker/src/WebApp/Dockerfile -t webapp:latest .
 ```
 
 ### Les trois défauts corrigés
@@ -403,9 +421,9 @@ Résultats vérifiés le 14 octobre 2026 :
 | Image | Attributs des cookies de connexion |
 |---|---|
 | Sources d’origine, construite pour comparaison | `secure; samesite=none` |
-| `eshop/webapp:dev`, avec le fichier de remplacement | `samesite=lax` |
+| `webapp:latest`, avec le fichier de remplacement | `samesite=lax` |
 
-| Contrôle sur `eshop/webapp:dev` | Résultat |
+| Contrôle sur `webapp:latest` | Résultat |
 |---|---|
 | Construction | Réussie, 370 Mo |
 | Compte d’exécution | `uid=1654(app)` |
@@ -467,13 +485,13 @@ Ce travail commence par PostgreSQL : voir [03 — Docker Compose : PostgreSQL](0
 
 ```bash
 # Construire une image
-docker build -f docker/src/Ordering.API/Dockerfile -t eshop/ordering-api:dev .
+docker build -f docker/src/Ordering.API/Dockerfile -t ordering-api:latest .
 
 # Lister les images du projet
-docker image ls 'eshop/*'
+docker image ls --format '{{.Repository}}:{{.Tag}}  {{.Size}}' | grep -E '^(basket-api|catalog-api|identity-api|order-processor|ordering-api|payment-processor|webapp|webhook-client|webhooks-api):'
 
 # Vérifier le compte d'exécution d'une image
-docker run --rm --entrypoint id eshop/ordering-api:dev
+docker run --rm --entrypoint id ordering-api:latest
 
 # Envoyer une requête depuis le réseau de test
 docker run --rm --network eshop-verify curlimages/curl:latest \
