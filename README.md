@@ -82,6 +82,7 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] Identity.API et Catalog.API démarrés avec Docker Compose.
 * [x] Basket.API démarré avec Docker Compose (accès à Redis à vérifier avec un utilisateur connecté).
 * [x] Ordering.API démarré avec Docker Compose.
+* [x] OrderProcessor démarré avec Docker Compose, rétablissement vérifié s'il démarre avant les tables.
 * [ ] Démarrage de l’ensemble des services avec Docker Compose.
 
 ### Suite du projet
@@ -120,7 +121,8 @@ EshopOnContainer/
 │       ├── 06-compose-identity.md
 │       ├── 07-compose-catalog.md
 │       ├── 08-compose-basket.md
-│       └── 09-compose-ordering.md
+│       ├── 09-compose-ordering.md
+│       └── 10-compose-order-processor.md
 │
 ├── lab-local/
 │   ├── README.md
@@ -172,6 +174,7 @@ Conteneurisation de l'application :
 | [07 — Compose : Catalog.API](docs/02-docker/07-compose-catalog.md) | Catalogue, connexion à RabbitMQ, attente de la réponse du service |
 | [08 — Compose : Basket.API](docs/02-docker/08-compose-basket.md) | Panier, Redis, gRPC en HTTP/2, dépendance à Identity.API |
 | [09 — Compose : Ordering.API](docs/02-docker/09-compose-ordering.md) | Commandes, tables partagées avec OrderProcessor, contrôle d'accès |
+| [10 — Compose : OrderProcessor](docs/02-docker/10-compose-order-processor.md) | Tâche de fond, vérification sans API, démarrage avant les tables |
 
 ## Feuille de route
 

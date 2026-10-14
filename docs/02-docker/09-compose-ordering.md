@@ -220,7 +220,7 @@ warn: LuckyPennySoftware.MediatR.License[0]
 
 ## 7. Étape suivante
 
-Ajouter `OrderProcessor`. Ce service utilise la base `orderingdb` sans la créer : il doit donc attendre qu’`Ordering.API` ait créé ses tables, et non seulement que PostgreSQL soit prêt.
+Ajouter `OrderProcessor`. Ce service utilise la base `orderingdb` sans la créer : il doit donc attendre qu’`Ordering.API` ait créé ses tables, et non seulement que PostgreSQL soit prêt. Voir [10 — Docker Compose : OrderProcessor](10-compose-order-processor.md).
 
 ## 8. Commandes de référence
 
