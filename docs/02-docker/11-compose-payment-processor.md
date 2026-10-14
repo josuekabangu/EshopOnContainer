@@ -263,7 +263,7 @@ Un message mal formé ou mal traité n’est donc ni conservé, ni retenté : se
 
 ## 8. Étape suivante
 
-Ajouter `Webhooks.API`, le dernier service qui dépend d’`Identity.API`. Il utilise PostgreSQL et RabbitMQ.
+Ajouter `Webhooks.API`, le dernier service qui dépend d’`Identity.API`. Il utilise PostgreSQL et RabbitMQ. Voir [12 — Docker Compose : Webhooks.API](12-compose-webhooks.md).
 
 ## 9. Commandes de référence
 

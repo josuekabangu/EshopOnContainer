@@ -84,6 +84,7 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] Ordering.API démarré avec Docker Compose.
 * [x] OrderProcessor démarré avec Docker Compose, rétablissement vérifié s'il démarre avant les tables.
 * [x] PaymentProcessor démarré avec Docker Compose, échange de messages vérifié avec Ordering.API.
+* [x] Webhooks.API démarré avec Docker Compose.
 * [ ] Démarrage de l’ensemble des services avec Docker Compose.
 
 ### Suite du projet
@@ -124,7 +125,8 @@ EshopOnContainer/
 │       ├── 08-compose-basket.md
 │       ├── 09-compose-ordering.md
 │       ├── 10-compose-order-processor.md
-│       └── 11-compose-payment-processor.md
+│       ├── 11-compose-payment-processor.md
+│       └── 12-compose-webhooks.md
 │
 ├── lab-local/
 │   ├── README.md
@@ -178,6 +180,7 @@ Conteneurisation de l'application :
 | [09 — Compose : Ordering.API](docs/02-docker/09-compose-ordering.md) | Commandes, tables partagées avec OrderProcessor, contrôle d'accès |
 | [10 — Compose : OrderProcessor](docs/02-docker/10-compose-order-processor.md) | Tâche de fond, vérification sans API, démarrage avant les tables |
 | [11 — Compose : PaymentProcessor](docs/02-docker/11-compose-payment-processor.md) | Paiement simulé, liaisons RabbitMQ, événement de test à travers le bus |
+| [12 — Compose : Webhooks.API](docs/02-docker/12-compose-webhooks.md) | Abonnements des applications extérieures, valeur d'origine remplacée, trois événements |
 
 ## Feuille de route
 
