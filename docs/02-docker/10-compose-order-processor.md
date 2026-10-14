@@ -241,7 +241,7 @@ Après le test, l’ensemble a été redémarré avec `docker compose up -d` : l
 
 ## 7. Étape suivante
 
-Ajouter `PaymentProcessor`, le second service sans API, qui simule le paiement des commandes. Il ne dépend que de RabbitMQ.
+Ajouter `PaymentProcessor`, le second service sans API, qui simule le paiement des commandes. Il ne dépend que de RabbitMQ. Voir [11 — Docker Compose : PaymentProcessor](11-compose-payment-processor.md).
 
 ## 8. Commandes de référence
 
