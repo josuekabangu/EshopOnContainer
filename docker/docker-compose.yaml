@@ -43,11 +43,35 @@ services:
       retries: 5
     networks:
       - eshop-network
- 
+
+
+  # =====================================================================
+  # RABBITMQ
+  # =====================================================================
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: rabbitmq
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: /
+    ports:
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      - eshop-network 
   
 volumes:
   pg_data:
   redis_data:
+  rmq_data:
 
 networks:
   eshop-network:
