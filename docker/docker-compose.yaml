@@ -80,8 +80,10 @@ services:
     container_name: identity-api
     environment:
       ConnectionStrings__identitydb: "Host=postgres;Port=5432;Database=identitydb;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      ASPNETCORE_HTTP_PORTS: "5223"
+      WebAppClient: "http://localhost:5045"
     ports:
-      - "127.0.0.1:5223:8080"
+      - "127.0.0.1:5223:5223"
     depends_on:
       postgres:
         condition: service_healthy
@@ -124,7 +126,7 @@ services:
     environment:
       ConnectionStrings__redis: "redis:6379,password=${REDIS_PASSWORD}"
       ConnectionStrings__eventbus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/"
-      Identity__Url: "http://identity-api:8080"
+      Identity__Url: "http://identity-api:5223"
     ports:
       - "127.0.0.1:5221:8080"
     depends_on:
@@ -150,7 +152,7 @@ services:
     environment:
       ConnectionStrings__orderingdb: "Host=postgres;Port=5432;Database=orderingdb;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       ConnectionStrings__eventbus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/"
-      Identity__Url: "http://identity-api:8080"
+      Identity__Url: "http://identity-api:5223"
     ports:
       - "127.0.0.1:5224:8080"
     depends_on:
@@ -217,7 +219,7 @@ services:
     environment:
       ConnectionStrings__webhooksdb: "Host=postgres;Port=5432;Database=webhooksdb;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       ConnectionStrings__eventbus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/"
-      Identity__Url: "http://identity-api:8080"
+      Identity__Url: "http://identity-api:5223"
     ports:
       - "127.0.0.1:5227:8080"
     depends_on:
@@ -226,6 +228,39 @@ services:
       rabbitmq:
         condition: service_healthy
       identity-api:
+        condition: service_started
+    networks:
+      - eshop-network
+
+  # =====================================================================
+  # WEBAPP
+  # =====================================================================
+  webapp:
+    image: webapp
+    pull_policy: build
+    build:
+      context: ..
+      dockerfile: docker/src/WebApp/Dockerfile
+    container_name: webapp
+    environment:
+      IdentityUrl: "http://identity-api:5223"
+      CallBackUrl: "http://localhost:5045"
+      ConnectionStrings__eventbus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/"
+      services__catalog-api__http__0: "http://catalog-api:8080"
+      services__basket-api__http__0: "http://basket-api:8080"
+      services__ordering-api__http__0: "http://ordering-api:8080"
+    ports:
+      - "127.0.0.1:5045:8080"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      identity-api:
+        condition: service_started
+      catalog-api:
+        condition: service_started
+      basket-api:
+        condition: service_started
+      ordering-api:
         condition: service_started
     networks:
       - eshop-network
