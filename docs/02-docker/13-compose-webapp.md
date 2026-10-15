@@ -231,7 +231,16 @@ Dans `basket-api`, `ordering-api` et `webhooks-api` :
 
 Le code de `WebApp` peut assouplir les cookies de connexion, pour un accès en HTTP par une adresse autre que `localhost`, si le réglage `Authentication:AllowInsecureCookies` vaut `true` (guide 02, section 8 bis). Le fichier Compose ne le définit pas : la boutique est ouverte par `localhost`, que les navigateurs traitent comme une adresse sûre.
 
-Lors du parcours de la section 6, cet assouplissement était encore appliqué en permanence, par un fichier de remplacement dans l’image. Depuis l’alignement du 15 octobre 2026, les cookies sont ceux d’origine, `secure; samesite=none`. La connexion dans le navigateur doit être revérifiée dans cette configuration.
+Lors du parcours de la section 6, cet assouplissement était encore appliqué en permanence, par un fichier de remplacement dans l’image. Depuis l’alignement du 15 octobre 2026, les cookies sont ceux d’origine, `secure; samesite=none`. La connexion a été revérifiée dans cette configuration, le même jour, dans une fenêtre de navigation privée :
+
+| Contrôle | Résultat |
+|---|---|
+| Image de `webapp` | Celle de l’alignement, sans le réglage `Authentication__AllowInsecureCookies` |
+| Journal d’`Identity.API`, client `webapp` | `User Login Success`, puis `Token Issued Success` |
+| Journal de `webapp` | Aucune erreur `Correlation failed` |
+| Panier | `Basket item persisted successfully` dans le journal de `basket-api` |
+
+Si les cookies de connexion avaient été refusés par le navigateur, `WebApp` n’aurait pas pu vérifier le retour d’`Identity.API`, et aurait écrit `Correlation failed`. Les cookies d’origine suffisent donc pour un accès par `localhost`. Le journal contenait aussi deux erreurs `antiforgery token could not be decrypted`, sur la clé de `webhook-client` : c’est l’interférence entre les deux sites décrite dans le guide 14, section 6.
 
 Aucune variable nouvelle n’est à ajouter au fichier `.env`.
 

@@ -31,9 +31,12 @@ Le raisonnement et la correction du défaut qui a précédé ce choix sont décr
 
 | Fichier | Modification | Raison | Commit |
 |---|---|---|---|
-| `eShop/src/eShop.ServiceDefaults/Extensions.cs` | Les routes `/health` et `/alive` sont aussi déclarées hors `Development` quand le réglage `HealthChecks:Expose` vaut `true` ; ajout de `using Microsoft.Extensions.Configuration;`, nécessaire à `GetValue` | Les contrôles de santé de Docker Compose et les probes de Kubernetes en ont besoin ; sans le réglage, le comportement d'origine est conservé | *à compléter après le commit* |
+| `eShop/src/eShop.ServiceDefaults/Extensions.cs` | Les routes `/health` et `/alive` sont aussi déclarées hors `Development` quand le réglage `HealthChecks:Expose` vaut `true` ; ajout de `using Microsoft.Extensions.Configuration;`, nécessaire à `GetValue` | Les contrôles de santé de Docker Compose et les probes de Kubernetes en ont besoin ; sans le réglage, le comportement d'origine est conservé | `ae2f77b` |
+| `eShop/src/WebApp/Extensions/Extensions.cs` | Les cookies de corrélation et de nonce d'OpenID Connect passent en `SameSite=Lax`, sans attribut `Secure`, et la réponse de connexion revient dans l'adresse (`ResponseMode = "query"`), quand le réglage `Authentication:AllowInsecureCookies` vaut `true` | Permettre la connexion en HTTP par une adresse autre que `localhost`, par exemple celle d'un nœud du cluster ; sans le réglage, le comportement d'origine est conservé | `72ee8fa` |
 
-Une modification est appliquée en dehors de ce répertoire : à la construction de l'image de `WebApp`, le fichier `eShop/src/WebApp/Extensions/Extensions.cs` est remplacé par `docker/src/WebApp/Extensions.cs`. Les sources ne changent pas, seule l'image est concernée. Voir [docs/02-docker/02-autres-services.md](../docs/02-docker/02-autres-services.md), section 8.
+Jusqu'au 15 octobre 2026, la modification de `WebApp` était appliquée en dehors de ce répertoire, par un fichier de remplacement copié pendant la construction de l'image (`docker/src/WebApp/Extensions.cs`, supprimé depuis). Voir [docs/02-docker/02-autres-services.md](../docs/02-docker/02-autres-services.md), sections 8 et 8 bis.
+
+Le commit `72ee8fa` contient aussi la ligne du tableau qui décrit l'adaptation `ae2f77b` : les deux commits ont été faits dans l'ordre inverse de celui prévu. Le code de chaque adaptation est bien dans son propre commit.
 
 Une différence existe avec le dépôt d'origine sans être une adaptation : le fichier `eShop/.github/workflows/pr-validation-maui.yml` a les mêmes lignes, mais ses fins de ligne ont été normalisées par Git lors de l'import.
 
