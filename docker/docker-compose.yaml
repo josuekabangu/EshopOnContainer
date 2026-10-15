@@ -1,8 +1,44 @@
+# =======================================================================
+# RÉGLAGES COMMUNS À TOUS LES CONTENEURS
+# =======================================================================
+# Redémarrage automatique si le processus s'arrête (par exemple un service
+# lancé avant sa base), et rotation des journaux : 3 fichiers de 10 Mo au plus.
+x-defaults: &defaults
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+# =======================================================================
+# CONTRÔLE DE SANTÉ COMMUN AUX SERVICES D'ESHOP
+# =======================================================================
+# Les images ne contiennent ni curl ni wget : bash ouvre la connexion
+# par /dev/tcp et vérifie que /health répond 200. Les routes de santé
+# n'existent que si HealthChecks__Expose vaut true.
+x-service-healthcheck: &service-healthcheck
+  test:
+    - CMD
+    - bash
+    - -c
+    - >-
+      exec 3<>/dev/tcp/127.0.0.1/$${HEALTHCHECK_PORT:-8080}
+      && printf 'GET /health HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3
+      && head -1 <&3 | grep -q ' 200 '
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 30s
+  # Pendant start_period, contrôle toutes les 2 s au lieu de 10 s
+  start_interval: 2s
+
 services:
   # =====================================================================
   # POSTGRES PGVECTOR
   # =====================================================================
   postgres:
+    <<: *defaults
     image: ankane/pgvector:latest
     container_name: postgres
     environment:
@@ -13,10 +49,14 @@ services:
       - pg_data:/var/lib/postgresql/data
       - ./scripts/postgres/init-db.sh:/docker-entrypoint-initdb.d/01-init-db.sh
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      # -h 127.0.0.1 : passer par TCP. Pendant init-db.sh, l'image fait tourner un serveur
+      # temporaire joignable par le seul socket local ; sans -h, le contrôle le croirait prêt.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d postgres"]
       interval: 10s
-      timeout: 10s
+      timeout: 5s
       retries: 5
+      start_period: 30s
+      start_interval: 2s
     networks:
       - eshop-network
 
@@ -25,6 +65,7 @@ services:
   # REDIS
   # =====================================================================
   redis:
+    <<: *defaults
     image: redis:7
     container_name: redis
     command: 
@@ -34,12 +75,16 @@ services:
       - --maxmemory-policy noeviction
       - --appendonly yes
       - --appendfsync everysec
+    environment:
+      # Lu par redis-cli : le mot de passe n'apparaît pas dans la commande du contrôle
+      REDISCLI_AUTH: ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      # grep PONG : redis-cli sort avec le code 0 même quand l'authentification échoue
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
       interval: 10s
-      timeout: 10s
+      timeout: 5s
       retries: 5
     networks:
       - eshop-network
@@ -49,6 +94,7 @@ services:
   # RABBITMQ
   # =====================================================================
   rabbitmq:
+    <<: *defaults
     image: rabbitmq:4-management
     container_name: rabbitmq
     hostname: rabbitmq
@@ -72,6 +118,7 @@ services:
   # IDENTITY.API
   # =====================================================================
   identity-api:
+    <<: *defaults
     image: identity-api
     pull_policy: build 
     build:
@@ -83,8 +130,11 @@ services:
       ASPNETCORE_HTTP_PORTS: "5223"
       WebAppClient: "http://localhost:5045"
       WebhooksWebClient: "http://localhost:5062"
+      HealthChecks__Expose: "true"
+      HEALTHCHECK_PORT: "5223"
     ports:
       - "127.0.0.1:5223:5223"
+    healthcheck: *service-healthcheck
     depends_on:
       postgres:
         condition: service_healthy
@@ -95,6 +145,7 @@ services:
   # CATALOG.API
   # =====================================================================
   catalog-api:
+    <<: *defaults
     image: catalog-api
     pull_policy: build
     build: 
@@ -104,8 +155,10 @@ services:
     environment:
       ConnectionStrings__catalogdb: "Host=postgres;Port=5432;Database=catalogdb;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       ConnectionStrings__eventbus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/"
+      HealthChecks__Expose: "true"
     ports:
       - "127.0.0.1:5102:8080"
+    healthcheck: *service-healthcheck
     depends_on:
       postgres:
         condition: service_healthy
@@ -118,6 +171,7 @@ services:
   # BASKET.API
   # =====================================================================
   basket-api:
+    <<: *defaults
     image: basket-api
     pull_policy: build
     build:
@@ -128,15 +182,23 @@ services:
       ConnectionStrings__redis: "redis:6379,password=${REDIS_PASSWORD}"
       ConnectionStrings__eventbus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/"
       Identity__Url: "http://identity-api:5223"
+      HealthChecks__Expose: "true"
+      # gRPC en HTTP/2 seul sur 8080 ; second port, en HTTP/1.1, réservé au contrôle de santé
+      HEALTHCHECK_PORT: "8081"
+      Kestrel__Endpoints__grpc__Url: "http://+:8080"
+      Kestrel__Endpoints__grpc__Protocols: "Http2"
+      Kestrel__Endpoints__health__Url: "http://+:8081"
+      Kestrel__Endpoints__health__Protocols: "Http1"
     ports:
       - "127.0.0.1:5221:8080"
+    healthcheck: *service-healthcheck
     depends_on:
       redis:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
       identity-api:
-        condition: service_started
+        condition: service_healthy
     networks:
       - eshop-network
 
@@ -144,6 +206,7 @@ services:
   # ORDERING.API
   # =====================================================================
   ordering-api:
+    <<: *defaults
     image: ordering-api
     pull_policy: build
     build:
@@ -154,15 +217,17 @@ services:
       ConnectionStrings__orderingdb: "Host=postgres;Port=5432;Database=orderingdb;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       ConnectionStrings__eventbus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/"
       Identity__Url: "http://identity-api:5223"
+      HealthChecks__Expose: "true"
     ports:
       - "127.0.0.1:5224:8080"
+    healthcheck: *service-healthcheck
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
       identity-api:
-        condition: service_started
+        condition: service_healthy
     networks:
       - eshop-network
 
@@ -170,6 +235,7 @@ services:
   # ORDERPROCESSOR
   # =====================================================================
   order-processor:
+    <<: *defaults
     image: order-processor
     pull_policy: build
     build:
@@ -179,13 +245,15 @@ services:
     environment:
       ConnectionStrings__orderingdb: "Host=postgres;Port=5432;Database=orderingdb;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       ConnectionStrings__eventbus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/"
+      HealthChecks__Expose: "true"
+    healthcheck: *service-healthcheck
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
       ordering-api:
-        condition: service_started
+        condition: service_healthy
     networks:
       - eshop-network
 
@@ -193,6 +261,7 @@ services:
   # PAYMENTPROCESSOR
   # =====================================================================
   payment-processor:
+    <<: *defaults
     image: payment-processor
     pull_policy: build
     build:
@@ -201,6 +270,8 @@ services:
     container_name: payment-processor
     environment:
       ConnectionStrings__eventbus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/"
+      HealthChecks__Expose: "true"
+    healthcheck: *service-healthcheck
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -211,6 +282,7 @@ services:
   # WEBHOOKS.API
   # =====================================================================
   webhooks-api:
+    <<: *defaults
     image: webhooks-api
     pull_policy: build
     build:
@@ -221,15 +293,17 @@ services:
       ConnectionStrings__webhooksdb: "Host=postgres;Port=5432;Database=webhooksdb;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       ConnectionStrings__eventbus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/"
       Identity__Url: "http://identity-api:5223"
+      HealthChecks__Expose: "true"
     ports:
       - "127.0.0.1:5227:8080"
+    healthcheck: *service-healthcheck
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
       identity-api:
-        condition: service_started
+        condition: service_healthy
     networks:
       - eshop-network
 
@@ -237,6 +311,7 @@ services:
   # WEBAPP
   # =====================================================================
   webapp:
+    <<: *defaults
     image: webapp
     pull_policy: build
     build:
@@ -250,19 +325,21 @@ services:
       services__catalog-api__http__0: "http://catalog-api:8080"
       services__basket-api__http__0: "http://basket-api:8080"
       services__ordering-api__http__0: "http://ordering-api:8080"
+      HealthChecks__Expose: "true"
     ports:
       - "127.0.0.1:5045:8080"
+    healthcheck: *service-healthcheck
     depends_on:
       rabbitmq:
         condition: service_healthy
       identity-api:
-        condition: service_started
+        condition: service_healthy
       catalog-api:
-        condition: service_started
+        condition: service_healthy
       basket-api:
-        condition: service_started
+        condition: service_healthy
       ordering-api:
-        condition: service_started
+        condition: service_healthy
     networks:
       - eshop-network
 
@@ -270,6 +347,7 @@ services:
   # WEBHOOKCLIENT
   # =====================================================================
   webhook-client:
+    <<: *defaults
     image: webhook-client
     pull_policy: build
     build:
@@ -281,13 +359,15 @@ services:
       CallBackUrl: "http://localhost:5062"
       WebhookClientOptions__SelfUrl: "http://webhook-client:8080/"
       services__webhooks-api__http__0: "http://webhooks-api:8080"
+      HealthChecks__Expose: "true"
     ports:
       - "127.0.0.1:5062:8080"
+    healthcheck: *service-healthcheck
     depends_on:
       identity-api:
-        condition: service_started
+        condition: service_healthy
       webhooks-api:
-        condition: service_started
+        condition: service_healthy
     networks:
       - eshop-network
 
