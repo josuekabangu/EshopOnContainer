@@ -229,7 +229,9 @@ Dans `basket-api`, `ordering-api` et `webhooks-api` :
 | Port `5045` | Celui qu’eShop utilise en développement |
 | `depends_on` | Les quatre services appelés par `WebApp`, et RabbitMQ |
 
-Le Dockerfile de `WebApp` remplace un fichier source pour assouplir les cookies de connexion (guide 02, section 8). Ici, ce remplacement n’est pas nécessaire : la boutique est ouverte par `localhost`, que les navigateurs traitent comme une adresse sûre.
+Le code de `WebApp` peut assouplir les cookies de connexion, pour un accès en HTTP par une adresse autre que `localhost`, si le réglage `Authentication:AllowInsecureCookies` vaut `true` (guide 02, section 8 bis). Le fichier Compose ne le définit pas : la boutique est ouverte par `localhost`, que les navigateurs traitent comme une adresse sûre.
+
+Lors du parcours de la section 6, cet assouplissement était encore appliqué en permanence, par un fichier de remplacement dans l’image. Depuis l’alignement du 15 octobre 2026, les cookies sont ceux d’origine, `secure; samesite=none`. La connexion dans le navigateur doit être revérifiée dans cette configuration.
 
 Aucune variable nouvelle n’est à ajouter au fichier `.env`.
 

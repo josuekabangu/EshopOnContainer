@@ -204,7 +204,7 @@ transferring context: 15.39MB
 
 Seules les sources d’eShop sont transmises, et la construction réussit.
 
-Depuis le 14 octobre 2026, le fichier contient une autorisation supplémentaire, `!docker/src/WebApp/Extensions.cs`, propre à l’image de `WebApp` : voir [02 — Images Docker des autres services](02-autres-services.md), section 8.
+Du 14 au 15 octobre 2026, le fichier a contenu une autorisation supplémentaire, `!docker/src/WebApp/Extensions.cs`, propre à l’image de `WebApp`. Elle a été retirée avec le fichier qu’elle concernait : voir [02 — Images Docker des autres services](02-autres-services.md), sections 8 et 8 bis.
 
 ### Vérification de l’image
 

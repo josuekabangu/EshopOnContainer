@@ -344,6 +344,8 @@ Sans cette variable, `WebApp` cherche le catalogue sur le port `443`, où rien n
 
 ## 8. WebApp : un fichier de remplacement
 
+> **Remplacé le 15 octobre 2026.** Le mécanisme décrit dans cette section n’existe plus. La modification des cookies a été déplacée dans les sources, `application/eShop/src/WebApp/Extensions/Extensions.cs`, et ne s’applique plus que si le réglage `Authentication:AllowInsecureCookies` vaut `true`. Le fichier `docker/src/WebApp/Extensions.cs`, l’instruction `COPY` du Dockerfile et l’exception du `.dockerignore` ont été supprimés : le Dockerfile de `WebApp` est désormais identique aux huit autres. Voir la section 8 bis. La suite de cette section est conservée comme historique.
+
 ### Pourquoi
 
 Pendant la connexion d’un utilisateur, `WebApp` dépose deux cookies dans le navigateur, puis vérifie qu’ils lui reviennent. Avec le code d’origine, ces cookies portent l’attribut `secure` : un navigateur ne les renvoie que sur une connexion HTTPS, avec une exception pour `localhost`.
@@ -450,6 +452,55 @@ diff --strip-trailing-cr \
 
 `--strip-trailing-cr` ignore les différences de fin de ligne. Le résultat attendu se limite aux cinq lignes ci-dessus et à un caractère invisible en tête du fichier d’origine.
 
+## 8 bis. WebApp : la même modification, dans les sources
+
+### Pourquoi changer de méthode
+
+Le 15 octobre 2026, une seconde adaptation du code d’eShop a été nécessaire, pour les routes de santé. Elle a été faite selon la règle de `application/README.md` : dans le fichier d’origine, dans un commit dédié, inscrite dans le tableau des adaptations, et activable par un réglage. Le projet avait alors deux méthodes pour adapter le code. La modification de `WebApp` a été alignée sur la seconde.
+
+| | Fichier de remplacement (section 8) | Modification des sources (actuelle) |
+|---|---|---|
+| Emplacement | Copie complète, dans `docker/src/WebApp/` | Dans le fichier d’origine, `application/eShop/` |
+| Écart visible | 5 lignes noyées dans une copie de 130 | 11 lignes, visibles dans `git diff` |
+| Tableau des adaptations | Non | Oui |
+| Mise à jour d’eShop | La copie écrase la nouvelle version sans prévenir | Conflit visible, à résoudre |
+| Activation | Permanente | Seulement si le réglage la demande |
+| Dispositifs supplémentaires | Ligne `COPY`, exception dans `.dockerignore` | Aucun |
+
+Un constat du guide 13 a aussi pesé : la boutique s’ouvre par `http://localhost:5045`, que les navigateurs traitent comme une adresse sûre. La modification n’y sert à rien. Toujours active, elle retirait pourtant l’attribut `secure` des cookies en permanence.
+
+### La modification
+
+Dans `application/eShop/src/WebApp/Extensions/Extensions.cs`, à la fin de la configuration d’OpenID Connect :
+
+```csharp
+            // EshopOnContainer adaptation: let the sign-in work over plain HTTP on a host other than
+            // localhost, when explicitly requested by configuration (Authentication__AllowInsecureCookies=true).
+            if (configuration.GetValue<bool>("Authentication:AllowInsecureCookies"))
+            {
+                options.ResponseMode = "query";
+                options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+                options.NonceCookie.SameSite = SameSiteMode.Lax;
+                options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.None;
+                options.NonceCookie.SecurePolicy = CookieSecurePolicy.None;
+            }
+```
+
+Les cinq lignes sont celles de l’ancien fichier de remplacement, décrites en section 8. Elles ne s’appliquent que si le réglage `Authentication:AllowInsecureCookies` vaut `true`. Le fichier Compose ne le définit pas.
+
+Le Dockerfile de `WebApp` ne contient plus l’instruction de remplacement : il est identique aux huit autres, au nom du projet près. Le `.dockerignore` est revenu à sa forme de la section 4 du guide 01.
+
+### Vérifier
+
+Les attributs des cookies de connexion ont été relevés, comme en section 8, sur une requête vers `/user/login` :
+
+| Image `webapp:latest`, après alignement | Attributs des cookies de connexion |
+|---|---|
+| Sans le réglage, conteneur du Compose | `secure; samesite=none`, comportement d’origine d’eShop |
+| Avec `Authentication__AllowInsecureCookies=true`, conteneur jetable | `samesite=lax` |
+
+La requête portait l’en-tête `Host: localhost:5045`. Sans lui, `WebApp` aurait construit une adresse de retour que `Identity.API` refuse (guide 13, section 6).
+
 ## 9. Tableau de validation
 
 | Contrôle | Résultat au 14 octobre 2026 |
@@ -469,8 +520,8 @@ diff --strip-trailing-cr \
 
 ## 10. Points ouverts
 
-1. **Retirer le fichier de remplacement de `WebApp`** lorsque l’application sera servie en HTTPS, et le comparer au fichier d’origine à chaque mise à jour d’eShop, voir section 8.
-2. **Décider du traitement des routes de santé**, en tenant compte de `Basket.API`, qui ne répond qu’en HTTP/2, et des deux services de traitement, qui ne servent aucune page.
+1. ~~Retirer le fichier de remplacement de `WebApp`~~ : remplacé le 15 octobre 2026 par une adaptation des sources, activable par un réglage, voir section 8 bis.
+2. **Décider du traitement des routes de santé**, en tenant compte de `Basket.API`, qui ne répond qu’en HTTP/2, et des deux services de traitement, qui ne servent aucune page. Décidé le 15 octobre 2026 : les routes sont activables par le réglage `HealthChecks:Expose` (adaptation de `eShop.ServiceDefaults/Extensions.cs`, inscrite dans `application/README.md`).
 3. **Réduire la répétition.** Les neuf Dockerfiles ne diffèrent que par le nom du projet. Un Dockerfile unique, recevant ce nom en argument de construction, éviterait de reporter neuf fois chaque évolution. Le choix d’un fichier par service reste valable : il est plus simple à lire.
 4. **Corriger le commentaire** « Restauration des référencés », repris dans les neuf fichiers : il s’agit de la restauration des dépendances.
 5. **Clé de signature et clés de protection**, voir section 7 : à traiter avant tout usage autre que l’apprentissage.
