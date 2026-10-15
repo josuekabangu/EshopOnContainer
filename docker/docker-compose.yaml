@@ -10,6 +10,13 @@ x-defaults: &defaults
     options:
       max-size: "10m"
       max-file: "3"
+  # Plafond mémoire par conteneur. Consommation mesurée le 15/10/2026 :
+  # de 41 à 111 Mio pour les services .NET, 55 Mio pour PostgreSQL.
+  # Redis et RabbitMQ ont leur propre plafond, plus haut.
+  deploy:
+    resources:
+      limits:
+        memory: 512M
 
 # =======================================================================
 # CONTRÔLE DE SANTÉ COMMUN AUX SERVICES D'ESHOP
@@ -39,7 +46,10 @@ services:
   # =====================================================================
   postgres:
     <<: *defaults
-    image: ankane/pgvector:latest
+    # Image officielle de pgvector, version figée. eShop utilise ankane/pgvector:latest,
+    # qui n'est plus mise à jour depuis 2023. Rester en PostgreSQL 15 : une autre version
+    # majeure ne pourrait pas lire le volume pg_data.
+    image: pgvector/pgvector:0.8.7-pg15
     container_name: postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -80,6 +90,11 @@ services:
       REDISCLI_AUTH: ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
+    # Au-dessus de --maxmemory 1gb : sinon le noyau arrêterait Redis avant qu'il refuse les écritures
+    deploy:
+      resources:
+        limits:
+          memory: 1280M
     healthcheck:
       # grep PONG : redis-cli sort avec le code 0 même quand l'authentification échoue
       test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
@@ -106,6 +121,11 @@ services:
       - "127.0.0.1:15672:15672"
     volumes:
       - rmq_data:/var/lib/rabbitmq
+    # RabbitMQ bloque les publications à 40 % de la mémoire disponible : avec 1 Go, à environ 400 Mio
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
       interval: 10s
