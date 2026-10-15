@@ -382,7 +382,7 @@ C’est la première vérification de bout en bout du projet. Il confirme aussi 
 ## 7. Points ouverts
 
 1. ~~`WebhookClient` reste à ajouter~~ : ajouté le 15 octobre 2026, voir le guide 14.
-2. **Les services n’ont pas de contrôle de santé.** `WebApp` ne peut attendre que le démarrage des services qu’il appelle.
+2. ~~Les services n’ont pas de contrôle de santé~~ : réglé le 15 octobre 2026. `WebApp` attend désormais que les services qu’il appelle soient `healthy` (guide 15).
 3. **Les ports de `Catalog.API`, `Basket.API`, `Ordering.API` et `Webhooks.API` ne sont plus utiles qu’aux tests.** `WebApp` les joint par le réseau Docker.
 4. **Le fichier `hosts` est à préparer sur chaque poste**, voir section 4.
 5. **Le journal de `WebApp` contient l’avertissement `Failed to determine the https port for redirect`.** Le code d’eShop demande une redirection vers HTTPS, qui n’est pas configuré ici. Sans conséquence : la boutique fonctionne en HTTP.

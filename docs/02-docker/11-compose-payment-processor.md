@@ -244,7 +244,7 @@ Un message mal formé ou mal traité n’est donc ni conservé, ni retenté : se
 
 ## 6. Points ouverts
 
-1. **Le service n’a pas de contrôle de santé**, et n’a pas de page qu’un contrôle HTTP pourrait interroger.
+1. ~~Le service n’a pas de contrôle de santé~~ : réglé le 15 octobre 2026. Sans page métier, il expose tout de même `/health` et `/alive` quand `HealthChecks__Expose` vaut `true`, et le contrôle commun s’applique (guide 15, section 6).
 2. **Un message en erreur est perdu**, voir section 5. C’est une limite du code d’eShop, pas de la configuration.
 3. **Le paiement refusé n’est pas testé.** Il suffirait de transmettre `PaymentOptions__PaymentSucceeded=false` au service.
 

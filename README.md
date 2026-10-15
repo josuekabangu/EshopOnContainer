@@ -88,6 +88,8 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] WebApp démarrée avec Docker Compose : connexion d'un utilisateur et commande menée jusqu'au paiement depuis le navigateur.
 * [x] WebhookClient démarré avec Docker Compose : abonnement et notification vérifiés.
 * [x] Démarrage de l’ensemble des services avec Docker Compose : 9 services et 3 dépendances.
+* [x] Contrôles de santé sur les 12 conteneurs, démarrage ordonné par l'état `healthy` des dépendances.
+* [x] Redémarrage automatique, rotation des journaux, plafonds de mémoire, image PostgreSQL officielle à version figée.
 
 ### Suite du projet
 
@@ -133,7 +135,9 @@ EshopOnContainer/
 │       ├── 11-compose-payment-processor.md
 │       ├── 12-compose-webhooks.md
 │       ├── 13-compose-webapp.md
-│       └── 14-compose-webhook-client.md
+│       ├── 14-compose-webhook-client.md
+│       ├── 15-controles-de-sante.md
+│       └── 16-robustesse-compose.md
 │
 ├── lab-local/
 │   ├── README.md
@@ -190,6 +194,8 @@ Conteneurisation de l'application :
 | [12 — Compose : Webhooks.API](docs/02-docker/12-compose-webhooks.md) | Abonnements des applications extérieures, valeur d'origine remplacée, trois événements |
 | [13 — Compose : WebApp](docs/02-docker/13-compose-webapp.md) | Boutique, adresse unique d'Identity.API, fichier `hosts`, parcours de commande de bout en bout |
 | [14 — Compose : WebhookClient](docs/02-docker/14-compose-webhook-client.md) | Site de démonstration des webhooks, adresse vue du réseau Docker, notification reçue |
+| [15 — Les contrôles de santé](docs/02-docker/15-controles-de-sante.md) | Routes `/health` et `/alive` activables, contrôle sans `curl`, démarrage par vagues |
+| [16 — Robustesse du fichier Compose](docs/02-docker/16-robustesse-compose.md) | Redémarrage, journaux, plafonds de mémoire, image PostgreSQL, revue extérieure |
 
 ## Feuille de route
 

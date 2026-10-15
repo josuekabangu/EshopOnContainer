@@ -107,6 +107,10 @@ Le modèle doit être complété en même temps que le fichier réel. Sans cela,
 
 ## 6. Le contrôle de santé
 
+> **Corrigé le 15 octobre 2026.** Le contrôle décrit ci-dessous plaçait le mot de passe dans sa commande. Il est devenu `redis-cli ping | grep -q PONG`, et le mot de passe est transmis au conteneur par la variable `REDISCLI_AUTH`, que `redis-cli` lit nativement. Le `grep PONG` répond au défaut décrit dans cette section : seule la réponse `PONG` fait réussir le contrôle. Voir le guide 15, section 8.
+>
+> Conséquence pour les commandes de ce guide : `REDISCLI_AUTH` étant défini dans le conteneur, `docker exec redis redis-cli ping` s’authentifie désormais seul et répond `PONG`. Pour reproduire un refus, il faut vider ou fausser la variable : `docker exec -e REDISCLI_AUTH= redis redis-cli ping`.
+
 | Réglage | Valeur | Signification |
 |---|---|---|
 | `test` | `redis-cli -a ${REDIS_PASSWORD} ping` | Envoie la commande `PING`, avec le mot de passe ; Redis répond `PONG` s’il fonctionne |
@@ -190,6 +194,8 @@ docker exec redis redis-cli -a faux ping
 ```
 
 Les deux commandes sont refusées. La première n’envoie aucun mot de passe, la seconde un mot de passe faux.
+
+Depuis le 15 octobre 2026, la variable `REDISCLI_AUTH` est définie dans le conteneur (section 6) : la première commande répond `PONG`. Pour vérifier le refus, il faut écrire `docker exec -e REDISCLI_AUTH= redis redis-cli ping`, qui répond `NOAUTH Authentication required.`
 
 ### Les réglages sont appliqués
 
@@ -280,6 +286,8 @@ Ce réglage est perdu au redémarrage de WSL2. Il modifie aussi le comportement 
 1. **L’image porte l’étiquette `redis:7`.** Elle suit les nouvelles versions 7.x. Une étiquette complète, comme `redis:7.4.11`, figerait la version.
 2. **L’avertissement `Memory overcommit`** reste affiché, voir section 8.
 3. **Les mots de passe sont lisibles avec `docker inspect`**, voir section 6.
+
+Depuis le 15 octobre 2026, Redis a aussi un plafond de mémoire, 1280 Mio, fixé au-dessus de `--maxmemory 1gb` pour que la politique `noeviction` puisse jouer (guide 16, section 5).
 
 ## 12. Étape suivante
 

@@ -183,7 +183,7 @@ Résultats vérifiés : une seule ligne, `127.0.0.1:5223`, puis le compte `1654`
 
 ## 6. Points ouverts
 
-1. **Le service n’a pas de contrôle de santé.** `/health` répond `404`, pour la raison donnée dans le guide 01, section 8. Un service qui dépendra d’`Identity.API` ne pourra attendre que son démarrage (`condition: service_started`), et non son bon fonctionnement.
+1. ~~Le service n’a pas de contrôle de santé~~ : réglé le 15 octobre 2026. Le service reçoit `HealthChecks__Expose: "true"`, `HEALTHCHECK_PORT: "5223"` et le contrôle commun ; les services qui en dépendent attendent son état `healthy`. Voir le guide 15.
 2. **L’adresse d’émission des jetons dépend de l’adresse d’appel.** `Identity.API` signe chaque jeton avec son adresse, appelée « émetteur » (`issuer`), qu’il déduit de l’adresse utilisée pour le joindre. Avec la première version de ce guide, l’émetteur différait selon l’appelant :
 
    | Joint par | `issuer` annoncé |
@@ -205,7 +205,7 @@ Résultats vérifiés : une seule ligne, `127.0.0.1:5223`, puis le compte `1654`
 | Utilisateurs de démonstration | 2, `alice` et `bob` |
 | Port publié | `127.0.0.1:5223` seulement |
 | Compte d’exécution | `1654` |
-| Contrôle de santé | Absent |
+| Contrôle de santé | Absent ; ajouté le 15 octobre 2026 (guide 15) |
 | Connexion d’un utilisateur depuis un navigateur | Non testée |
 
 ## 8. Étape suivante

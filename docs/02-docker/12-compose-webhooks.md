@@ -178,7 +178,7 @@ Résultats vérifiés le 15 octobre 2026 :
 
 ## 6. Points ouverts
 
-1. **Le service n’a pas de contrôle de santé**, comme les autres services d’eShop.
+1. ~~Le service n’a pas de contrôle de santé~~ : réglé le 15 octobre 2026 pour tous les services d’eShop, voir le guide 15.
 2. ~~L’envoi d’un webhook n’est pas testé~~ : testé le 15 octobre 2026 avec `WebhookClient`, voir le guide 14, section 5. La réception des événements est en revanche vérifiée : lors de la commande du 15 octobre 2026, le service a reçu l’événement « payée » et constaté `0 subscriptions to process` (guide 13, section 6). Le message de son journal nomme par erreur l’événement `OrderStatusChangedToShippedIntegrationEvent` : c’est une coquille du code d’eShop, dans `OrderStatusChangedToPaidIntegrationEventHandler.cs`.
 3. **Le port publié n’est utile qu’aux tests.**
 

@@ -199,7 +199,7 @@ warn: LuckyPennySoftware.MediatR.License[0]
 
 ## 5. Points ouverts
 
-1. **Le service n’a pas de contrôle de santé.** `OrderProcessor`, qui a besoin des tables créées par `Ordering.API`, ne pourra attendre que son démarrage, et non la fin de ses migrations. Ce point est traité avec `OrderProcessor`.
+1. ~~Le service n’a pas de contrôle de santé~~ : réglé le 15 octobre 2026. `Ordering.API` applique ses migrations avant d’accepter des requêtes : son état `healthy` garantit que ses tables existent, et `OrderProcessor` l’attend désormais (guide 15, section 7). Le texte d’origine suit : `OrderProcessor`, qui a besoin des tables créées par `Ordering.API`, ne pourra attendre que son démarrage, et non la fin de ses migrations. Ce point est traité avec `OrderProcessor`.
 2. **Le port publié n’est utile qu’aux tests.**
 3. ~~La création d’une commande n’est pas testée~~ : testée le 15 octobre 2026 depuis le navigateur, une fois `WebApp` en place. La commande n° 1 est passée de `Submitted` à `Paid`, voir le guide 13, section 6.
 

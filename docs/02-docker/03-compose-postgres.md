@@ -40,6 +40,8 @@ docker/
 
 ## 3. Le fichier Compose
 
+> **Mise à jour du 15 octobre 2026.** Le bloc ci-dessous est la première version. Trois éléments ont changé depuis : l’image est désormais `pgvector/pgvector:0.8.7-pg15` (guide 16, section 6), le contrôle de santé est `pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d postgres` (guide 15, section 8), et le service reçoit les réglages communs de redémarrage, de journaux et de mémoire (guide 16). Les explications de ce guide restent valables pour le reste.
+
 ```yaml
 services:
   # =====================================================================
@@ -241,6 +243,8 @@ Un conteneur démarré n’est pas une base prête. PostgreSQL met quelques seco
 
 `pg_isready` est fourni par l’image PostgreSQL : aucun outil n’est à installer.
 
+> **Corrigé le 15 octobre 2026.** Sans l’option `-h`, `pg_isready` interroge le serveur par son socket local. Pendant l’exécution de `init-db.sh`, l’image fait tourner un serveur temporaire joignable par ce seul socket : le contrôle le déclarait prêt alors que les services, qui passent par TCP, ne pouvaient pas encore s’y connecter. Le contrôle est devenu `pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d postgres`, avec `start_period` et `start_interval`. Le cas, sa reproduction et la correction sont décrits dans le guide 15, section 8.
+
 ## 7. Démarrer et vérifier
 
 Les commandes sont lancées dans WSL2, depuis la racine du dépôt.
@@ -364,8 +368,8 @@ Après chaque correction de l’utilisateur, du mot de passe ou du script, le vo
 
 ## 10. Points ouverts
 
-1. **Le contrôle de santé écrit l’utilisateur en dur.** `pg_isready -U postgres` ne suit pas la variable `POSTGRES_USER`. La forme `pg_isready -U "$$POSTGRES_USER"` la suivrait : le double `$` empêche Compose de remplacer la variable, qui est alors lue dans le conteneur.
-2. **L’image porte l’étiquette `latest`.** Elle fournit aujourd’hui PostgreSQL 15.4 et l’extension `vector` 0.5.1, mais rien ne garantit qu’elle restera la même. Ce point est déjà relevé dans le guide 01.
+1. ~~Le contrôle de santé écrit l’utilisateur en dur~~ : corrigé le 15 octobre 2026, le contrôle utilise `$${POSTGRES_USER}` (guide 15, section 8).
+2. ~~L’image porte l’étiquette `latest`~~ : remplacée le 15 octobre 2026 par `pgvector/pgvector:0.8.7-pg15`, PostgreSQL 15.19 et `vector` 0.8.7 (guide 16, section 6).
 3. **Les services se connectent avec le compte administrateur.** Un compte par service, limité à sa base, serait plus sûr. Ce n’est pas nécessaire pour l’apprentissage.
 
 ## 11. Étape suivante

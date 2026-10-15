@@ -271,7 +271,7 @@ info: eShop.Basket.API.IntegrationEvents.EventHandling.OrderStartedIntegrationEv
 ## 6. Points ouverts
 
 1. ~~L’accès à Redis n’est pas vérifié~~ : vérifié le 15 octobre 2026, voir section 5.
-2. **Le service n’a pas de contrôle de santé.** De plus, un contrôle HTTP ordinaire échouerait sur ce service, qui refuse HTTP/1.1. Il faudra en tenir compte au moment de traiter la question de `/health`.
+2. ~~Le service n’a pas de contrôle de santé~~ : réglé le 15 octobre 2026. Comme prévu, un contrôle HTTP/1.1 échouait sur le port gRPC. Le service écoute désormais sur deux ports : `8080` en HTTP/2 pour gRPC, `8081` en HTTP/1.1 pour le contrôle. Accepter les deux protocoles sur le même port cassait gRPC. Voir le guide 15, section 6. Depuis, `Identity.API` est attendu à l’état `healthy`, et non plus seulement démarré.
 3. **Le port publié n’est utile qu’aux tests.**
 
 ## 7. Tableau de validation

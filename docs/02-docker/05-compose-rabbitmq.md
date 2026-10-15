@@ -282,6 +282,8 @@ docker compose -f docker/docker-compose.yaml up -d
 1. **Un seul compte pour tous les services.** Le compte `eshop_rabbit` est administrateur. Un compte limité pour les services serait plus sûr ; ce n’est pas nécessaire pour l’apprentissage.
 2. **L’image porte l’étiquette `rabbitmq:4-management`**, qui suit les nouvelles versions 4.x. Une étiquette complète, comme `rabbitmq:4.3.6-management`, figerait la version.
 
+Depuis le 15 octobre 2026, RabbitMQ a un plafond de mémoire de 1 Gio, choisi pour que son seuil de blocage des publications, 40 % de la mémoire disponible, reste loin de sa consommation (guide 16, section 5).
+
 ## 13. Étape suivante
 
 Les trois dépendances sont en place. L’étape suivante consiste à ajouter les neuf services au fichier Compose, avec la configuration relevée dans le guide 02, section 6, et à les faire attendre que leurs dépendances soient `healthy`. Les deux premiers sont traités dans [06 — Docker Compose : Identity.API](06-compose-identity.md) et [07 — Docker Compose : Catalog.API](07-compose-catalog.md).

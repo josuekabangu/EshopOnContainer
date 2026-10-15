@@ -268,7 +268,7 @@ Le cookie anti-falsification, lui, n’a pas reçu ce traitement. Ces lignes `fa
 
 1. **La validation du jeton des notifications est désactivée**, voir section 5. Le réglage `WebhookClientOptions__ValidateToken=true` l’activerait.
 2. **Les deux sites partagent leurs cookies**, voir section 6. Seul un nom de domaine distinct par site supprimerait l’interférence.
-3. **Les services n’ont pas de contrôle de santé**, comme tous les services d’eShop.
+3. ~~Les services n’ont pas de contrôle de santé~~ : réglé le 15 octobre 2026, voir le guide 15.
 
 ## 8. Tableau de validation
 
@@ -287,7 +287,7 @@ Le cookie anti-falsification, lui, n’a pas reçu ce traitement. Ces lignes `fa
 
 ## 9. Étape suivante
 
-Les neuf services d’eShop tournent avec Docker Compose, et les deux parcours de bout en bout ont réussi. Restent les points ouverts communs à tous les services, dont le principal : l’absence de contrôle de santé, à régler avant le déploiement sur Kubernetes.
+Les neuf services d’eShop tournent avec Docker Compose, et les deux parcours de bout en bout ont réussi. Restent les points ouverts communs à tous les services, dont le principal : l’absence de contrôle de santé, à régler avant le déploiement sur Kubernetes. C’est l’objet de [15 — Les contrôles de santé](15-controles-de-sante.md), suivi de [16 — Robustesse du fichier Compose](16-robustesse-compose.md).
 
 ## 10. Commandes de référence
 

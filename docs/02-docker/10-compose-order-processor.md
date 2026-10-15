@@ -221,7 +221,7 @@ Après le test, l’ensemble a été redémarré avec `docker compose up -d` : l
 
 ## 5. Points ouverts
 
-1. **Le service n’a pas de contrôle de santé**, comme les autres services d’eShop. Un contrôle HTTP n’aurait d’ailleurs pas de sens pour lui : il ne sert aucune page.
+1. ~~Le service n’a pas de contrôle de santé~~ : réglé le 15 octobre 2026. Contrairement à ce que ce guide supposait, un contrôle HTTP a un sens pour lui : sans servir de page métier, il appelle `MapDefaultEndpoints`, et ses routes `/health` et `/alive` existent dès que `HealthChecks__Expose` vaut `true`. Le service attend aussi désormais qu’`Ordering.API` soit `healthy`, donc ses tables créées : lors des deux démarrages à froid du guide 15, son journal ne contenait aucune ligne `fail`. Le comportement décrit en section 4 reste vrai, mais ne se présente plus au démarrage normal.
 2. ~~Le traitement d’une commande n’est pas testé~~ : testé le 15 octobre 2026. Pour la commande n° 1, `OrderProcessor` a publié `GracePeriodConfirmed` 83 secondes après sa création, soit au premier passage suivant la fin du délai de grâce d’une minute. Voir le guide 13, section 6.
 
 ## 6. Tableau de validation

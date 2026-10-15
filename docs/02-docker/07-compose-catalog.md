@@ -192,7 +192,7 @@ Résultats vérifiés : une seule ligne, `127.0.0.1:5102`, puis le compte `1654`
 
 ## 6. Points ouverts
 
-1. **Le service n’a pas de contrôle de santé.** `/health` répond `404`, comme pour `Identity.API`. `WebApp`, qui dépendra de `Catalog.API`, ne pourra attendre que son démarrage, et non le moment où il répond.
+1. ~~Le service n’a pas de contrôle de santé~~ : réglé le 15 octobre 2026, voir le guide 15. Le texte d’origine suit : `/health` répond `404`, comme pour `Identity.API`. `WebApp`, qui dépendra de `Catalog.API`, ne pourra attendre que son démarrage, et non le moment où il répond.
 2. **Le port publié n’est utile qu’aux tests.** Il pourra être retiré une fois `WebApp` en place.
 
 ## 7. Tableau de validation
@@ -208,7 +208,7 @@ Résultats vérifiés : une seule ligne, `127.0.0.1:5102`, puis le compte `1654`
 | File `Catalog` | 1 consommateur |
 | Port publié | `127.0.0.1:5102` seulement |
 | Compte d’exécution | `1654` |
-| Contrôle de santé | Absent |
+| Contrôle de santé | Absent ; ajouté le 15 octobre 2026 (guide 15) |
 
 ## 8. Étape suivante
 
