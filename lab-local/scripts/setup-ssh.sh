@@ -157,5 +157,5 @@ done
 echo
 echo "=============================================="
 echo "Accès SSH prêts pour : ${MACHINES[*]}"
-echo "Étape suivante : ansible all -m ping"
+echo "Les machines sont prêtes pour Ansible."
 echo "=============================================="
