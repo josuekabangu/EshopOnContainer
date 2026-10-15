@@ -15,6 +15,3 @@ application/eShop/img
 **/bin
 **/obj
 **/node_modules
-
-# Fichier de remplacement appliqué par le Dockerfile de WebApp.
-!docker/src/WebApp/Extensions.cs

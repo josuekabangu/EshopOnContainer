@@ -10,10 +10,7 @@ COPY application/eShop/Directory.Build.targets ./
 COPY application/eShop/nuget.config ./
 
 # Sources et projets référencés 
-COPY application/eShop/src/ ./src/ 
-
-# Patch OAuth2 SameSite/SecurePolicy pour fonctionner en HTTP (dev sans TLS)
-COPY docker/src/WebApp/Extensions.cs src/WebApp/Extensions/Extensions.cs
+COPY application/eShop/src/ ./src/
 
 # Restauration des référencés 
 RUN dotnet restore src/WebApp/WebApp.csproj

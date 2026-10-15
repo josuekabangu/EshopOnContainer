@@ -84,6 +84,17 @@ public static class Extensions
             options.Scope.Add("profile");
             options.Scope.Add("orders");
             options.Scope.Add("basket");
+
+            // EshopOnContainer adaptation: let the sign-in work over plain HTTP on a host other than
+            // localhost, when explicitly requested by configuration (Authentication__AllowInsecureCookies=true).
+            if (configuration.GetValue<bool>("Authentication:AllowInsecureCookies"))
+            {
+                options.ResponseMode = "query";
+                options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+                options.NonceCookie.SameSite = SameSiteMode.Lax;
+                options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.None;
+                options.NonceCookie.SecurePolicy = CookieSecurePolicy.None;
+            }
         });
 
         // Blazor auth services

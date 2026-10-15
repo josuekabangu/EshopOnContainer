@@ -31,7 +31,7 @@ Le raisonnement et la correction du défaut qui a précédé ce choix sont décr
 
 | Fichier | Modification | Raison | Commit |
 |---|---|---|---|
-| Aucune à ce jour | | | |
+| `eShop/src/eShop.ServiceDefaults/Extensions.cs` | Les routes `/health` et `/alive` sont aussi déclarées hors `Development` quand le réglage `HealthChecks:Expose` vaut `true` ; ajout de `using Microsoft.Extensions.Configuration;`, nécessaire à `GetValue` | Les contrôles de santé de Docker Compose et les probes de Kubernetes en ont besoin ; sans le réglage, le comportement d'origine est conservé | *à compléter après le commit* |
 
 Une modification est appliquée en dehors de ce répertoire : à la construction de l'image de `WebApp`, le fichier `eShop/src/WebApp/Extensions/Extensions.cs` est remplacé par `docker/src/WebApp/Extensions.cs`. Les sources ne changent pas, seule l'image est concernée. Voir [docs/02-docker/02-autres-services.md](../docs/02-docker/02-autres-services.md), section 8.
 
