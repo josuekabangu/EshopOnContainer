@@ -239,6 +239,38 @@ Si une étape échoue, le script s'arrête et la nomme. Les étapes
 manuelles des sections 4 à 6 restent valables, pour comprendre ou
 reprendre une étape isolée.
 
+### Sur un poste Linux
+
+Sur un poste Linux, sans Windows, Vagrant et Ansible tournent sur le
+même système. Le script `lab-local/scripts/rebuild.sh` fait le même
+travail, avec les mêmes deux usages :
+
+```bash
+bash lab-local/scripts/rebuild.sh              # démarrer ou relancer
+bash lab-local/scripts/rebuild.sh --rebuild    # détruire puis reconstruire
+```
+
+Avant de toucher aux machines, il vérifie :
+
+| Prérequis | En cas d'absence |
+|---|---|
+| Le script ne tourne pas dans WSL2 | Arrêt, avec un renvoi vers `rebuild.ps1` : dans WSL2, Vagrant doit rester celui de Windows |
+| `vagrant`, `ansible-playbook` et `ssh` sont installés | Arrêt, avec le nom de l'outil manquant |
+| Le plugin `vagrant-vmware-desktop` est installé | Arrêt, avec la commande d'installation |
+
+Le `Vagrantfile` utilise le provider `vmware_desktop` : le poste Linux
+doit disposer de VMware Workstation pour Linux et de l'utilitaire
+Vagrant VMware, comme sous Windows.
+
+> **Validé partiellement.** Le projet n'a pas de poste Linux sans WSL2.
+> Le 15 octobre 2026, le script a été testé dans un conteneur Debian,
+> avec `vagrant`, `ansible-playbook` et `ssh` remplacés par des
+> programmes de simulation : enchaînement des étapes, option `--rebuild`,
+> option inconnue refusée, arrêt sur échec de `vagrant up`, arrêt si
+> Ansible est absent, refus dans WSL2. Lancé dans le vrai WSL2 du poste,
+> il s'arrête bien sur ce refus. Une reconstruction réelle sur un poste
+> Linux reste à faire.
+
 ## 9. Structure
 
 ```text
@@ -260,6 +292,7 @@ lab-local/
 │       └── worker/
 └── scripts/
     ├── rebuild.ps1
+    ├── rebuild.sh
     └── setup-ssh.sh
 ```
 
