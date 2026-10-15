@@ -55,7 +55,7 @@ Le projet est organisé autour de trois domaines principaux :
 
 ## État d’avancement
 
-Le premier objectif était de construire un laboratoire Kubernetes local reproductible. Il est atteint : le cluster se reconstruit à partir de machines neuves avec trois commandes, décrites dans la [documentation du laboratoire local](lab-local/README.md).
+Le premier objectif était de construire un laboratoire Kubernetes local reproductible. Il est atteint : le cluster se reconstruit à partir de machines neuves en une seule commande, le script `lab-local/scripts/rebuild.ps1`, en un peu plus de cinq minutes. Voir la [documentation du laboratoire local](lab-local/README.md).
 
 ### Laboratoire local
 

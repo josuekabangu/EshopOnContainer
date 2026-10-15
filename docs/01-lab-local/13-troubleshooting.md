@@ -52,8 +52,10 @@ Un problème n'est déclaré résolu que lorsque sa validation a été réelleme
 | 13 | Ansible : `UNREACHABLE` alors que Windows joint les machines     | WSL2 en mode réseau `mirrored`                          | Réseau WSL2       |
 | 14 | Tâche `kubectl apply` en `changed` à chaque exécution            | `kubectl apply` annonce `configured` sans rien modifier | Ansible           |
 | 15 | Un play entier est ignoré, sans erreur                           | Nom de groupe mal orthographié dans `hosts`             | Ansible           |
+| 16 | `rebuild.ps1` : boîte téléchargée, puis `ansible-playbook: command not found` | Script lancé depuis un autre compte Windows | Poste de travail  |
+| 17 | Contrôle `wsl -e bash -c` qui affiche un seul mot et ne détecte pas l'échec | Guillemets doubles mal transmis à `wsl.exe` par Windows PowerShell 5.1 | Poste de travail |
 
-Les problèmes 1 à 11 ont été rencontrés le 8 octobre 2026, lors de la construction manuelle du laboratoire. Les problèmes 12 à 15 l'ont été le 9 octobre 2026, lors de son automatisation.
+Les problèmes 1 à 11 ont été rencontrés le 8 octobre 2026, lors de la construction manuelle du laboratoire. Les problèmes 12 à 15 l'ont été le 9 octobre 2026, lors de son automatisation. Les problèmes 16 et 17 l'ont été le 15 octobre 2026, lors de l'écriture du script de reconstruction.
 
 Les problèmes 1 à 8 ont été diagnostiqués pas à pas, avec les résultats de commande relevés au moment de la panne. Pour le problème 9, le symptôme et l'état initial du fichier `/etc/default/kubelet` proviennent des notes prises lors de l'intervention ; la table de routage et la validation ont été vérifiées après correction. Pour les problèmes 10 et 11, les messages proviennent également des notes prises lors de l'intervention ; l'état final du nœud a été vérifié sur le cluster. Les problèmes 12 à 15 ont été diagnostiqués pas à pas, avec les résultats relevés au moment de l'incident.
 
@@ -1351,11 +1353,139 @@ Connaître à l'avance le nombre de tâches attendu dans le récapitulatif perme
 
 ---
 
-## 19. Points de vigilance
+## 19. Problème 16 — Le script de reconstruction s'exécute dans un autre compte Windows
+
+### Symptôme
+
+Lancé depuis PowerShell, `lab-local/scripts/rebuild.ps1` télécharge la boîte Vagrant, pourtant déjà installée, puis crée deux machines neuves. La préparation des accès SSH réussit, mais la construction du cluster échoue :
+
+```text
+==> kube-control: Box 'bento/ubuntu-22.04' could not be found. Attempting to find and install...
+...
+Clé copiée : kube-control -> /home/<autre-utilisateur>/.ssh/vagrant/kube-control
+...
+bash: line 1: ansible-playbook: command not found
+Échec de l'étape « Construction du cluster » (code 127).
+```
+
+### Diagnostic
+
+Trois indices, sans lancer Vagrant :
+
+| Indice | Signification |
+|---|---|
+| `/home/<autre-utilisateur>/` dans la sortie | La distribution WSL2 utilisée a un autre utilisateur que celle du poste de travail habituel (`<utilisateur>`) |
+| `Box ... could not be found` | La boîte est installée dans `.vagrant.d\boxes` du compte habituel : le Vagrant utilisé cherche ailleurs |
+| `ansible-playbook: command not found` | Ansible est installé dans la distribution WSL2 du compte habituel, pas dans celle-ci |
+
+```powershell
+Get-ChildItem C:\Users -Directory | Select-Object -ExpandProperty Name
+Get-ChildItem "$env:USERPROFILE\.vagrant.d\boxes"
+```
+
+La première commande montre un second compte Windows, `<compte-administrateur>`. La seconde, lancée depuis le compte habituel, montre que la boîte y est bien installée.
+
+Le dossier `lab-local/vagrant/.vagrant/machines` contient alors deux machines créées quelques minutes plus tôt, et un fichier `creator_uid` qui les attribue au compte qui les a créées.
+
+### Cause
+
+Le PowerShell utilisé s'exécutait sous ce second compte, et non sous le compte habituel. L'explication la plus probable, non vérifiée : la fenêtre avait été ouverte par « Exécuter en tant qu'administrateur » pour le script `hosts` de la phase Docker, et cette élévation passe, sur ce poste, par un compte administrateur distinct.
+
+Vagrant, ses boîtes, les machines de VMware Workstation et les distributions WSL2 sont propres à chaque compte Windows. Le script a donc trouvé un autre Vagrant, sans boîte, et une autre distribution WSL2, sans Ansible.
+
+### Correction
+
+1. Les deux machines créées par erreur ont été supprimées depuis le compte qui les avait créées, dans la même fenêtre PowerShell :
+
+   ```powershell
+   cd lab-local\vagrant
+   vagrant destroy -f
+   ```
+
+2. Le script a été relancé depuis un PowerShell ouvert dans la session habituelle, sans élévation vers un autre compte.
+
+3. Le script vérifie désormais ses prérequis **avant** de toucher aux machines. Il affiche le compte Windows et la distribution WSL2, puis s'arrête si Ansible est absent :
+
+   ```text
+   === Vérification des prérequis
+   Compte Windows : <compte-habituel>
+   Distribution WSL2 : Ubuntu, utilisateur <utilisateur>
+   ```
+
+### Validation
+
+Relancé depuis le compte habituel, le script a reconstruit le laboratoire à partir de machines neuves en 5 minutes 31 : `failed=0` sur les deux machines, nœuds `Ready`. Relancé une seconde fois sur le cluster existant, il s'est terminé en 42 secondes, avec `changed=0` sur les deux machines.
+
+### À retenir
+
+Le script `hosts` de la phase Docker exige un PowerShell administrateur ; le script de reconstruction exige le compte habituel. Ce sont deux fenêtres différentes. Un script qui crée des ressources doit vérifier ses prérequis avant de les créer, et non découvrir leur absence à mi-parcours.
+
+---
+
+## 20. Problème 17 — Une commande transmise à WSL2 perd ses guillemets
+
+### Symptôme
+
+Le contrôle des prérequis de `rebuild.ps1`, testé sous Windows PowerShell 5.1, n'affiche qu'un mot, et ne détecte pas l'absence d'Ansible :
+
+```text
+Distribution
+code = 0
+```
+
+Sous PowerShell 7, la même ligne fonctionne :
+
+```text
+Distribution WSL2 : Ubuntu, utilisateur <utilisateur>
+code = 0
+```
+
+### Diagnostic
+
+La ligne en cause transmettait à `wsl.exe` une commande `bash` contenant des guillemets doubles :
+
+```powershell
+wsl -e bash -c 'echo "Distribution WSL2 : $WSL_DISTRO_NAME ..."; command -v ansible-playbook >/dev/null || { echo "..."; exit 1; }'
+```
+
+La ligne a été testée dans un fichier de test, sous les deux versions de PowerShell, en cas normal puis avec un nom de programme volontairement faux :
+
+| Version | Cas normal | Cas d'échec simulé |
+|---|---|---|
+| PowerShell 7 | Message complet, code 0 | Message d'erreur, code 1 |
+| Windows PowerShell 5.1 | `Distribution` seul, code 0 | `Distribution` seul, **code 0** |
+
+### Cause
+
+Pour lancer un programme externe, PowerShell reconstruit sa ligne de commande. Windows PowerShell 5.1 n'échappe pas les guillemets doubles contenus dans un argument : `wsl.exe` reçoit une commande découpée au premier guillemet. PowerShell 7 les échappe correctement.
+
+La commande lancée par `powershell -File`, celle de la documentation, utilise Windows PowerShell 5.1.
+
+### Correction
+
+La commande `bash` a été réécrite sans aucun guillemet double :
+
+```powershell
+wsl -e bash -c 'echo Distribution WSL2 : $WSL_DISTRO_NAME, utilisateur $(whoami); command -v ansible-playbook >/dev/null || { echo ansible-playbook est introuvable dans la distribution WSL2 par défaut de ce compte.; exit 1; }'
+```
+
+Les autres appels à `wsl` du script n'utilisent que des guillemets simples à l'intérieur de la commande `bash`, que Windows PowerShell 5.1 transmet correctement.
+
+### Validation
+
+Après correction, le même test donne le même résultat sous les deux versions : message complet et code 0 en cas normal, message d'erreur et code 1 en cas d'échec simulé.
+
+### À retenir
+
+Un script PowerShell qui appelle un programme externe doit être testé sous la version de PowerShell qui l'exécutera réellement. Dans une commande transmise à `wsl.exe`, les guillemets doubles sont à éviter.
+
+---
+
+## 21. Points de vigilance
 
 Les points suivants ont été identifiés mais ne sont pas des pannes. Ils sont listés pour ne pas être oubliés.
 
-### 19.1 Points résolus
+### 21.1 Points résolus
 
 | Point                                                                                       | Résolution                                                                  |
 | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
@@ -1367,20 +1497,20 @@ Les points suivants ont été identifiés mais ne sont pas des pannes. Ils sont 
 | Le script `setup-ssh.sh` n'avait pas été éprouvé à la suite d'une recréation des machines   | Utilisé avec succès lors de la seconde reconstruction du 9 octobre 2026     |
 | Le paquet `containerd` n'était pas figé, contrairement aux paquets Kubernetes               | Figé par le rôle `containerd` le 9 octobre 2026, voir `08-containerd.md` (section 6) |
 | Les tests fonctionnels du réseau n'avaient pas été rejoués après la reconstruction          | Rejoués le 9 octobre 2026 depuis `kubernetes/tests/network-test.yaml`, voir `12-worker.md` (section 7) |
+| La reconstruction demandait trois commandes, dans deux terminaux                            | Script `lab-local/scripts/rebuild.ps1`, validé le 15 octobre 2026 : reconstruction complète en 5 min 31, relance en 42 s avec `changed=0` |
 
-### 19.2 Points ouverts
+### 21.2 Points ouverts
 
 | Point                                                                                         | Risque                                                              | Traitement prévu      |
 | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------- |
 | Les tests fonctionnels du réseau sont lancés à la main                                        | Ils peuvent être oubliés après une reconstruction                   | À décider             |
 | Le paquet `runc`, dépendance de `containerd`, n'est pas figé                                  | Une mise à jour du système pourrait changer sa version              | À décider             |
 | Le `Vagrantfile` ne fixe pas de provider par défaut                                           | Un `vagrant up` sans option `--provider` peut choisir un autre hyperviseur | À décider             |
-| La reconstruction demande encore trois commandes, dans deux terminaux                         | Enchaînement manuel entre PowerShell et WSL2                        | À décider             |
 | La plage `192.168.57.0/24` est partagée avec le laboratoire `cka-lab`                         | Les deux laboratoires ne peuvent pas fonctionner en même temps      | À décider             |
 
 ---
 
-## 20. Documentation associée
+## 22. Documentation associée
 
 | Fichier                          | Lien avec ce document                              |
 | -------------------------------- | -------------------------------------------------- |
@@ -1395,3 +1525,4 @@ Les points suivants ont été identifiés mais ne sont pas des pannes. Ils sont 
 | `05-inventory.md`                | Clés SSH après recréation (problème 5)             |
 | `07-kubernetes-prerequisites.md` | Désactivation du swap (problème 7)                 |
 | `08-containerd.md`               | Installation de `containerd` (problème 6)          |
+| `lab-local/README.md`            | Script de reconstruction (problèmes 16 et 17)      |

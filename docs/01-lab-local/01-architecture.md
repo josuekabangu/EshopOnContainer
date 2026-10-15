@@ -274,7 +274,7 @@ Le poste de contrôle est WSL2.
 * [x] Jonction du Worker automatisée avec Ansible.
 * [x] Reconstruction complète du cluster validée à partir de machines neuves.
 * [x] Remise en place des accès SSH regroupée dans un script.
-* [ ] Enchaînement de la création des machines, des accès SSH et d'Ansible en une seule commande.
+* [x] Enchaînement de la création des machines, des accès SSH et d'Ansible en une seule commande : script `lab-local/scripts/rebuild.ps1`, validé le 15 octobre 2026.
 
 Le laboratoire a d'abord été construit à la main le 8 octobre 2026, puis automatisé le 9 octobre 2026. Les éléments cochés ont été vérifiés le 9 octobre 2026 sur le cluster reconstruit par Ansible, dont le résultat est présenté dans `06-roles.md` (section 8.3).
 

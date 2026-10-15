@@ -198,10 +198,46 @@ fichier `kubernetes/tests/network-test.yaml` et sont décrits dans
 | Les redémarrer | `vagrant up --provider vmware_desktop` | PowerShell |
 | Les détruire | `vagrant destroy -f` | PowerShell |
 
-Pour reconstruire le laboratoire à partir de machines neuves, détruire
-les machines puis reprendre les sections 4, 5 et 6 dans l'ordre.
-
 La commande `vagrant destroy` supprime les machines et leur contenu.
+
+### Démarrer ou reconstruire en une commande
+
+Le script `lab-local/scripts/rebuild.ps1` enchaîne les sections 4, 5 et 6,
+puis affiche l'état des nœuds. Dans PowerShell, depuis la racine du dépôt :
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\lab-local\scripts\rebuild.ps1
+```
+
+| Usage | Commande | Effet | Durée mesurée le 15 octobre 2026 |
+|---|---|---|---|
+| Démarrer ou relancer | `rebuild.ps1` | Démarre les machines, ou les crée si elles n'existent pas, puis applique le playbook | 42 s sur un cluster existant, avec `changed=0` |
+| Reconstruire | `rebuild.ps1 -Rebuild` | Détruit d'abord les machines, puis reconstruit tout | 5 min 31 à partir de machines neuves |
+
+`-ExecutionPolicy Bypass` autorise ce script pour cette commande
+seulement, sans modifier la configuration du poste.
+
+Le script est en PowerShell parce que Vagrant doit rester celui de
+Windows. Il lance les étapes WSL2 par `wsl -e bash -c`. Avant de toucher
+aux machines, il vérifie ses prérequis :
+
+```text
+=== Vérification des prérequis
+Compte Windows : <compte-habituel>
+Distribution WSL2 : Ubuntu, utilisateur <utilisateur>
+```
+
+> **Le lancer depuis le compte habituel.** Vagrant, VMware et WSL2 sont
+> propres à chaque compte Windows. Un PowerShell ouvert par « Exécuter en
+> tant qu'administrateur » peut s'exécuter sous un autre compte : le script
+> s'arrête alors, faute d'Ansible dans la distribution WSL2 de ce compte.
+> Le cas est décrit dans
+> [13-troubleshooting.md](../docs/01-lab-local/13-troubleshooting.md),
+> problème 16.
+
+Si une étape échoue, le script s'arrête et la nomme. Les étapes
+manuelles des sections 4 à 6 restent valables, pour comprendre ou
+reprendre une étape isolée.
 
 ## 9. Structure
 
@@ -223,6 +259,7 @@ lab-local/
 │       ├── calico/
 │       └── worker/
 └── scripts/
+    ├── rebuild.ps1
     └── setup-ssh.sh
 ```
 

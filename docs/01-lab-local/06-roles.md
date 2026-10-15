@@ -284,7 +284,7 @@ Deux reconstructions successives donnant le même résultat confirment que la co
 
 | Limite                                                                               | Conséquence                                                          |
 | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| La création des machines reste une étape séparée, lancée depuis PowerShell           | La reconstruction complète demande trois commandes, dans deux terminaux, listées dans `02-vagrant.md` |
+| La création des machines reste une étape séparée, lancée depuis PowerShell           | Depuis le 15 octobre 2026, le script `lab-local/scripts/rebuild.ps1` enchaîne les trois commandes depuis PowerShell, voir `lab-local/README.md` (section 8) |
 | Les accès SSH doivent être remis en place dans WSL2 après chaque recréation des machines | Un script s'en charge, décrit dans `05-inventory.md` (section 11.2) |
 | Le rôle `worker` ne gère pas le retrait d'un nœud                                    | Un nœud à retirer doit l'être à la main                              |
 | Les tests fonctionnels du réseau ne font pas partie du playbook                      | Ils sont lancés à la main depuis un fichier du dépôt, comme décrit dans `12-worker.md` (section 7) |
