@@ -289,13 +289,15 @@ lab-local/
 │       ├── kubernetes/
 │       ├── control_plane/
 │       ├── calico/
-│       └── worker/
+│       ├── worker/
+│       └── local_path/
 ├── scripts/
 │   ├── rebuild.ps1
 │   ├── rebuild.sh
 │   └── setup-ssh.sh
 └── tests/
-    └── network-test.yaml
+    ├── network-test.yaml
+    └── storage-test.yaml
 ```
 
 ## 10. Documentation technique
@@ -315,6 +317,7 @@ lab-local/
 | [11-calico.md](../docs/01-lab-local/11-calico.md) | Réseau des Pods |
 | [12-worker.md](../docs/01-lab-local/12-worker.md) | Jonction du Worker, tests réseau |
 | [13-troubleshooting.md](../docs/01-lab-local/13-troubleshooting.md) | Problèmes rencontrés et corrections |
+| [14-local-path.md](../docs/01-lab-local/14-local-path.md) | Fournisseur de volumes, test de persistance |
 
 ## 11. En cas de problème
 

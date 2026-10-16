@@ -275,6 +275,7 @@ Le poste de contrôle est WSL2.
 * [x] Reconstruction complète du cluster validée à partir de machines neuves.
 * [x] Remise en place des accès SSH regroupée dans un script.
 * [x] Enchaînement de la création des machines, des accès SSH et d'Ansible en une seule commande : script `lab-local/scripts/rebuild.ps1`, validé le 15 octobre 2026.
+* [x] Fournisseur de volumes `local-path-provisioner`, classe de stockage par défaut, installé par Ansible et validé par une reconstruction le 16 octobre 2026 (`14-local-path.md`).
 
 Le laboratoire a d'abord été construit à la main le 8 octobre 2026, puis automatisé le 9 octobre 2026. Les éléments cochés ont été vérifiés le 9 octobre 2026 sur le cluster reconstruit par Ansible, dont le résultat est présenté dans `06-roles.md` (section 8.3).
 

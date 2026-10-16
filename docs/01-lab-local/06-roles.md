@@ -66,9 +66,9 @@ Un rôle ne contient que les répertoires dont il a besoin :
 
 ---
 
-## 4. Les six rôles
+## 4. Les sept rôles
 
-Les trois premiers rôles préparent les machines. Les trois suivants construisent le cluster.
+Les trois premiers rôles préparent les machines. Les trois suivants construisent le cluster. Le septième, ajouté le 16 octobre 2026, installe un composant du cluster : le fournisseur de volumes.
 
 | Rôle            | Machines ciblées | Responsabilité                                                          | Document de référence            |
 | --------------- | ---------------- | ----------------------------------------------------------------------- | -------------------------------- |
@@ -78,6 +78,7 @@ Les trois premiers rôles préparent les machines. Les trois suivants construise
 | `control_plane` | Control Plane    | Configuration `kubeadm`, initialisation du cluster, accès `kubectl`     | `10-control-plane.md`            |
 | `calico`        | Control Plane    | Installation du plugin réseau et attente de sa disponibilité            | `11-calico.md`                   |
 | `worker`        | Workers          | Jonction du nœud au cluster                                             | `12-worker.md`                   |
+| `local_path`    | Control Plane    | Installation de `local-path-provisioner`, classe de stockage par défaut | `14-local-path.md`               |
 
 Le rôle `calico` cible le Control Plane, car le plugin réseau s'installe en envoyant des ressources à l'API du cluster. C'est ensuite le cluster qui le déploie sur chaque nœud.
 
@@ -90,7 +91,7 @@ Les variables sont réparties selon les machines qui en ont besoin.
 | Fichier                        | Portée          | Contenu                                                                     |
 | ------------------------------ | --------------- | --------------------------------------------------------------------------- |
 | `group_vars/all.yml`           | Tous les nœuds  | Versions de Kubernetes, `containerd` et `crictl`, dépôt APT, adresse du nœud |
-| `group_vars/control_plane.yml` | Control Plane   | Paramètres du cluster (port de l'API, plages des Pods et des Services, domaine DNS), version et emplacement de Calico |
+| `group_vars/control_plane.yml` | Control Plane   | Paramètres du cluster (port de l'API, plages des Pods et des Services, domaine DNS), versions et emplacements de Calico et de `local-path-provisioner` |
 | `group_vars/workers.yml`       | Workers         | Vide : le Worker ne nécessite aucun paramètre propre                        |
 
 Deux variables sont calculées à partir d'une autre, afin de ne pas écrire deux fois la même information :
@@ -106,7 +107,7 @@ La première reprend l'adresse déjà présente dans l'inventaire. La seconde d�
 
 ## 6. Playbook principal
 
-Le fichier `site.yml` ordonne les rôles en trois plays :
+Le fichier `site.yml` ordonne les rôles en quatre plays :
 
 ```yaml
 ---
@@ -133,9 +134,16 @@ Le fichier `site.yml` ordonne les rôles en trois plays :
 
   roles:
     - worker
+
+- name: Installer les composants du cluster
+  hosts: control_plane
+  become: true
+
+  roles:
+    - local_path
 ```
 
-### 6.1 Pourquoi trois plays ?
+### 6.1 Pourquoi quatre plays ?
 
 Chaque play cible un groupe de machines différent, et l'ordre des plays garantit l'ordre de construction :
 
@@ -147,7 +155,12 @@ Play 2 : Control Plane      création du cluster, puis du réseau
               |
               v
 Play 3 : Workers            jonction à un cluster dont le réseau est prêt
+              |
+              v
+Play 4 : Control Plane      composants qui ont besoin d'un nœud de travail
 ```
+
+Le quatrième play cible de nouveau le Control Plane, mais il vient **après** la jonction du Worker. Le pod de `local-path-provisioner` ne peut pas tourner sur `kube-control`, réservé au Control Plane : placé avec Calico dans le deuxième play, il attendrait un nœud qui n'a pas encore rejoint le cluster. Le détail est dans `14-local-path.md`.
 
 Un play ne commence que lorsque le précédent est terminé sur toutes ses machines. Les handlers d'un play s'exécutent à la fin de celui-ci : `kubelet` est donc redémarré avec la bonne adresse avant que le cluster ne soit initialisé.
 
@@ -262,6 +275,13 @@ kube-worker  : ok=27   changed=21   unreachable=0    failed=0    skipped=0
 ```
 
 Depuis ces deux reconstructions, une tâche a été ajoutée au rôle `containerd` pour figer sa version. Une exécution sur un cluster déjà construit se termine désormais avec `ok=29` sur `kube-control` et `ok=23` sur `kube-worker`, toujours avec `changed=0`.
+
+Depuis l'ajout du rôle `local_path`, le 16 octobre 2026, les compteurs sont les suivants :
+
+| Situation | `kube-control` | `kube-worker` |
+|---|---|---|
+| Reconstruction à partir de machines neuves | `ok=42 changed=30 failed=0` | `ok=28 changed=22 failed=0` |
+| Exécution sur un cluster déjà construit | `ok=35 changed=0 skipped=5` | `ok=23 changed=0 skipped=3` |
 
 Deux reconstructions successives donnant le même résultat confirment que la construction est reproductible. Les tests fonctionnels du réseau, décrits dans `12-worker.md` (section 7), ont été rejoués avec succès sur ce second cluster.
 

@@ -54,8 +54,9 @@ Un problème n'est déclaré résolu que lorsque sa validation a été réelleme
 | 15 | Un play entier est ignoré, sans erreur                           | Nom de groupe mal orthographié dans `hosts`             | Ansible           |
 | 16 | `rebuild.ps1` : boîte téléchargée, puis `ansible-playbook: command not found` | Script lancé depuis un autre compte Windows | Poste de travail  |
 | 17 | Contrôle `wsl -e bash -c` qui affiche un seul mot et ne détecte pas l'échec | Guillemets doubles mal transmis à `wsl.exe` par Windows PowerShell 5.1 | Poste de travail |
+| 18 | Rôle `local_path` : `namespaces "local-path-storage" not found`, code 2 | `kubectl diff` ne compare pas des objets d'un espace de noms inexistant | Ansible |
 
-Les problèmes 1 à 11 ont été rencontrés le 8 octobre 2026, lors de la construction manuelle du laboratoire. Les problèmes 12 à 15 l'ont été le 9 octobre 2026, lors de son automatisation. Les problèmes 16 et 17 l'ont été le 15 octobre 2026, lors de l'écriture du script de reconstruction.
+Les problèmes 1 à 11 ont été rencontrés le 8 octobre 2026, lors de la construction manuelle du laboratoire. Les problèmes 12 à 15 l'ont été le 9 octobre 2026, lors de son automatisation. Les problèmes 16 et 17 l'ont été le 15 octobre 2026, lors de l'écriture du script de reconstruction. Le problème 18 l'a été le 16 octobre 2026, lors de l'ajout du fournisseur de volumes.
 
 Les problèmes 1 à 8 ont été diagnostiqués pas à pas, avec les résultats de commande relevés au moment de la panne. Pour le problème 9, le symptôme et l'état initial du fichier `/etc/default/kubelet` proviennent des notes prises lors de l'intervention ; la table de routage et la validation ont été vérifiées après correction. Pour les problèmes 10 et 11, les messages proviennent également des notes prises lors de l'intervention ; l'état final du nœud a été vérifié sur le cluster. Les problèmes 12 à 15 ont été diagnostiqués pas à pas, avec les résultats relevés au moment de l'incident.
 
@@ -1481,11 +1482,83 @@ Un script PowerShell qui appelle un programme externe doit être testé sous la 
 
 ---
 
-## 21. Points de vigilance
+## 21. Problème 18 — kubectl diff échoue sur un espace de noms qui n'existe pas encore
+
+### Symptôme
+
+Au premier passage du rôle `local_path`, la comparaison du fichier de définition avec le cluster échoue :
+
+```text
+TASK [local_path : Comparer le fichier de définition de local-path avec l'état du cluster]
+fatal: [kube-control]: FAILED! => {... "rc": 2, ...
+"stderr": "Error from server (NotFound): namespaces \"local-path-storage\" not found"}
+```
+
+Seul le téléchargement du fichier a eu lieu : le récapitulatif affiche `changed=1`, `failed=1`.
+
+### Diagnostic
+
+Le message désigne l'espace de noms `local-path-storage`. Le fichier de définition le crée lui-même, puis y place ses autres objets :
+
+```bash
+grep -n -E '^kind:|namespace:' /etc/kubernetes/local-path-storage-v0.0.37.yaml
+```
+
+Le premier objet est `kind: Namespace`, nommé `local-path-storage` ; les suivants portent `namespace: local-path-storage`.
+
+Le même fichier, passé à `kubectl apply`, réussit : `kubectl apply` crée les objets dans l'ordre du fichier, l'espace de noms en premier.
+
+### Cause
+
+`kubectl diff` compare chaque objet du fichier avec sa version sur le cluster, en interrogeant l'API. Pour un objet placé dans un espace de noms qui n'existe pas encore, l'API répond `NotFound`, et `kubectl diff` s'arrête avec le code `2`, qui signale une erreur. Il ne renvoie pas le code `1`, qui signifierait seulement « il y a des différences ».
+
+La garde du rôle, `failed_when: local_path_diff.rc > 1`, reprise du rôle `calico`, traite donc ce cas comme un échec. Le rôle `calico` ne le rencontre pas : Calico s'installe dans `kube-system`, qui existe toujours.
+
+Le même message était apparu la veille, lors d'une simulation de `kubectl apply --dry-run=server` sur le fichier de test réseau : en simulation, l'espace de noms déclaré n'est pas réellement créé.
+
+### Correction
+
+Deux tâches ont été ajoutées au rôle, avant la comparaison :
+
+```yaml
+- name: Vérifier si l'espace de noms local-path-storage existe
+  ansible.builtin.command:
+    cmd: kubectl get namespace local-path-storage
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: local_path_namespace
+  changed_when: false
+  failed_when: false
+
+- name: Créer l'espace de noms local-path-storage
+  ansible.builtin.command:
+    cmd: kubectl create namespace local-path-storage
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: local_path_namespace.rc != 0
+```
+
+La première lit l'état sans rien changer : `failed_when: false` accepte l'échec de `kubectl get`, qui signifie « absent ». La seconde ne crée l'espace de noms que s'il manque.
+
+### Validation
+
+| Passage | Résultat |
+|---|---|
+| Premier, après correction | Espace de noms créé, fichier appliqué, `failed=0` |
+| Second | `changed=0` : les tâches de création et d'application sont sautées |
+| Reconstruction complète | Quatrième play réussi sur des machines neuves |
+
+### À retenir
+
+`kubectl diff` sert à rendre une installation idempotente, mais il suppose que les espaces de noms existent. Pour un fichier qui crée son propre espace de noms, celui-ci doit être créé avant la comparaison.
+
+---
+
+## 22. Points de vigilance
 
 Les points suivants ont été identifiés mais ne sont pas des pannes. Ils sont listés pour ne pas être oubliés.
 
-### 21.1 Points résolus
+### 22.1 Points résolus
 
 | Point                                                                                       | Résolution                                                                  |
 | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
@@ -1499,7 +1572,7 @@ Les points suivants ont été identifiés mais ne sont pas des pannes. Ils sont 
 | Les tests fonctionnels du réseau n'avaient pas été rejoués après la reconstruction          | Rejoués le 9 octobre 2026 depuis `network-test.yaml`, aujourd'hui dans `lab-local/tests/`, voir `12-worker.md` (section 7) |
 | La reconstruction demandait trois commandes, dans deux terminaux                            | Script `lab-local/scripts/rebuild.ps1`, validé le 15 octobre 2026 : reconstruction complète en 5 min 31, relance en 42 s avec `changed=0` |
 
-### 21.2 Points ouverts
+### 22.2 Points ouverts
 
 | Point                                                                                         | Risque                                                              | Traitement prévu      |
 | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------- |
@@ -1510,7 +1583,7 @@ Les points suivants ont été identifiés mais ne sont pas des pannes. Ils sont 
 
 ---
 
-## 22. Documentation associée
+## 23. Documentation associée
 
 | Fichier                          | Lien avec ce document                              |
 | -------------------------------- | -------------------------------------------------- |
@@ -1526,3 +1599,4 @@ Les points suivants ont été identifiés mais ne sont pas des pannes. Ils sont 
 | `07-kubernetes-prerequisites.md` | Désactivation du swap (problème 7)                 |
 | `08-containerd.md`               | Installation de `containerd` (problème 6)          |
 | `lab-local/README.md`            | Script de reconstruction (problèmes 16 et 17)      |
+| `14-local-path.md`             | Fournisseur de volumes (problème 18)               |
