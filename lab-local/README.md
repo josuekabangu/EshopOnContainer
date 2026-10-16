@@ -187,7 +187,7 @@ Résultat attendu :
 
 Un nœud `Ready` ne prouve pas que le réseau fonctionne. Trois tests
 (Pod à Pod entre nœuds, Service, DNS) le vérifient. Ils s'appuient sur le
-fichier `kubernetes/tests/network-test.yaml` et sont décrits dans
+fichier `lab-local/tests/network-test.yaml` et sont décrits dans
 [12-worker.md](../docs/01-lab-local/12-worker.md), section 7.
 
 ## 8. Arrêter, redémarrer, reconstruire
@@ -290,10 +290,12 @@ lab-local/
 │       ├── control_plane/
 │       ├── calico/
 │       └── worker/
-└── scripts/
-    ├── rebuild.ps1
-    ├── rebuild.sh
-    └── setup-ssh.sh
+├── scripts/
+│   ├── rebuild.ps1
+│   ├── rebuild.sh
+│   └── setup-ssh.sh
+└── tests/
+    └── network-test.yaml
 ```
 
 ## 10. Documentation technique

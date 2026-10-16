@@ -346,8 +346,10 @@ Le test du Service se fait par adresse et non par nom. S'il utilisait le nom, un
 Les ressources sont décrites dans un fichier du dépôt, ce qui permet de rejouer les tests à l'identique :
 
 ```text
-kubernetes/tests/network-test.yaml
+lab-local/tests/network-test.yaml
 ```
+
+Jusqu'au 16 octobre 2026, ce fichier se trouvait dans `kubernetes/tests/`. Il a été déplacé avec le reste du laboratoire, dont il vérifie le fonctionnement : le répertoire `kubernetes/` est réservé aux manifestes de l'application.
 
 Le fichier crée quatre ressources dans un namespace temporaire :
 
@@ -396,7 +398,7 @@ Les images utilisées portent une version explicite (`nginx:1.27-alpine` et `bus
 Depuis WSL2, à la racine du projet :
 
 ```bash
-ssh kube-control kubectl apply -f - < kubernetes/tests/network-test.yaml
+ssh kube-control kubectl apply -f - < lab-local/tests/network-test.yaml
 ```
 
 Cette commande envoie le contenu du fichier à `kubectl` à travers la connexion SSH. Le tiret après `-f` indique à `kubectl` de lire les ressources sur son entrée standard. Le fichier reste dans le dépôt et n'est pas copié sur le nœud.

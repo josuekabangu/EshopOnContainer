@@ -1496,7 +1496,7 @@ Les points suivants ont été identifiés mais ne sont pas des pannes. Ils sont 
 | Le script `setup-ssh.sh` appelait `vagrant` depuis WSL2                                     | Réécrit le 9 octobre 2026 : il n'appelle plus Vagrant et lit l'inventaire Ansible |
 | Le script `setup-ssh.sh` n'avait pas été éprouvé à la suite d'une recréation des machines   | Utilisé avec succès lors de la seconde reconstruction du 9 octobre 2026     |
 | Le paquet `containerd` n'était pas figé, contrairement aux paquets Kubernetes               | Figé par le rôle `containerd` le 9 octobre 2026, voir `08-containerd.md` (section 6) |
-| Les tests fonctionnels du réseau n'avaient pas été rejoués après la reconstruction          | Rejoués le 9 octobre 2026 depuis `kubernetes/tests/network-test.yaml`, voir `12-worker.md` (section 7) |
+| Les tests fonctionnels du réseau n'avaient pas été rejoués après la reconstruction          | Rejoués le 9 octobre 2026 depuis `network-test.yaml`, aujourd'hui dans `lab-local/tests/`, voir `12-worker.md` (section 7) |
 | La reconstruction demandait trois commandes, dans deux terminaux                            | Script `lab-local/scripts/rebuild.ps1`, validé le 15 octobre 2026 : reconstruction complète en 5 min 31, relance en 42 s avec `changed=0` |
 
 ### 21.2 Points ouverts

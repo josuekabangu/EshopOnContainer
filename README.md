@@ -91,6 +91,14 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] Contrôles de santé sur les 12 conteneurs, démarrage ordonné par l'état `healthy` des dépendances.
 * [x] Redémarrage automatique, rotation des journaux, plafonds de mémoire, image PostgreSQL officielle à version figée.
 
+### Déploiement sur Kubernetes
+
+* [x] Images publiées sur un registre privé (`ghcr.io`), étiquetées par l'identifiant du commit, téléchargées par le cluster.
+* [ ] Fournisseur de volumes pour les données persistantes.
+* [ ] PostgreSQL, Redis et RabbitMQ déployés sur le cluster.
+* [ ] Services d'eShop déployés, avec leurs probes.
+* [ ] Point d'entrée unique et connexion d'un utilisateur.
+
 ### Suite du projet
 
 * [ ] Validation de l’application e-commerce complète.
@@ -121,32 +129,35 @@ EshopOnContainer/
 │   │   ├── 01-architecture.md
 │   │   ├── ...
 │   │   └── 13-troubleshooting.md
-│   └── 02-docker/
-│       ├── 01-catalog-api.md
-│       ├── 02-autres-services.md
-│       ├── 03-compose-postgres.md
-│       ├── 04-compose-redis.md
-│       ├── 05-compose-rabbitmq.md
-│       ├── 06-compose-identity.md
-│       ├── 07-compose-catalog.md
-│       ├── 08-compose-basket.md
-│       ├── 09-compose-ordering.md
-│       ├── 10-compose-order-processor.md
-│       ├── 11-compose-payment-processor.md
-│       ├── 12-compose-webhooks.md
-│       ├── 13-compose-webapp.md
-│       ├── 14-compose-webhook-client.md
-│       ├── 15-controles-de-sante.md
-│       └── 16-robustesse-compose.md
+│   ├── 02-docker/
+│   │   ├── 01-catalog-api.md
+│   │   ├── 02-autres-services.md
+│   │   ├── 03-compose-postgres.md
+│   │   ├── 04-compose-redis.md
+│   │   ├── 05-compose-rabbitmq.md
+│   │   ├── 06-compose-identity.md
+│   │   ├── 07-compose-catalog.md
+│   │   ├── 08-compose-basket.md
+│   │   ├── 09-compose-ordering.md
+│   │   ├── 10-compose-order-processor.md
+│   │   ├── 11-compose-payment-processor.md
+│   │   ├── 12-compose-webhooks.md
+│   │   ├── 13-compose-webapp.md
+│   │   ├── 14-compose-webhook-client.md
+│   │   ├── 15-controles-de-sante.md
+│   │   └── 16-robustesse-compose.md
+│   └── 03-kubernetes/
+│       └── 01-registre-images.md
 │
 ├── lab-local/
 │   ├── README.md
 │   ├── vagrant/
 │   ├── ansible/
-│   └── scripts/
+│   ├── scripts/
+│   └── tests/
 │
 ├── kubernetes/
-│   └── tests/
+│   └── README.md
 │
 └── README.md
 ```
@@ -196,6 +207,13 @@ Conteneurisation de l'application :
 | [14 — Compose : WebhookClient](docs/02-docker/14-compose-webhook-client.md) | Site de démonstration des webhooks, adresse vue du réseau Docker, notification reçue |
 | [15 — Les contrôles de santé](docs/02-docker/15-controles-de-sante.md) | Routes `/health` et `/alive` activables, contrôle sans `curl`, démarrage par vagues |
 | [16 — Robustesse du fichier Compose](docs/02-docker/16-robustesse-compose.md) | Redémarrage, journaux, plafonds de mémoire, image PostgreSQL, revue extérieure |
+
+Déploiement sur Kubernetes :
+
+| Guide | Sujet |
+| ----- | ----- |
+| [Manifestes Kubernetes](kubernetes/README.md) | Cible du déploiement, règles, contenu du répertoire `kubernetes/` |
+| [01 — Le registre d'images](docs/03-kubernetes/01-registre-images.md) | Images privées sur `ghcr.io`, étiquette du commit, jetons, secret d'accès du cluster |
 
 ## Feuille de route
 
