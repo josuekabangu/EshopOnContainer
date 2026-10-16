@@ -1,0 +1,36 @@
+# Test du stockage du laboratoire : un fichier écrit dans un volume doit
+# survivre à la suppression du pod. Le fichier n'est écrit que s'il est absent :
+# après recréation du pod, il doit garder sa date d'origine.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: storage-test
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: storage-test
+  namespace: storage-test
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 100Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: storage-test
+  namespace: storage-test
+spec:
+  containers:
+    - name: test
+      image: busybox:1.36
+      command: ["sh", "-c", "[ -f /data/preuve.txt ] || date > /data/preuve.txt; sleep 3600"]
+      volumeMounts:
+        - name: data
+          mountPath: /data
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: storage-test

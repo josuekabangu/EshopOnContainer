@@ -1,0 +1,68 @@
+---
+- name: Télécharger le fichier de définition de local-path-provisioner
+  ansible.builtin.get_url:
+    url: "{{ local_path_manifest_url }}"
+    dest: "{{ local_path_manifest_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+# kubectl diff échoue (code 2) si l'espace de noms des objets n'existe pas encore :
+# il est donc créé avant la comparaison, seulement s'il est absent.
+- name: Vérifier si l'espace de noms local-path-storage existe
+  ansible.builtin.command:
+    cmd: kubectl get namespace local-path-storage
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: local_path_namespace
+  changed_when: false
+  failed_when: false
+
+- name: Créer l'espace de noms local-path-storage
+  ansible.builtin.command:
+    cmd: kubectl create namespace local-path-storage
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: local_path_namespace.rc != 0
+
+- name: Comparer le fichier de définition de local-path avec l'état du cluster
+  ansible.builtin.command:
+    cmd: "kubectl diff -f {{ local_path_manifest_path }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: local_path_diff
+  changed_when: false
+  failed_when: local_path_diff.rc > 1
+
+- name: Appliquer le fichier de définition de local-path
+  ansible.builtin.command:
+    cmd: "kubectl apply -f {{ local_path_manifest_path }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: local_path_diff.rc == 1
+
+- name: Attendre que local-path-provisioner soit prêt
+  ansible.builtin.command:
+    cmd: kubectl -n local-path-storage rollout status deployment/local-path-provisioner --timeout=300s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false
+
+- name: Lire si local-path est la classe de stockage par défaut
+  ansible.builtin.command:
+    cmd: >-
+      kubectl get storageclass local-path
+      -o 'jsonpath={.metadata.annotations.storageclass\.kubernetes\.io/is-default-class}'
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: local_path_default
+  changed_when: false
+
+- name: Faire de local-path la classe de stockage par défaut
+  ansible.builtin.command:
+    cmd: >-
+      kubectl patch storageclass local-path
+      -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: local_path_default.stdout != "true"

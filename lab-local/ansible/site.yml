@@ -23,3 +23,10 @@
   roles:
     - worker
 
+- name: Installer les composants du cluster
+  hosts: control_plane
+  become: true
+
+  roles:
+    - local_path
+    
