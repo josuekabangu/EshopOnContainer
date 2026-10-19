@@ -252,23 +252,55 @@ kubectl -n eshop rollout restart statefulset/postgres
 kubectl -n eshop rollout status statefulset/postgres --timeout=180s
 ```
 
-Un redémarrage réussi ne prouve rien sur le mot de passe : la base ne relit pas la variable. Le test se fait donc **par TCP**, avec la valeur que le pod a reçue du secret :
+Un redémarrage réussi ne prouve rien sur le mot de passe : la base ne relit pas la variable. Le test doit donc passer par une connexion où PostgreSQL **vérifie** le mot de passe, avec la valeur que le pod a reçue du secret :
 
 ```bash
 kubectl -n eshop exec -i postgres-0 -- sh <<'EOF'
-PGPASSWORD="$POSTGRES_PASSWORD" psql -h 127.0.0.1 -U "$POSTGRES_USER" -d postgres -At -c 'select current_user'
+PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$(hostname -i)" -U "$POSTGRES_USER" -d postgres -At -c 'select current_user'
 EOF
 ```
 
-Par le socket local, sans `-h`, l'image PostgreSQL accepte toute connexion sans vérifier le mot de passe. Une faute de frappe à la saisie aurait passé ce test, puis fait échouer le premier service.
+`hostname -i` donne l'adresse du pod sur le réseau du cluster : la connexion arrive comme celle d'un autre pod.
+
+> **Correction du 19 octobre 2026.** Ce test passait d'abord par `-h 127.0.0.1`, et ses résultats des 18 et 19 octobre ne prouvaient rien : PostgreSQL **ne vérifie aucun mot de passe** sur cette adresse. L'erreur a été découverte en déroulant la section 9 (voir « Une erreur de méthode », plus bas).
+
+### Une erreur de méthode : quelles connexions vérifient le mot de passe ?
+
+Les règles d'authentification réellement chargées se lisent dans la base :
+
+```bash
+kubectl -n eshop exec -i postgres-0 -- psql -U postgres -At <<'SQL'
+select line_number, type, database, user_name, address, auth_method from pg_hba_file_rules order by line_number;
+SQL
+```
+
+Résultat vérifié le 19 octobre 2026 (lignes `replication` omises) :
+
+| Type | Adresse | Méthode |
+|---|---|---|
+| `local` (socket) | — | `trust` : aucun mot de passe |
+| `host` | `127.0.0.1` | `trust` : aucun mot de passe |
+| `host` | `::1` | `trust` : aucun mot de passe |
+| `host` | toutes les autres | `scram-sha-256` : mot de passe vérifié |
+
+L'image initialise la base en faisant confiance aux connexions venues de l'intérieur du conteneur, et n'exige un mot de passe que pour celles qui viennent d'ailleurs. Un mot de passe faux le montre :
+
+| Connexion avec `PGPASSWORD=faux` | Résultat |
+|---|---|
+| `-h 127.0.0.1`, dans `postgres-0` | **Acceptée** |
+| `-h "$(hostname -i)"`, dans `postgres-0` | `password authentication failed` |
+| `-h postgres`, depuis un autre pod, par le `Service` | `password authentication failed` |
+
+Les services d'eShop se connecteront par le `Service`, donc avec vérification. Les probes de la section 4 du [guide 03](03-postgres.md) gardent `127.0.0.1` : `pg_isready` teste seulement que le serveur répond, sans mot de passe.
 
 Résultats vérifiés le 18 octobre 2026 :
 
 | Contrôle | Résultat |
 |---|---|
 | `postgres-0` après redémarrage | `1/1 Running` |
-| Connexion par TCP avec le mot de passe déchiffré | Acceptée : `postgres` |
 | Propriétaire des deux `Secret` | `SealedSecret` : ils sont créés et gérés par le contrôleur |
+
+La correspondance entre le secret et la base a été prouvée le 19 octobre, après le changement de mot de passe de la section 9.
 
 ## 8. La preuve : un cluster neuf, depuis le dépôt seul
 
@@ -305,13 +337,13 @@ NAME                                    STATUS   VOLUME                         
 persistentvolumeclaim/data-postgres-0   Bound    pvc-9b5c6f26-87e7-4aba-a8db-2053d42b1977   2Gi        local-path
 ```
 
-Le volume est neuf, puisque les disques ont été détruits avec les machines. PostgreSQL a donc initialisé une base neuve, avec le mot de passe du secret. La connexion par TCP de la section 7, rejouée, a répondu `postgres`.
+Le volume est neuf, puisque les disques ont été détruits avec les machines. PostgreSQL a donc initialisé une base neuve, avec le mot de passe du secret. La connexion de contrôle, rejouée alors par `127.0.0.1`, ne vérifiait pas le mot de passe (section 7) ; la correspondance a été prouvée le lendemain, section 9.
 
 **Plus aucune ressource de l'application n'est créée par commande.** Tout ce qui tourne dans `eshop` vient du dépôt. Seule la clé privée du contrôleur reste hors de Git.
 
 ## 9. Changer un mot de passe
 
-Cette procédure est décrite ici pour référence. **Elle n'a pas encore été déroulée sur le cluster.**
+Procédure déroulée le 19 octobre 2026 sur le mot de passe de PostgreSQL. Résultats en fin de section.
 
 ### Ce qu'il faut savoir avant
 
@@ -323,6 +355,20 @@ L'image PostgreSQL ne lit `POSTGRES_PASSWORD` qu'une fois : quand elle initialis
 | Seule la base est changée | Les pods utilisent toujours l'ancien ; la prochaine reconstruction remet l'ancien, sur un volume neuf |
 | Entre le changement de la base et le redémarrage des clients | Les nouvelles connexions avec l'ancien mot de passe sont refusées |
 | Après une reconstruction | Aucun problème : volume neuf, base initialisée avec la valeur du secret |
+
+### 0. Préparer
+
+Le nouveau mot de passe est généré sans caractère spécial (commande du [guide 03](03-postgres.md), section 3), et enregistré **d'abord** dans le gestionnaire de mots de passe : il sera saisi deux fois, et c'est la référence en cas d'erreur de frappe.
+
+Une fonction du terminal regroupe le contrôle de la section 7 :
+
+```bash
+verif() {
+kubectl -n eshop exec -i postgres-0 -- sh <<'EOF'
+PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$(hostname -i)" -U "$POSTGRES_USER" -d postgres -At -c 'select current_user'
+EOF
+}
+```
 
 ### 1. Changer le mot de passe dans la base
 
@@ -339,6 +385,10 @@ Puis, dans `psql` :
 ```
 
 `\password` demande le nouveau mot de passe deux fois, sans l'afficher, et le chiffre avant de l'envoyer au serveur. Il n'apparaît ni dans l'historique, ni dans les journaux. Un `ALTER USER ... PASSWORD '...'` l'aurait laissé en clair dans les deux.
+
+`ssh -t` et `exec -it` sont nécessaires ici : `psql` pose des questions, il lui faut un terminal.
+
+À ce stade, `verif` doit échouer avec `password authentication failed` : le pod utilise encore l'ancien mot de passe, que la base n'accepte plus. C'est la coupure que subiraient les services.
 
 ### 2. Chiffrer le nouveau secret et l'appliquer
 
@@ -361,9 +411,48 @@ Pour PostgreSQL, ce redémarrage ne sert qu'au contrôle de l'étape 4. Quand le
 
 ### 4. Vérifier
 
-La connexion par TCP de la section 7 doit répondre `postgres`. `password authentication failed` signifierait que les deux saisies diffèrent : il faut reprendre l'étape 1 avec la valeur du secret.
+`verif` doit répondre `postgres`. `password authentication failed` signifierait que les deux saisies diffèrent : il faut reprendre l'étape 1 avec la valeur du gestionnaire de mots de passe.
 
-Pour finir, commiter le nouveau fichier chiffré, et mettre à jour le gestionnaire de mots de passe.
+Pour finir, commiter le nouveau fichier chiffré.
+
+### Résultats
+
+Vérifiés le 19 octobre 2026 :
+
+| Étape | Résultat |
+|---|---|
+| 1. `\password postgres` | Accepté, sans message |
+| Contrôle entre l'étape 1 et l'étape 3 | `postgres` : **le contrôle passait encore par `127.0.0.1`**, où aucun mot de passe n'est vérifié. L'anomalie a révélé l'erreur de méthode de la section 7 |
+| 2. Nouveau `SealedSecret` | `configured` ; fichier modifié selon `git status` |
+| 3. Redémarrage | `postgres-0` recréé, `1/1 Running` |
+| 4. Avec le secret, par l'adresse du pod | `postgres` |
+| 4. Avec le secret, depuis un autre pod, par le `Service` `postgres` | `postgres` |
+| 4. Avec un mot de passe faux, par les mêmes chemins | `password authentication failed` |
+| Bases présentes après l'opération | `postgres`, `template0`, `template1` : la même base, seul le mot de passe a changé |
+
+Le contrôle par le `Service` utilise un pod de test qui reçoit le secret comme le recevront les services d'eShop :
+
+```bash
+kubectl apply -f - <<'Y'
+apiVersion: v1
+kind: Pod
+metadata: { name: pgtest, namespace: eshop }
+spec:
+  restartPolicy: Never
+  containers:
+    - name: pgtest
+      image: pgvector/pgvector:0.8.7-pg15
+      command: ["sleep", "300"]
+      envFrom: [ { secretRef: { name: postgres-credentials } } ]
+Y
+kubectl -n eshop wait --for=condition=Ready pod/pgtest --timeout=120s
+kubectl -n eshop exec -i pgtest -- sh <<'SH'
+PGPASSWORD="$POSTGRES_PASSWORD" psql -h postgres -U "$POSTGRES_USER" -d postgres -Atc 'select current_user'
+SH
+kubectl -n eshop delete pod pgtest
+```
+
+Le refus attendu entre l'étape 1 et l'étape 3 n'a donc pas été observé, faute d'un contrôle valide à ce moment-là. Il découle des règles d'authentification vérifiées en section 7 : un mot de passe faux est refusé par ces chemins.
 
 ### En entreprise
 
@@ -390,7 +479,9 @@ Deux pratiques évitent la coupure entre l'étape 1 et l'étape 3 :
 | Secret de test chiffré puis déchiffré | Oui, `bonjour` |
 | Valeurs en clair dans les fichiers du dépôt | Aucune |
 | Secrets créés par commande remplacés | Oui, sans interruption de PostgreSQL |
-| Mot de passe déchiffré accepté par PostgreSQL, par TCP | Oui |
+| Mot de passe déchiffré accepté par PostgreSQL, par le `Service` | Oui, le 19 octobre, après changement du mot de passe |
+| Mot de passe faux refusé par le `Service` | Oui |
+| Changement de mot de passe (section 9) | Réussi, données conservées |
 | Cluster neuf : secrets recréés depuis le dépôt seul | Oui |
 
 ## 12. Étape suivante
