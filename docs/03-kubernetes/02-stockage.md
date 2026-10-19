@@ -80,6 +80,6 @@ Les limites de `local-path`, vérifiées dans le guide du laboratoire, pèseront
 
 ## 7. Étape suivante
 
-Déployer les dépendances de l’application, en commençant par PostgreSQL, avec un volume demandé à la classe `local-path`.
+Déployer les dépendances de l’application, en commençant par PostgreSQL, avec un volume demandé à la classe `local-path` : voir [03 — PostgreSQL sur le cluster](03-postgres.md).
 
 **Bilan :** le laboratoire utilise un fournisseur de volumes local, choisi en connaissance de ses limites, et la future infrastructure AWS suivra l’usage des entreprises, avec EKS et EBS CSI.
