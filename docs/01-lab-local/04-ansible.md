@@ -364,7 +364,7 @@ Le projet utilise un playbook principal :
 site.yml
 ```
 
-Il orchestre sept rôles, répartis en quatre plays :
+Il orchestre huit rôles, répartis en quatre plays :
 
 ```text
 site.yml
@@ -375,7 +375,7 @@ site.yml
    |
    +---- worker                             (Workers)
    |
-   +---- local_path                         (Control Plane, après la jonction des Workers)
+   +---- local_path, sealed_secrets         (Control Plane, après la jonction des Workers)
 ```
 
 L'objectif est d'éviter un playbook monolithique contenant toutes les opérations. Le contenu du playbook est détaillé dans `06-roles.md`.
@@ -395,7 +395,7 @@ roles/
 └── kubernetes/
 ```
 
-Trois autres rôles construisent ensuite le cluster : `control_plane`, `calico` et `worker`. Un septième, `local_path`, installe le fournisseur de volumes. Les sept rôles sont présentés dans `06-roles.md`.
+Trois autres rôles construisent ensuite le cluster : `control_plane`, `calico` et `worker`. Un septième, `local_path`, installe le fournisseur de volumes, et un huitième, `sealed_secrets`, le contrôleur qui déchiffre les secrets du dépôt. Les huit rôles sont présentés dans `06-roles.md`.
 
 ### `common`
 

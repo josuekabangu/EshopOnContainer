@@ -12,3 +12,9 @@ calico_manifest_path: "/etc/kubernetes/calico-{{ calico_version }}.yaml"
 local_path_version: "v0.0.37"
 local_path_manifest_url: "https://raw.githubusercontent.com/rancher/local-path-provisioner/{{ local_path_version }}/deploy/local-path-storage.yaml"
 local_path_manifest_path: "/etc/kubernetes/local-path-storage-{{ local_path_version }}.yaml"
+
+sealed_secrets_version: "v0.40.0"
+sealed_secrets_manifest_url: "https://github.com/bitnami/sealed-secrets/releases/download/{{ sealed_secrets_version }}/controller.yaml"
+sealed_secrets_manifest_path: "/etc/kubernetes/sealed-secrets-{{ sealed_secrets_version }}.yaml"
+# Sauvegarde de la clé privée, sur le poste de contrôle (WSL2), hors du dépôt
+sealed_secrets_backup_dir: "{{ lookup('env', 'HOME') }}/.config/eshoponcontainer/sealed-secrets"

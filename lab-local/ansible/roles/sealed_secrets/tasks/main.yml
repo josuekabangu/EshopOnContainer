@@ -1,0 +1,129 @@
+---
+- name: Télécharger le fichier de définition de Sealed Secrets
+  ansible.builtin.get_url:
+    url: "{{ sealed_secrets_manifest_url }}"
+    dest: "{{ sealed_secrets_manifest_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+# Une seule clé, jamais renouvelée : c'est elle que l'on sauvegarde et restaure.
+- name: Désactiver le renouvellement automatique de la clé
+  ansible.builtin.replace:
+    path: "{{ sealed_secrets_manifest_path }}"
+    regexp: '^(\s+)- args: \[\]$'
+    replace: '\1- args: ["--key-renew-period=0"]'
+
+- name: Chercher la sauvegarde de la clé sur le poste de contrôle
+  ansible.builtin.stat:
+    path: "{{ sealed_secrets_backup_dir }}/tls.key"
+  delegate_to: localhost
+  become: false
+  register: sealed_secrets_backup
+
+- name: Chercher la clé active dans le cluster
+  ansible.builtin.command:
+    cmd: kubectl -n kube-system get secret -l sealedsecrets.bitnami.com/sealed-secrets-key=active -o name
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: sealed_secrets_active_key
+  changed_when: false
+
+# Restauration : avant le démarrage du contrôleur, pour qu'il réutilise la clé.
+- name: Restaurer la clé sauvegardée
+  when:
+    - sealed_secrets_backup.stat.exists
+    - sealed_secrets_active_key.stdout == ""
+  block:
+    - name: Copier la clé sauvegardée sur le Control Plane
+      ansible.builtin.copy:
+        src: "{{ sealed_secrets_backup_dir }}/{{ item }}"
+        dest: "/etc/kubernetes/sealed-secrets-{{ item }}"
+        owner: root
+        group: root
+        mode: '0600'
+      loop:
+        - tls.crt
+        - tls.key
+
+    - name: Créer le secret de la clé
+      ansible.builtin.command:
+        cmd: >-
+          kubectl -n kube-system create secret tls sealed-secrets-key
+          --cert=/etc/kubernetes/sealed-secrets-tls.crt
+          --key=/etc/kubernetes/sealed-secrets-tls.key
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+
+    - name: Marquer la clé comme active
+      ansible.builtin.command:
+        cmd: kubectl -n kube-system label secret sealed-secrets-key sealedsecrets.bitnami.com/sealed-secrets-key=active
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+
+    - name: Supprimer les copies de la clé sur le Control Plane
+      ansible.builtin.file:
+        path: "/etc/kubernetes/sealed-secrets-{{ item }}"
+        state: absent
+      loop:
+        - tls.crt
+        - tls.key
+
+- name: Comparer le fichier de définition de Sealed Secrets avec l'état du cluster
+  ansible.builtin.command:
+    cmd: "kubectl diff -f {{ sealed_secrets_manifest_path }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: sealed_secrets_diff
+  changed_when: false
+  failed_when: sealed_secrets_diff.rc > 1
+
+- name: Appliquer le fichier de définition de Sealed Secrets
+  ansible.builtin.command:
+    cmd: "kubectl apply -f {{ sealed_secrets_manifest_path }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: sealed_secrets_diff.rc == 1
+
+- name: Attendre que le contrôleur soit prêt
+  ansible.builtin.command:
+    cmd: kubectl -n kube-system rollout status deployment/sealed-secrets-controller --timeout=300s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false
+
+# Sauvegarde : au premier passage seulement, quand le contrôleur vient de créer sa clé.
+- name: Sauvegarder la clé créée par le contrôleur
+  when: not sealed_secrets_backup.stat.exists
+  block:
+    - name: Lire la clé dans le cluster
+      ansible.builtin.command:
+        cmd: >-
+          kubectl -n kube-system get secret -l sealedsecrets.bitnami.com/sealed-secrets-key=active
+          -o 'jsonpath={.items[0].data.tls\.{{ item }}}'
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      loop:
+        - crt
+        - key
+      register: sealed_secrets_key_parts
+      changed_when: false
+      no_log: true
+
+    - name: Créer le dossier de sauvegarde sur le poste de contrôle
+      ansible.builtin.file:
+        path: "{{ sealed_secrets_backup_dir }}"
+        state: directory
+        mode: '0700'
+      delegate_to: localhost
+      become: false
+
+    - name: Écrire la clé sur le poste de contrôle
+      ansible.builtin.copy:
+        content: "{{ item.stdout | b64decode }}"
+        dest: "{{ sealed_secrets_backup_dir }}/tls.{{ item.item }}"
+        mode: '0600'
+      loop: "{{ sealed_secrets_key_parts.results }}"
+      delegate_to: localhost
+      become: false
+      no_log: true

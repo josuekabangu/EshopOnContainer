@@ -66,9 +66,9 @@ Un rôle ne contient que les répertoires dont il a besoin :
 
 ---
 
-## 4. Les sept rôles
+## 4. Les huit rôles
 
-Les trois premiers rôles préparent les machines. Les trois suivants construisent le cluster. Le septième, ajouté le 16 octobre 2026, installe un composant du cluster : le fournisseur de volumes.
+Les trois premiers rôles préparent les machines. Les trois suivants construisent le cluster. Les deux derniers installent des composants du cluster : le fournisseur de volumes, ajouté le 16 octobre 2026, et le contrôleur Sealed Secrets, ajouté le 18 octobre 2026.
 
 | Rôle            | Machines ciblées | Responsabilité                                                          | Document de référence            |
 | --------------- | ---------------- | ----------------------------------------------------------------------- | -------------------------------- |
@@ -79,6 +79,7 @@ Les trois premiers rôles préparent les machines. Les trois suivants construise
 | `calico`        | Control Plane    | Installation du plugin réseau et attente de sa disponibilité            | `11-calico.md`                   |
 | `worker`        | Workers          | Jonction du nœud au cluster                                             | `12-worker.md`                   |
 | `local_path`    | Control Plane    | Installation de `local-path-provisioner`, classe de stockage par défaut | `14-local-path.md`               |
+| `sealed_secrets` | Control Plane, et le poste de contrôle | Installation du contrôleur Sealed Secrets ; sauvegarde de sa clé dans WSL2, puis restauration à chaque reconstruction | `15-sealed-secrets.md` |
 
 Le rôle `calico` cible le Control Plane, car le plugin réseau s'installe en envoyant des ressources à l'API du cluster. C'est ensuite le cluster qui le déploie sur chaque nœud.
 
@@ -91,7 +92,7 @@ Les variables sont réparties selon les machines qui en ont besoin.
 | Fichier                        | Portée          | Contenu                                                                     |
 | ------------------------------ | --------------- | --------------------------------------------------------------------------- |
 | `group_vars/all.yml`           | Tous les nœuds  | Versions de Kubernetes, `containerd` et `crictl`, dépôt APT, adresse du nœud |
-| `group_vars/control_plane.yml` | Control Plane   | Paramètres du cluster (port de l'API, plages des Pods et des Services, domaine DNS), versions et emplacements de Calico et de `local-path-provisioner` |
+| `group_vars/control_plane.yml` | Control Plane   | Paramètres du cluster (port de l'API, plages des Pods et des Services, domaine DNS), versions et emplacements de Calico, de `local-path-provisioner` et de Sealed Secrets, dossier de sauvegarde de la clé de Sealed Secrets |
 | `group_vars/workers.yml`       | Workers         | Vide : le Worker ne nécessite aucun paramètre propre                        |
 
 Deux variables sont calculées à partir d'une autre, afin de ne pas écrire deux fois la même information :
@@ -141,6 +142,7 @@ Le fichier `site.yml` ordonne les rôles en quatre plays :
 
   roles:
     - local_path
+    - sealed_secrets
 ```
 
 ### 6.1 Pourquoi quatre plays ?
@@ -160,7 +162,7 @@ Play 3 : Workers            jonction à un cluster dont le réseau est prêt
 Play 4 : Control Plane      composants qui ont besoin d'un nœud de travail
 ```
 
-Le quatrième play cible de nouveau le Control Plane, mais il vient **après** la jonction du Worker. Le pod de `local-path-provisioner` ne peut pas tourner sur `kube-control`, réservé au Control Plane : placé avec Calico dans le deuxième play, il attendrait un nœud qui n'a pas encore rejoint le cluster. Le détail est dans `14-local-path.md`.
+Le quatrième play cible de nouveau le Control Plane, mais il vient **après** la jonction du Worker. Le pod de `local-path-provisioner` ne peut pas tourner sur `kube-control`, réservé au Control Plane : placé avec Calico dans le deuxième play, il attendrait un nœud qui n'a pas encore rejoint le cluster. Le détail est dans `14-local-path.md`. Le contrôleur Sealed Secrets est dans le même cas (`15-sealed-secrets.md`).
 
 Un play ne commence que lorsque le précédent est terminé sur toutes ses machines. Les handlers d'un play s'exécutent à la fin de celui-ci : `kubelet` est donc redémarré avec la bonne adresse avant que le cluster ne soit initialisé.
 
@@ -188,6 +190,8 @@ Chaque rôle doit pouvoir être relancé sans effet sur un système déjà confi
 | `control_plane` | `kubeadm init`                         | Ignorée si `/etc/kubernetes/admin.conf` existe              |
 | `calico`        | `kubectl apply`                        | Exécutée seulement si `kubectl diff` signale une différence |
 | `worker`        | Création d'un jeton et `kubeadm join`  | Ignorées si `/etc/kubernetes/kubelet.conf` existe           |
+| `local_path`    | Création de l'espace de noms, `kubectl apply`, `kubectl patch` | Espace de noms créé s'il est absent ; application si `kubectl diff` signale une différence ; annotation posée si elle ne vaut pas `true` |
+| `sealed_secrets` | Restauration et sauvegarde de la clé, `kubectl apply` | Restauration seulement si une sauvegarde existe et que le cluster n'a aucune clé active ; sauvegarde seulement si elle n'existe pas ; application si `kubectl diff` signale une différence |
 
 ---
 
@@ -283,6 +287,13 @@ Depuis l'ajout du rôle `local_path`, le 16 octobre 2026, les compteurs sont les
 | Reconstruction à partir de machines neuves | `ok=42 changed=30 failed=0` | `ok=28 changed=22 failed=0` |
 | Exécution sur un cluster déjà construit | `ok=35 changed=0 skipped=5` | `ok=23 changed=0 skipped=3` |
 
+Depuis l'ajout du rôle `sealed_secrets`, le 18 octobre 2026 :
+
+| Situation | `kube-control` | `kube-worker` |
+|---|---|---|
+| Reconstruction à partir de machines neuves, avec restauration de la clé | `ok=53 changed=37 failed=0` | `ok=28 changed=22 failed=0` |
+| Exécution sur un cluster déjà construit | `ok=41 changed=0 skipped=13` | `ok=23 changed=0 skipped=3` |
+
 Deux reconstructions successives donnant le même résultat confirment que la construction est reproductible. Les tests fonctionnels du réseau, décrits dans `12-worker.md` (section 7), ont été rejoués avec succès sur ce second cluster.
 
 ---
@@ -324,6 +335,8 @@ Deux reconstructions successives donnant le même résultat confirment que la co
 | `11-calico.md`                   | Rôle `calico`                               |
 | `12-worker.md`                   | Rôle `worker`                               |
 | `13-troubleshooting.md`          | Diagnostic des problèmes                    |
+| `14-local-path.md`               | Rôle `local_path`                           |
+| `15-sealed-secrets.md`           | Rôle `sealed_secrets`                       |
 
 ---
 

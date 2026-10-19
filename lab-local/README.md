@@ -290,7 +290,8 @@ lab-local/
 │       ├── control_plane/
 │       ├── calico/
 │       ├── worker/
-│       └── local_path/
+│       ├── local_path/
+│       └── sealed_secrets/
 ├── scripts/
 │   ├── rebuild.ps1
 │   ├── rebuild.sh
@@ -318,6 +319,7 @@ lab-local/
 | [12-worker.md](../docs/01-lab-local/12-worker.md) | Jonction du Worker, tests réseau |
 | [13-troubleshooting.md](../docs/01-lab-local/13-troubleshooting.md) | Problèmes rencontrés et corrections |
 | [14-local-path.md](../docs/01-lab-local/14-local-path.md) | Fournisseur de volumes, test de persistance |
+| [15-sealed-secrets.md](../docs/01-lab-local/15-sealed-secrets.md) | Contrôleur Sealed Secrets, sauvegarde et restauration de sa clé |
 
 ## 11. En cas de problème
 
