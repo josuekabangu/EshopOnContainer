@@ -10,3 +10,6 @@
 id_rsa
 id_ed25519
 private_key
+
+# Clé publique de Sealed Secrets : elle sert seulement à chiffrer, et doit être dans le dépôt
+!kubernetes/sealed-secrets-cert.pem

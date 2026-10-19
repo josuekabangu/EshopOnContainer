@@ -157,6 +157,8 @@ Le registre refuse de délivrer un jeton anonyme : l’image est privée.
 
 ### L’espace de noms et le secret
 
+> **Mise à jour du 18 octobre 2026.** L’espace de noms et le secret ne se créent plus par commande. Ils sont décrits par `kubernetes/namespace-eshop.yaml` et `kubernetes/sealedsecret-ghcr-pull.yaml`, ce dernier chiffré par Sealed Secrets : voir [04 — Les secrets dans le dépôt, chiffrés](04-secrets.md). Les commandes ci-dessous restent celles du 16 octobre ; la mise en forme du secret est la même, `kubeseal` y ajoute le chiffrement.
+
 Les ressources de l’application seront rangées dans un espace de noms (*namespace*) dédié, `eshop`. Le secret d’accès y est créé.
 
 ```bash
@@ -266,9 +268,9 @@ L’espace de noms et le secret sont conservés pour le déploiement.
 
 ## 7. Points ouverts
 
-1. **Les jetons expirent.** À l’expiration du jeton de lecture, les nœuds ne pourront plus télécharger de nouvelle image. Il faudra recréer le secret `ghcr-pull` avec un nouveau jeton.
+1. **Les jetons expirent.** À l’expiration du jeton de lecture, les nœuds ne pourront plus télécharger de nouvelle image. Il faudra chiffrer à nouveau le secret `ghcr-pull` avec un nouveau jeton.
 2. **La publication est manuelle.** Elle sera reprise par GitHub Actions, qui disposera de son propre jeton.
-3. **Une reconstruction du cluster supprime l’espace de noms et le secret.** Il faudra les recréer, ou automatiser leur création avec le déploiement.
+3. ~~**Une reconstruction du cluster supprime l’espace de noms et le secret.**~~ Réglé le 18 octobre 2026 : les deux sont décrits par des fichiers du dépôt et se réappliquent sans saisie ([guide 04](04-secrets.md)).
 4. **Les images ne sont pas reliées au dépôt dans l’interface de GitHub.** Une étiquette `org.opencontainers.image.source` ajoutée aux Dockerfiles le ferait.
 
 ## 8. Tableau de validation
