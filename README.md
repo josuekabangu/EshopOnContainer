@@ -102,7 +102,8 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] Secrets versionnés dans le dépôt, chiffrés : un cluster neuf retrouve tout depuis les fichiers, sans ressaisie.
 * [x] Redis déployé sur le cluster : mot de passe exigé et invisible, données conservées après suppression du pod.
 * [x] RabbitMQ déployé sur le cluster : version figée, nom de nœud stable, mot de passe exigé, données conservées après suppression du pod.
-* [ ] Services d'eShop déployés, avec leurs probes.
+* [x] Identity.API déployé : image privée, chaîne de connexion chiffrée, base créée, santé vérifiée par le `Service`.
+* [ ] Autres services d'eShop déployés, avec leurs probes.
 * [ ] Point d'entrée unique et connexion d'un utilisateur.
 
 ### Suite du projet
@@ -159,7 +160,8 @@ EshopOnContainer/
 │       ├── 03-postgres.md
 │       ├── 04-secrets.md
 │       ├── 05-redis.md
-│       └── 06-rabbitmq.md
+│       ├── 06-rabbitmq.md
+│       └── 07-identity-api.md
 │
 ├── lab-local/
 │   ├── README.md
@@ -173,6 +175,7 @@ EshopOnContainer/
 │   ├── sealed-secrets-cert.pem
 │   ├── namespace-eshop.yaml
 │   ├── sealedsecret-ghcr-pull.yaml
+│   ├── identity-api/
 │   ├── postgres/
 │   ├── rabbitmq/
 │   └── redis/
@@ -239,6 +242,7 @@ Déploiement sur Kubernetes :
 | [04 — Les secrets](docs/03-kubernetes/04-secrets.md) | Secrets chiffrés dans le dépôt avec `kubeseal`, options d'entreprise, cluster neuf sans ressaisie, changement de mot de passe |
 | [05 — Redis](docs/03-kubernetes/05-redis.md) | Version figée, mot de passe exigé et absent des arguments du processus, persistance vérifiée |
 | [06 — RabbitMQ](docs/03-kubernetes/06-rabbitmq.md) | Version figée, nom de nœud stable fourni par le `StatefulSet`, mot de passe exigé, persistance vérifiée |
+| [07 — Identity.API](docs/03-kubernetes/07-identity-api.md) | Premier service : `Deployment`, image privée, chaîne de connexion chiffrée, clé de signature publique héritée d'eShop |
 
 ## Feuille de route
 

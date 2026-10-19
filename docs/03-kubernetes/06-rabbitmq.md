@@ -314,7 +314,7 @@ Le `0` est la preuve décisive, comme dans Compose : sur une base vide, RabbitMQ
 
 ## 11. Étape suivante
 
-Les trois dépendances sont en place. Viennent ensuite les services d'eShop, en commençant par `Identity.API`, dont dépendent tous les autres. Chacun aura besoin de ses chaînes de connexion, qui contiennent les mots de passe de PostgreSQL, Redis ou RabbitMQ, et seront donc rangées dans des `SealedSecret`.
+Les trois dépendances sont en place. Viennent ensuite les services d'eShop, en commençant par `Identity.API`, dont dépendent tous les autres : [07 — Identity.API sur le cluster](07-identity-api.md). Chacun aura besoin de ses chaînes de connexion, qui contiennent les mots de passe de PostgreSQL, Redis ou RabbitMQ, et seront donc rangées dans des `SealedSecret`.
 
 ## 12. Commandes de référence
 

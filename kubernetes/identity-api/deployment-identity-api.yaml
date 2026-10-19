@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity-api
+  namespace: eshop
+spec:
+  # Une seule copie : les clés de protection des données (cookies) sont propres à chaque pod
+  replicas: 1
+  selector:
+    matchLabels:
+      app: identity-api
+  template:
+    metadata:
+      labels:
+        app: identity-api
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull
+      containers:
+        - name: identity-api
+          image: ghcr.io/josuekabangu/identity-api:87e28f8
+          envFrom:
+            - secretRef:
+                name: identity-api-secrets
+          env:
+            - name: ASPNETCORE_HTTP_PORTS
+              value: "5223"
+            # Routes /health et /alive, hors environnement Development (adaptation ae2f77b)
+            - name: HealthChecks__Expose
+              value: "true"
+          ports:
+            - name: http
+              containerPort: 5223
+          startupProbe:
+            httpGet:
+              path: /alive
+              port: http
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /alive
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
