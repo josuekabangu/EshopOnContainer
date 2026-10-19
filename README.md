@@ -100,7 +100,8 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] Fournisseur de volumes pour les données persistantes : `local-path` au laboratoire, EBS CSI prévu sur AWS.
 * [x] PostgreSQL déployé sur le cluster, données conservées après suppression du pod et du `StatefulSet`.
 * [x] Secrets versionnés dans le dépôt, chiffrés : un cluster neuf retrouve tout depuis les fichiers, sans ressaisie.
-* [ ] Redis et RabbitMQ déployés sur le cluster.
+* [x] Redis déployé sur le cluster : mot de passe exigé et invisible, données conservées après suppression du pod.
+* [ ] RabbitMQ déployé sur le cluster.
 * [ ] Services d'eShop déployés, avec leurs probes.
 * [ ] Point d'entrée unique et connexion d'un utilisateur.
 
@@ -156,7 +157,8 @@ EshopOnContainer/
 │       ├── 01-registre-images.md
 │       ├── 02-stockage.md
 │       ├── 03-postgres.md
-│       └── 04-secrets.md
+│       ├── 04-secrets.md
+│       └── 05-redis.md
 │
 ├── lab-local/
 │   ├── README.md
@@ -170,7 +172,8 @@ EshopOnContainer/
 │   ├── sealed-secrets-cert.pem
 │   ├── namespace-eshop.yaml
 │   ├── sealedsecret-ghcr-pull.yaml
-│   └── postgres/
+│   ├── postgres/
+│   └── redis/
 │
 └── README.md
 ```
@@ -232,6 +235,7 @@ Déploiement sur Kubernetes :
 | [02 — Le stockage](docs/03-kubernetes/02-stockage.md) | Options de stockage, usage en entreprise, choix du laboratoire et d'AWS |
 | [03 — PostgreSQL](docs/03-kubernetes/03-postgres.md) | `StatefulSet`, probes, conservation des données vérifiée |
 | [04 — Les secrets](docs/03-kubernetes/04-secrets.md) | Secrets chiffrés dans le dépôt avec `kubeseal`, options d'entreprise, cluster neuf sans ressaisie, changement de mot de passe |
+| [05 — Redis](docs/03-kubernetes/05-redis.md) | Version figée, mot de passe exigé et absent des arguments du processus, persistance vérifiée |
 
 ## Feuille de route
 

@@ -486,7 +486,7 @@ Deux pratiques évitent la coupure entre l'étape 1 et l'étape 3 :
 
 ## 12. Étape suivante
 
-Déployer Redis et RabbitMQ sur le même modèle : un `StatefulSet` avec son volume, un `Service`, et un `SealedSecret` rangé avec eux.
+Déployer Redis ([guide 05](05-redis.md)) et RabbitMQ sur le même modèle : un `StatefulSet` avec son volume, un `Service`, et un `SealedSecret` rangé avec eux.
 
 ## 13. Commandes de référence
 
