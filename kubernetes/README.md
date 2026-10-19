@@ -91,4 +91,4 @@ for f in kubernetes/redis/*.yaml; do echo '---'; cat "$f"; done | $CP kubectl ap
 for f in kubernetes/rabbitmq/*.yaml; do echo '---'; cat "$f"; done | $CP kubectl apply -f -
 ```
 
-Validé le 18 octobre 2026, avant l'ajout de Redis et de RabbitMQ, sur un cluster neuf ([docs/03-kubernetes/04-secrets.md](../docs/03-kubernetes/04-secrets.md), section 8).
+Validé le 19 octobre 2026 avec les trois dépendances, sur un cluster reconstruit en 6 min 58 : les quatre secrets déchiffrés, les trois pods prêts, et chaque base refuse un mot de passe faux et accepte celui de son secret. Une première validation, avec PostgreSQL seul, date du 18 octobre sur un cluster neuf ([docs/03-kubernetes/04-secrets.md](../docs/03-kubernetes/04-secrets.md), section 8).

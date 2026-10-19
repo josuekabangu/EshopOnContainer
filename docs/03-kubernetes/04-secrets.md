@@ -339,6 +339,53 @@ persistentvolumeclaim/data-postgres-0   Bound    pvc-9b5c6f26-87e7-4aba-a8db-205
 
 Le volume est neuf, puisque les disques ont été détruits avec les machines. PostgreSQL a donc initialisé une base neuve, avec le mot de passe du secret. La connexion de contrôle, rejouée alors par `127.0.0.1`, ne vérifiait pas le mot de passe (section 7) ; la correspondance a été prouvée le lendemain, section 9.
 
+### Seconde reconstruction, avec les trois dépendances
+
+Le 19 octobre 2026, après l'ajout de Redis ([guide 05](05-redis.md)) et de RabbitMQ ([guide 06](06-rabbitmq.md)), le cluster a de nouveau été reconstruit, en 6 min 58, avec les mêmes compteurs Ansible. Tout a été réappliqué depuis le dépôt :
+
+```bash
+kubectl apply -f - < kubernetes/namespace-eshop.yaml
+kubectl apply -f - < kubernetes/sealedsecret-ghcr-pull.yaml
+for d in postgres redis rabbitmq; do
+  for f in kubernetes/$d/*.yaml; do echo '---'; cat "$f"; done | kubectl apply -f -
+done
+for s in postgres redis rabbitmq; do kubectl -n eshop rollout status statefulset/$s --timeout=300s; done
+```
+
+Puis chaque mot de passe a été testé, faux puis celui du secret, par une connexion où il est vérifié :
+
+```bash
+kubectl -n eshop exec -i postgres-0 -- sh <<'SH'
+echo "postgres, faux : $(PGPASSWORD=faux psql -h "$(hostname -i)" -U postgres -d postgres -Atc 'select 1' 2>&1 | tail -1)"
+echo "postgres, secret : $(PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$(hostname -i)" -U "$POSTGRES_USER" -d postgres -Atc 'select current_user' 2>&1)"
+SH
+
+kubectl -n eshop exec -i redis-0 -- sh <<'SH'
+echo "redis, faux : $(REDISCLI_AUTH=faux redis-cli -h "$(hostname -i)" ping 2>&1 | head -1)"
+echo "redis, secret : $(redis-cli -h "$(hostname -i)" ping 2>&1)"
+SH
+
+kubectl -n eshop exec -i rabbitmq-0 -- sh <<'SH'
+echo "rabbitmq, faux : $(rabbitmqctl -q authenticate_user "$RABBITMQ_DEFAULT_USER" faux 2>&1 | head -1)"
+echo "rabbitmq, secret : $(rabbitmqctl -q authenticate_user "$RABBITMQ_DEFAULT_USER" "$RABBITMQ_DEFAULT_PASS" >/dev/null 2>&1 && echo accepté || echo refusé)"
+SH
+```
+
+Résultats vérifiés le 19 octobre 2026 :
+
+| Contrôle | Résultat |
+|---|---|
+| `SealedSecret` et `Secret` | 4 et 4 |
+| Pods | `postgres-0`, `redis-0`, `rabbitmq-0` : `1/1 Running` |
+| Volumes | 3 `Bound`, tous neufs |
+| PostgreSQL, mot de passe faux puis du secret | `password authentication failed`, puis `postgres` |
+| Redis | `WRONGPASS`, puis `PONG` |
+| RabbitMQ | `Error:` (le message, sur plusieurs lignes, est coupé par `head -1`), puis `accepté` |
+
+Les volumes étant neufs, chaque base a été initialisée avec la valeur de son secret : la correspondance est prouvée pour les trois.
+
+Une seconde application des mêmes fichiers répond `unchanged` pour tous les objets, sauf les trois `StatefulSet`, annoncés `configured` sans qu'aucun pod ne redémarre. Explication probable, non vérifiée : Kubernetes complète les modèles de volume (`volumeClaimTemplates`) avec des valeurs par défaut, que `kubectl apply` compte comme une différence.
+
 **Plus aucune ressource de l'application n'est créée par commande.** Tout ce qui tourne dans `eshop` vient du dépôt. Seule la clé privée du contrôleur reste hors de Git.
 
 ## 9. Changer un mot de passe
@@ -482,7 +529,7 @@ Deux pratiques évitent la coupure entre l'étape 1 et l'étape 3 :
 | Mot de passe déchiffré accepté par PostgreSQL, par le `Service` | Oui, le 19 octobre, après changement du mot de passe |
 | Mot de passe faux refusé par le `Service` | Oui |
 | Changement de mot de passe (section 9) | Réussi, données conservées |
-| Cluster neuf : secrets recréés depuis le dépôt seul | Oui |
+| Cluster neuf : secrets recréés depuis le dépôt seul | Oui, le 18 octobre avec PostgreSQL, le 19 avec les trois dépendances |
 
 ## 12. Étape suivante
 
