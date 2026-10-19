@@ -298,7 +298,7 @@ Le volume contient le journal `appendonly`, dans `appendonlydir/`, et un instant
 
 ## 11. Étape suivante
 
-Déployer RabbitMQ sur le même modèle. `Basket.API` aura ensuite besoin du mot de passe de Redis dans sa chaîne de connexion, `redis:6379,password=...`, qui sera rangée dans son propre secret.
+Déployer RabbitMQ sur le même modèle : [06 — RabbitMQ sur le cluster](06-rabbitmq.md). `Basket.API` aura ensuite besoin du mot de passe de Redis dans sa chaîne de connexion, `redis:6379,password=...`, qui sera rangée dans son propre secret.
 
 ## 12. Commandes de référence
 

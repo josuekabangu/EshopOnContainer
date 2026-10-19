@@ -101,7 +101,7 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] PostgreSQL déployé sur le cluster, données conservées après suppression du pod et du `StatefulSet`.
 * [x] Secrets versionnés dans le dépôt, chiffrés : un cluster neuf retrouve tout depuis les fichiers, sans ressaisie.
 * [x] Redis déployé sur le cluster : mot de passe exigé et invisible, données conservées après suppression du pod.
-* [ ] RabbitMQ déployé sur le cluster.
+* [x] RabbitMQ déployé sur le cluster : version figée, nom de nœud stable, mot de passe exigé, données conservées après suppression du pod.
 * [ ] Services d'eShop déployés, avec leurs probes.
 * [ ] Point d'entrée unique et connexion d'un utilisateur.
 
@@ -158,7 +158,8 @@ EshopOnContainer/
 │       ├── 02-stockage.md
 │       ├── 03-postgres.md
 │       ├── 04-secrets.md
-│       └── 05-redis.md
+│       ├── 05-redis.md
+│       └── 06-rabbitmq.md
 │
 ├── lab-local/
 │   ├── README.md
@@ -173,6 +174,7 @@ EshopOnContainer/
 │   ├── namespace-eshop.yaml
 │   ├── sealedsecret-ghcr-pull.yaml
 │   ├── postgres/
+│   ├── rabbitmq/
 │   └── redis/
 │
 └── README.md
@@ -236,6 +238,7 @@ Déploiement sur Kubernetes :
 | [03 — PostgreSQL](docs/03-kubernetes/03-postgres.md) | `StatefulSet`, probes, conservation des données vérifiée |
 | [04 — Les secrets](docs/03-kubernetes/04-secrets.md) | Secrets chiffrés dans le dépôt avec `kubeseal`, options d'entreprise, cluster neuf sans ressaisie, changement de mot de passe |
 | [05 — Redis](docs/03-kubernetes/05-redis.md) | Version figée, mot de passe exigé et absent des arguments du processus, persistance vérifiée |
+| [06 — RabbitMQ](docs/03-kubernetes/06-rabbitmq.md) | Version figée, nom de nœud stable fourni par le `StatefulSet`, mot de passe exigé, persistance vérifiée |
 
 ## Feuille de route
 

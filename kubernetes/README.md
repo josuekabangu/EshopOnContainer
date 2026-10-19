@@ -36,6 +36,9 @@ Une fois l'application validée sur le cluster, ces manifestes serviront de base
 | `namespace-eshop.yaml` | Espace de noms `eshop`, à appliquer avant tout autre fichier | Même guide |
 | `sealedsecret-ghcr-pull.yaml` | `SealedSecret` `ghcr-pull` : jeton de lecture du registre, chiffré. Commun à tous les services | Même guide ; [docs/03-kubernetes/01-registre-images.md](../docs/03-kubernetes/01-registre-images.md) |
 | `postgres/sealedsecret-postgres-credentials.yaml` | `SealedSecret` `postgres-credentials` : utilisateur et mot de passe de PostgreSQL, chiffrés | [docs/03-kubernetes/04-secrets.md](../docs/03-kubernetes/04-secrets.md) |
+| `rabbitmq/sealedsecret-rabbitmq-credentials.yaml` | `SealedSecret` `rabbitmq-credentials` : utilisateur et mot de passe de RabbitMQ, chiffrés | [docs/03-kubernetes/06-rabbitmq.md](../docs/03-kubernetes/06-rabbitmq.md) |
+| `rabbitmq/service-rabbitmq.yaml` | `Service` `rabbitmq` : AMQP sur 5672, administration sur 15672 | Même guide |
+| `rabbitmq/statefulset-rabbitmq.yaml` | `StatefulSet` `rabbitmq` : RabbitMQ 4.3.6 avec l'interface d'administration, nœud `rabbit@rabbitmq-0`, volume de 2 Gio conservé, trois probes | Même guide |
 | `redis/sealedsecret-redis-credentials.yaml` | `SealedSecret` `redis-credentials` : mot de passe de Redis, chiffré | [docs/03-kubernetes/05-redis.md](../docs/03-kubernetes/05-redis.md) |
 | `redis/service-redis.yaml` | `Service` `redis` : adresse stable de Redis, port 6379 | Même guide |
 | `redis/statefulset-redis.yaml` | `StatefulSet` `redis` : Redis 7.4.11, mot de passe exigé, journal `appendonly`, volume de 2 Gio conservé, trois probes | Même guide |
@@ -85,6 +88,7 @@ $CP kubectl apply -f - < kubernetes/namespace-eshop.yaml
 $CP kubectl apply -f - < kubernetes/sealedsecret-ghcr-pull.yaml
 for f in kubernetes/postgres/*.yaml; do echo '---'; cat "$f"; done | $CP kubectl apply -f -
 for f in kubernetes/redis/*.yaml; do echo '---'; cat "$f"; done | $CP kubectl apply -f -
+for f in kubernetes/rabbitmq/*.yaml; do echo '---'; cat "$f"; done | $CP kubectl apply -f -
 ```
 
-Validé le 18 octobre 2026, avant l'ajout de Redis, sur un cluster neuf ([docs/03-kubernetes/04-secrets.md](../docs/03-kubernetes/04-secrets.md), section 8).
+Validé le 18 octobre 2026, avant l'ajout de Redis et de RabbitMQ, sur un cluster neuf ([docs/03-kubernetes/04-secrets.md](../docs/03-kubernetes/04-secrets.md), section 8).
