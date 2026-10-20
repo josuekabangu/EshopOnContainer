@@ -108,7 +108,8 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] Ordering.API déployé : tables créées, appel sans jeton valide refusé (`401`).
 * [x] OrderProcessor déployé : tâche de fond sans `Service`, recherche périodique observée dans PostgreSQL.
 * [x] PaymentProcessor déployé : un événement a traversé le bus jusqu'à Ordering.API.
-* [ ] Autres services d'eShop déployés, avec leurs probes.
+* [x] Webhooks.API déployé : abonnements en place, événement « commande payée » reçu.
+* [ ] WebApp et WebhookClient déployés, derrière un point d'entrée.
 * [ ] Point d'entrée unique et connexion d'un utilisateur.
 
 ### Suite du projet
@@ -171,7 +172,8 @@ EshopOnContainer/
 │       ├── 09-basket-api.md
 │       ├── 10-ordering-api.md
 │       ├── 11-order-processor.md
-│       └── 12-payment-processor.md
+│       ├── 12-payment-processor.md
+│       └── 13-webhooks-api.md
 │
 ├── lab-local/
 │   ├── README.md
@@ -191,6 +193,7 @@ EshopOnContainer/
 │   ├── order-processor/
 │   ├── ordering-api/
 │   ├── payment-processor/
+│   ├── webhooks-api/
 │   ├── postgres/
 │   ├── rabbitmq/
 │   └── redis/
@@ -263,6 +266,7 @@ Déploiement sur Kubernetes :
 | [10 — Ordering.API](docs/03-kubernetes/10-ordering-api.md) | Tables du schéma `ordering`, premier contrôle d'accès vérifié : `401` sans jeton valide |
 | [11 — OrderProcessor](docs/03-kubernetes/11-order-processor.md) | Tâche de fond : probes HTTP sans `Service`, une seule copie, travail observé dans `pg_stat_activity` malgré la probe qui le masque |
 | [12 — PaymentProcessor](docs/03-kubernetes/12-payment-processor.md) | Seconde tâche de fond, liaison à son événement, chaîne de messages vérifiée jusqu'à Ordering.API |
+| [13 — Webhooks.API](docs/03-kubernetes/13-webhooks-api.md) | Abonnements aux événements, événement de test construit pour ne pas toucher au stock |
 
 ## Feuille de route
 

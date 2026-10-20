@@ -42,6 +42,9 @@ Une fois l'application validée sur le cluster, ces manifestes serviront de base
 | `redis/sealedsecret-redis-credentials.yaml` | `SealedSecret` `redis-credentials` : mot de passe de Redis, chiffré | [docs/03-kubernetes/05-redis.md](../docs/03-kubernetes/05-redis.md) |
 | `redis/service-redis.yaml` | `Service` `redis` : adresse stable de Redis, port 6379 | Même guide |
 | `redis/statefulset-redis.yaml` | `StatefulSet` `redis` : Redis 7.4.11, mot de passe exigé, journal `appendonly`, volume de 2 Gio conservé, trois probes | Même guide |
+| `webhooks-api/sealedsecret-webhooks-api.yaml` | `SealedSecret` `webhooks-api-secrets` : chaînes de connexion à `webhooksdb` et à RabbitMQ, chiffrées | [docs/03-kubernetes/13-webhooks-api.md](../docs/03-kubernetes/13-webhooks-api.md) |
+| `webhooks-api/service-webhooks-api.yaml` | `Service` `webhooks-api` : port 8080 | Même guide |
+| `webhooks-api/deployment-webhooks-api.yaml` | `Deployment` `webhooks-api` : celui d'`ordering-api`, renommé | Même guide |
 | `payment-processor/sealedsecret-payment-processor.yaml` | `SealedSecret` `payment-processor-secrets` : chaîne de connexion à RabbitMQ, chiffrée | [docs/03-kubernetes/12-payment-processor.md](../docs/03-kubernetes/12-payment-processor.md) |
 | `payment-processor/deployment-payment-processor.yaml` | `Deployment` `payment-processor` : tâche de fond, probes HTTP sur le port 8080, sans `Service` | Même guide |
 | `order-processor/sealedsecret-order-processor.yaml` | `SealedSecret` `order-processor-secrets` : chaînes de connexion à `orderingdb` et à RabbitMQ, chiffrées | [docs/03-kubernetes/11-order-processor.md](../docs/03-kubernetes/11-order-processor.md) |
@@ -111,6 +114,7 @@ for f in kubernetes/basket-api/*.yaml; do echo '---'; cat "$f"; done | $CP kubec
 for f in kubernetes/ordering-api/*.yaml; do echo '---'; cat "$f"; done | $CP kubectl apply -f -
 for f in kubernetes/order-processor/*.yaml; do echo '---'; cat "$f"; done | $CP kubectl apply -f -
 for f in kubernetes/payment-processor/*.yaml; do echo '---'; cat "$f"; done | $CP kubectl apply -f -
+for f in kubernetes/webhooks-api/*.yaml; do echo '---'; cat "$f"; done | $CP kubectl apply -f -
 ```
 
 Validé le 19 octobre 2026 avec les trois dépendances, sur un cluster reconstruit en 6 min 58 : les quatre secrets déchiffrés, les trois pods prêts, et chaque base refuse un mot de passe faux et accepte celui de son secret. Une première validation, avec PostgreSQL seul, date du 18 octobre. Les lignes des services d'eShop, ajoutées ensuite, n'ont pas encore été rejouées sur un cluster neuf sur un cluster neuf ([docs/03-kubernetes/04-secrets.md](../docs/03-kubernetes/04-secrets.md), section 8).

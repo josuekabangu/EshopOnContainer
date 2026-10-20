@@ -180,7 +180,7 @@ Résultat vérifié : aucune ligne. Pas même `libgssapi`, puisque le service n'
 
 ## 8. Étape suivante
 
-Déployer `Webhooks.API`, qui gère les abonnements des applications extérieures aux événements de la boutique ([guide 02-docker/12](../02-docker/12-compose-webhooks.md)).
+Déployer `Webhooks.API`, qui gère les abonnements des applications extérieures aux événements de la boutique ([guide 02-docker/12](../02-docker/12-compose-webhooks.md)) : [13 — Webhooks.API sur le cluster](13-webhooks-api.md).
 
 ## 9. Commandes de référence
 
