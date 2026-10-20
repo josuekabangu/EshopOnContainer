@@ -298,7 +298,7 @@ En entreprise, ces clés sont rangées dans un stockage partagé, Redis ou une b
 
 ## 10. Étape suivante
 
-Déployer les API qui s'appuient sur `Identity.API` et sur les dépendances, en commençant par `Catalog.API`, qui ne demande aucune authentification pour la lecture du catalogue.
+Déployer les API qui s'appuient sur `Identity.API` et sur les dépendances, en commençant par `Catalog.API`, qui ne demande aucune authentification pour la lecture du catalogue : [08 — Catalog.API sur le cluster](08-catalog-api.md).
 
 ## 11. Commandes de référence
 
