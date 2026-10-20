@@ -42,6 +42,8 @@ Le projet est organisé autour de trois domaines principaux :
 | Runtime de conteneurs   | containerd                  | Utilisé |
 | Orchestration           | Kubernetes (kubeadm)        | Utilisé |
 | Réseau Kubernetes       | Calico                      | Utilisé |
+| Adresses `LoadBalancer` | MetalLB (laboratoire)       | Utilisé |
+| Point d'entrée          | Gateway API, Envoy Gateway  | En cours |
 | Construction des images | Docker et Docker Compose    | Utilisé |
 | Secrets du cluster      | Sealed Secrets (laboratoire) ; External Secrets et AWS Secrets Manager (EKS) | Utilisé au laboratoire |
 | Déploiement applicatif  | Helm                        | Prévu   |
@@ -68,9 +70,10 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] Intégration du Worker au cluster, automatisée avec Ansible.
 * [x] Reconstruction complète du cluster validée à partir de machines neuves.
 * [x] Tests du réseau du cluster : Pod à Pod entre nœuds, Service et DNS.
-* [x] Documentation du laboratoire, en quinze guides.
+* [x] Documentation du laboratoire, en seize guides.
 * [x] Fournisseur de volumes `local-path-provisioner`, installé par Ansible, persistance des données vérifiée.
 * [x] Contrôleur Sealed Secrets, installé par Ansible, avec une clé qui survit aux reconstructions.
+* [x] MetalLB, installé par Ansible : adresses `LoadBalancer` sur le réseau privé, joignables depuis Windows.
 * [x] Inventaire Ansible portable, sans chemin lié à un compte utilisateur.
 * [x] Enchaînement de la reconstruction en une seule commande.
 
@@ -142,7 +145,8 @@ EshopOnContainer/
 │   │   ├── 01-architecture.md
 │   │   ├── ...
 │   │   ├── 14-local-path.md
-│   │   └── 15-sealed-secrets.md
+│   │   ├── 15-sealed-secrets.md
+│   │   └── 16-metallb.md
 │   ├── 02-docker/
 │   │   ├── 01-catalog-api.md
 │   │   ├── 02-autres-services.md
@@ -226,6 +230,7 @@ Les guides techniques se lisent dans l'ordre de construction du laboratoire :
 | [13 — Dépannage](docs/01-lab-local/13-troubleshooting.md) | Problèmes rencontrés et corrections |
 | [14 — Volumes](docs/01-lab-local/14-local-path.md) | Fournisseur de volumes `local-path`, test de persistance |
 | [15 — Sealed Secrets](docs/01-lab-local/15-sealed-secrets.md) | Contrôleur qui déchiffre les secrets, sauvegarde et restauration de sa clé |
+| [16 — MetalLB](docs/01-lab-local/16-metallb.md) | Adresses des `Service` de type `LoadBalancer` sur le réseau privé |
 
 Conteneurisation de l'application :
 

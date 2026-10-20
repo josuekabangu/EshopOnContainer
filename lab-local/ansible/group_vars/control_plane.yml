@@ -18,3 +18,11 @@ sealed_secrets_manifest_url: "https://github.com/bitnami/sealed-secrets/releases
 sealed_secrets_manifest_path: "/etc/kubernetes/sealed-secrets-{{ sealed_secrets_version }}.yaml"
 # Sauvegarde de la clé privée, sur le poste de contrôle (WSL2), hors du dépôt
 sealed_secrets_backup_dir: "{{ lookup('env', 'HOME') }}/.config/eshoponcontainer/sealed-secrets"
+
+metallb_version: "v0.16.0"
+metallb_manifest_url: "https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/config/manifests/metallb-native.yaml"
+metallb_manifest_path: "/etc/kubernetes/metallb-{{ metallb_version }}.yaml"
+metallb_config_path: "/etc/kubernetes/metallb-config.yaml"
+# Adresses attribuées aux Services de type LoadBalancer, sur le réseau privé du laboratoire
+metallb_address_range: "192.168.57.20-192.168.57.29"
+metallb_interface: "eth1"

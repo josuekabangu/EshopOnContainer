@@ -1,0 +1,76 @@
+---
+- name: Télécharger le fichier de définition de MetalLB
+  ansible.builtin.get_url:
+    url: "{{ metallb_manifest_url }}"
+    dest: "{{ metallb_manifest_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+# kubectl diff échoue (code 2) si l'espace de noms des objets n'existe pas encore (guide 13, problème 18)
+- name: Vérifier si l'espace de noms metallb-system existe
+  ansible.builtin.command:
+    cmd: kubectl get namespace metallb-system
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: metallb_namespace
+  changed_when: false
+  failed_when: false
+
+- name: Créer l'espace de noms metallb-system
+  ansible.builtin.command:
+    cmd: kubectl create namespace metallb-system
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: metallb_namespace.rc != 0
+
+- name: Comparer le fichier de définition de MetalLB avec l'état du cluster
+  ansible.builtin.command:
+    cmd: "kubectl diff -f {{ metallb_manifest_path }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: metallb_diff
+  changed_when: false
+  failed_when: metallb_diff.rc > 1
+
+- name: Appliquer le fichier de définition de MetalLB
+  ansible.builtin.command:
+    cmd: "kubectl apply -f {{ metallb_manifest_path }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: metallb_diff.rc == 1
+
+# Le contrôleur sert aussi le webhook qui valide la configuration : il doit être prêt avant elle
+- name: Attendre que le contrôleur et le speaker de MetalLB soient prêts
+  ansible.builtin.command:
+    cmd: "kubectl -n metallb-system rollout status {{ item }} --timeout=300s"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  loop:
+    - deployment/controller
+    - daemonset/speaker
+  changed_when: false
+
+- name: Déposer la configuration de MetalLB
+  ansible.builtin.template:
+    src: metallb-config.yaml.j2
+    dest: "{{ metallb_config_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Comparer la configuration de MetalLB avec l'état du cluster
+  ansible.builtin.command:
+    cmd: "kubectl diff -f {{ metallb_config_path }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: metallb_config_diff
+  changed_when: false
+  failed_when: metallb_config_diff.rc > 1
+
+- name: Appliquer la configuration de MetalLB
+  ansible.builtin.command:
+    cmd: "kubectl apply -f {{ metallb_config_path }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: metallb_config_diff.rc == 1

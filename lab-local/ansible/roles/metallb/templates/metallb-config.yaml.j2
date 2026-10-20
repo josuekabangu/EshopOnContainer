@@ -1,0 +1,20 @@
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: lab
+  namespace: metallb-system
+spec:
+  addresses:
+    - {{ metallb_address_range }}
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: lab
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - lab
+  # Le réseau privé seulement : eth0 est le réseau NAT de VMware
+  interfaces:
+    - {{ metallb_interface }}

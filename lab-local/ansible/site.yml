@@ -30,3 +30,4 @@
   roles:
     - local_path
     - sealed_secrets
+    - metallb
