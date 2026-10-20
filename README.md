@@ -105,6 +105,7 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] Identity.API déployé : image privée, chaîne de connexion chiffrée, base créée, santé vérifiée par le `Service`.
 * [x] Catalog.API déployé : deux chaînes de connexion chiffrées, 101 articles, connexion AMQP à RabbitMQ vérifiée.
 * [x] Basket.API déployé : gRPC en HTTP/2 et probes en HTTP/1.1, appel gRPC et mot de passe Redis vérifiés.
+* [x] Ordering.API déployé : tables créées, appel sans jeton valide refusé (`401`).
 * [ ] Autres services d'eShop déployés, avec leurs probes.
 * [ ] Point d'entrée unique et connexion d'un utilisateur.
 
@@ -165,7 +166,8 @@ EshopOnContainer/
 │       ├── 06-rabbitmq.md
 │       ├── 07-identity-api.md
 │       ├── 08-catalog-api.md
-│       └── 09-basket-api.md
+│       ├── 09-basket-api.md
+│       └── 10-ordering-api.md
 │
 ├── lab-local/
 │   ├── README.md
@@ -182,6 +184,7 @@ EshopOnContainer/
 │   ├── basket-api/
 │   ├── catalog-api/
 │   ├── identity-api/
+│   ├── ordering-api/
 │   ├── postgres/
 │   ├── rabbitmq/
 │   └── redis/
@@ -251,6 +254,7 @@ Déploiement sur Kubernetes :
 | [07 — Identity.API](docs/03-kubernetes/07-identity-api.md) | Premier service : `Deployment`, image privée, chaîne de connexion chiffrée, clé de signature publique héritée d'eShop |
 | [08 — Catalog.API](docs/03-kubernetes/08-catalog-api.md) | Deux chaînes de connexion chiffrées sans saisie, extension `vector`, première connexion AMQP |
 | [09 — Basket.API](docs/03-kubernetes/09-basket-api.md) | gRPC en HTTP/2 et probes en HTTP/1.1, appel gRPC par le `Service`, mot de passe Redis de la chaîne vérifié |
+| [10 — Ordering.API](docs/03-kubernetes/10-ordering-api.md) | Tables du schéma `ordering`, premier contrôle d'accès vérifié : `401` sans jeton valide |
 
 ## Feuille de route
 

@@ -293,7 +293,7 @@ Aucune erreur : pas même `libgssapi`, puisque `Basket.API` n'utilise pas le pil
 
 ## 9. Étape suivante
 
-Déployer `Ordering.API`, qui partage ses tables avec `OrderProcessor` ([guide 02-docker/09](../02-docker/09-compose-ordering.md)).
+Déployer `Ordering.API`, qui partage ses tables avec `OrderProcessor` ([guide 02-docker/09](../02-docker/09-compose-ordering.md)) : [10 — Ordering.API sur le cluster](10-ordering-api.md).
 
 ## 10. Commandes de référence
 

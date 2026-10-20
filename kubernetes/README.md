@@ -42,6 +42,9 @@ Une fois l'application validée sur le cluster, ces manifestes serviront de base
 | `redis/sealedsecret-redis-credentials.yaml` | `SealedSecret` `redis-credentials` : mot de passe de Redis, chiffré | [docs/03-kubernetes/05-redis.md](../docs/03-kubernetes/05-redis.md) |
 | `redis/service-redis.yaml` | `Service` `redis` : adresse stable de Redis, port 6379 | Même guide |
 | `redis/statefulset-redis.yaml` | `StatefulSet` `redis` : Redis 7.4.11, mot de passe exigé, journal `appendonly`, volume de 2 Gio conservé, trois probes | Même guide |
+| `ordering-api/sealedsecret-ordering-api.yaml` | `SealedSecret` `ordering-api-secrets` : chaînes de connexion à `orderingdb` et à RabbitMQ, chiffrées | [docs/03-kubernetes/10-ordering-api.md](../docs/03-kubernetes/10-ordering-api.md) |
+| `ordering-api/service-ordering-api.yaml` | `Service` `ordering-api` : port 8080 | Même guide |
+| `ordering-api/deployment-ordering-api.yaml` | `Deployment` `ordering-api` : image `87e28f8`, adresse d'`Identity.API`, probes sur `/alive` et `/health` | Même guide |
 | `basket-api/sealedsecret-basket-api.yaml` | `SealedSecret` `basket-api-secrets` : chaînes de connexion à Redis et à RabbitMQ, chiffrées | [docs/03-kubernetes/09-basket-api.md](../docs/03-kubernetes/09-basket-api.md) |
 | `basket-api/service-basket-api.yaml` | `Service` `basket-api` : port 8080, gRPC en HTTP/2 (`appProtocol: kubernetes.io/h2c`) | Même guide |
 | `basket-api/deployment-basket-api.yaml` | `Deployment` `basket-api` : image `87e28f8`, HTTP/2 sur 8080, probes sur 8081 en HTTP/1.1 | Même guide |
@@ -101,6 +104,7 @@ for f in kubernetes/rabbitmq/*.yaml; do echo '---'; cat "$f"; done | $CP kubectl
 for f in kubernetes/identity-api/*.yaml; do echo '---'; cat "$f"; done | $CP kubectl apply -f -
 for f in kubernetes/catalog-api/*.yaml; do echo '---'; cat "$f"; done | $CP kubectl apply -f -
 for f in kubernetes/basket-api/*.yaml; do echo '---'; cat "$f"; done | $CP kubectl apply -f -
+for f in kubernetes/ordering-api/*.yaml; do echo '---'; cat "$f"; done | $CP kubectl apply -f -
 ```
 
-Validé le 19 octobre 2026 avec les trois dépendances, sur un cluster reconstruit en 6 min 58 : les quatre secrets déchiffrés, les trois pods prêts, et chaque base refuse un mot de passe faux et accepte celui de son secret. Une première validation, avec PostgreSQL seul, date du 18 octobre. Les lignes d'`identity-api`, de `catalog-api` et de `basket-api`, ajoutées ensuite, n'ont pas encore été rejouées sur un cluster neuf sur un cluster neuf ([docs/03-kubernetes/04-secrets.md](../docs/03-kubernetes/04-secrets.md), section 8).
+Validé le 19 octobre 2026 avec les trois dépendances, sur un cluster reconstruit en 6 min 58 : les quatre secrets déchiffrés, les trois pods prêts, et chaque base refuse un mot de passe faux et accepte celui de son secret. Une première validation, avec PostgreSQL seul, date du 18 octobre. Les lignes des services d'eShop, ajoutées ensuite, n'ont pas encore été rejouées sur un cluster neuf sur un cluster neuf ([docs/03-kubernetes/04-secrets.md](../docs/03-kubernetes/04-secrets.md), section 8).
