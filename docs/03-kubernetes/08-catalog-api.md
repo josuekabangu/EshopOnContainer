@@ -250,7 +250,7 @@ Résultat vérifié : `libgssapi_krb5.so.2` et `Connection[20004]`, une fois cha
 
 ## 9. Étape suivante
 
-Déployer `Basket.API`, qui ajoute Redis, l'authentification par les jetons d'`Identity.API`, et le protocole gRPC en HTTP/2 ([guide 02-docker/08](../02-docker/08-compose-basket.md)).
+Déployer `Basket.API`, qui ajoute Redis, l'authentification par les jetons d'`Identity.API`, et le protocole gRPC en HTTP/2 ([guide 02-docker/08](../02-docker/08-compose-basket.md)) : [09 — Basket.API sur le cluster](09-basket-api.md).
 
 ## 10. Commandes de référence
 

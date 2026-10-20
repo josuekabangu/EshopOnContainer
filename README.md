@@ -104,6 +104,7 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] RabbitMQ déployé sur le cluster : version figée, nom de nœud stable, mot de passe exigé, données conservées après suppression du pod.
 * [x] Identity.API déployé : image privée, chaîne de connexion chiffrée, base créée, santé vérifiée par le `Service`.
 * [x] Catalog.API déployé : deux chaînes de connexion chiffrées, 101 articles, connexion AMQP à RabbitMQ vérifiée.
+* [x] Basket.API déployé : gRPC en HTTP/2 et probes en HTTP/1.1, appel gRPC et mot de passe Redis vérifiés.
 * [ ] Autres services d'eShop déployés, avec leurs probes.
 * [ ] Point d'entrée unique et connexion d'un utilisateur.
 
@@ -163,7 +164,8 @@ EshopOnContainer/
 │       ├── 05-redis.md
 │       ├── 06-rabbitmq.md
 │       ├── 07-identity-api.md
-│       └── 08-catalog-api.md
+│       ├── 08-catalog-api.md
+│       └── 09-basket-api.md
 │
 ├── lab-local/
 │   ├── README.md
@@ -177,6 +179,7 @@ EshopOnContainer/
 │   ├── sealed-secrets-cert.pem
 │   ├── namespace-eshop.yaml
 │   ├── sealedsecret-ghcr-pull.yaml
+│   ├── basket-api/
 │   ├── catalog-api/
 │   ├── identity-api/
 │   ├── postgres/
@@ -247,6 +250,7 @@ Déploiement sur Kubernetes :
 | [06 — RabbitMQ](docs/03-kubernetes/06-rabbitmq.md) | Version figée, nom de nœud stable fourni par le `StatefulSet`, mot de passe exigé, persistance vérifiée |
 | [07 — Identity.API](docs/03-kubernetes/07-identity-api.md) | Premier service : `Deployment`, image privée, chaîne de connexion chiffrée, clé de signature publique héritée d'eShop |
 | [08 — Catalog.API](docs/03-kubernetes/08-catalog-api.md) | Deux chaînes de connexion chiffrées sans saisie, extension `vector`, première connexion AMQP |
+| [09 — Basket.API](docs/03-kubernetes/09-basket-api.md) | gRPC en HTTP/2 et probes en HTTP/1.1, appel gRPC par le `Service`, mot de passe Redis de la chaîne vérifié |
 
 ## Feuille de route
 
