@@ -279,6 +279,7 @@ Le poste de contrôle est WSL2.
 * [x] Fournisseur de volumes `local-path-provisioner`, classe de stockage par défaut, installé par Ansible et validé par une reconstruction le 16 octobre 2026 (`14-local-path.md`).
 * [x] Contrôleur Sealed Secrets installé par Ansible, clé sauvegardée hors du dépôt et restaurée à chaque reconstruction, validé par une reconstruction le 18 octobre 2026 (`15-sealed-secrets.md`).
 * [x] MetalLB installé par Ansible : les `Service` de type `LoadBalancer` reçoivent une adresse de `192.168.57.20` à `192.168.57.29`, joignable depuis Windows, validé le 20 octobre 2026 sur le cluster existant (`16-metallb.md`).
+* [x] Envoy Gateway installé par Ansible, avec la `GatewayClass` `eg` : un `Gateway` reçoit une adresse de MetalLB et route selon le nom demandé, validé le 20 octobre 2026 sur le cluster existant (`17-envoy-gateway.md`).
 
 Le laboratoire a d'abord été construit à la main le 8 octobre 2026, puis automatisé le 9 octobre 2026. Les éléments cochés ont été vérifiés le 9 octobre 2026 sur le cluster reconstruit par Ansible, dont le résultat est présenté dans `06-roles.md` (section 8.3).
 
@@ -306,6 +307,7 @@ La validation du cluster comprend trois tests fonctionnels du réseau (Pod à Po
 | `14-local-path.md`               | Fournisseur de volumes                      |
 | `15-sealed-secrets.md`           | Contrôleur Sealed Secrets et clé du cluster |
 | `16-metallb.md`                  | Adresses des `Service` `LoadBalancer`       |
+| `17-envoy-gateway.md`            | Point d'entrée, Gateway API                 |
 
 ---
 

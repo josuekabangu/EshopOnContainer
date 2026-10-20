@@ -31,3 +31,4 @@
     - local_path
     - sealed_secrets
     - metallb
+    - envoy_gateway

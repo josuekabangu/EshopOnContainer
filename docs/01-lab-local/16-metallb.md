@@ -239,6 +239,8 @@ Host: 192.168.57.20
 
 Le pod voit la requête venir de `192.168.200.155`, une adresse du réseau NAT de VMware, et non de Windows (`192.168.57.1`). Lecture probable, non vérifiée : le nœud élu par MetalLB a transmis la requête au pod en remplaçant l'adresse source par la sienne, comme le fait `kube-proxy` avec `externalTrafficPolicy: Cluster`, réglage par défaut, et par son interface `eth0`, qui porte sa route par défaut. L'adresse réelle du client se perd donc. C'est sans conséquence pour eShop ; `externalTrafficPolicy: Local` la conserverait, en n'acceptant le trafic que sur le nœud qui héberge le pod.
 
+> **Complément du 20 octobre 2026.** Le point d'entrée d'Envoy Gateway utilise justement `externalTrafficPolicy: Local` : l'adresse de Windows y arrive intacte, et MetalLB annonce l'adresse depuis le nœud du proxy ([17-envoy-gateway.md](17-envoy-gateway.md), section 6).
+
 ### Le nettoyage
 
 ```bash
@@ -266,7 +268,7 @@ kubectl delete -f - < lab-local/tests/loadbalancer-test.yaml
 
 ## 8. Étape suivante
 
-Installer Envoy Gateway, l'implémentation de Gateway API, dont le point d'entrée recevra une adresse de MetalLB.
+Installer Envoy Gateway, l'implémentation de Gateway API, dont le point d'entrée recevra une adresse de MetalLB : [17-envoy-gateway.md](17-envoy-gateway.md).
 
 ## 9. Commandes de référence
 

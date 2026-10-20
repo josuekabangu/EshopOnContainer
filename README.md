@@ -43,7 +43,7 @@ Le projet est organisé autour de trois domaines principaux :
 | Orchestration           | Kubernetes (kubeadm)        | Utilisé |
 | Réseau Kubernetes       | Calico                      | Utilisé |
 | Adresses `LoadBalancer` | MetalLB (laboratoire)       | Utilisé |
-| Point d'entrée          | Gateway API, Envoy Gateway  | En cours |
+| Point d'entrée          | Gateway API, Envoy Gateway  | Utilisé |
 | Construction des images | Docker et Docker Compose    | Utilisé |
 | Secrets du cluster      | Sealed Secrets (laboratoire) ; External Secrets et AWS Secrets Manager (EKS) | Utilisé au laboratoire |
 | Déploiement applicatif  | Helm                        | Prévu   |
@@ -70,10 +70,11 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] Intégration du Worker au cluster, automatisée avec Ansible.
 * [x] Reconstruction complète du cluster validée à partir de machines neuves.
 * [x] Tests du réseau du cluster : Pod à Pod entre nœuds, Service et DNS.
-* [x] Documentation du laboratoire, en seize guides.
+* [x] Documentation du laboratoire, en dix-sept guides.
 * [x] Fournisseur de volumes `local-path-provisioner`, installé par Ansible, persistance des données vérifiée.
 * [x] Contrôleur Sealed Secrets, installé par Ansible, avec une clé qui survit aux reconstructions.
 * [x] MetalLB, installé par Ansible : adresses `LoadBalancer` sur le réseau privé, joignables depuis Windows.
+* [x] Envoy Gateway, installé par Ansible : point d'entrée selon Gateway API, routage par nom vérifié depuis Windows.
 * [x] Inventaire Ansible portable, sans chemin lié à un compte utilisateur.
 * [x] Enchaînement de la reconstruction en une seule commande.
 
@@ -146,7 +147,8 @@ EshopOnContainer/
 │   │   ├── ...
 │   │   ├── 14-local-path.md
 │   │   ├── 15-sealed-secrets.md
-│   │   └── 16-metallb.md
+│   │   ├── 16-metallb.md
+│   │   └── 17-envoy-gateway.md
 │   ├── 02-docker/
 │   │   ├── 01-catalog-api.md
 │   │   ├── 02-autres-services.md
@@ -231,6 +233,7 @@ Les guides techniques se lisent dans l'ordre de construction du laboratoire :
 | [14 — Volumes](docs/01-lab-local/14-local-path.md) | Fournisseur de volumes `local-path`, test de persistance |
 | [15 — Sealed Secrets](docs/01-lab-local/15-sealed-secrets.md) | Contrôleur qui déchiffre les secrets, sauvegarde et restauration de sa clé |
 | [16 — MetalLB](docs/01-lab-local/16-metallb.md) | Adresses des `Service` de type `LoadBalancer` sur le réseau privé |
+| [17 — Envoy Gateway](docs/01-lab-local/17-envoy-gateway.md) | Point d'entrée selon Gateway API, choix face à Ingress, routage par nom |
 
 Conteneurisation de l'application :
 

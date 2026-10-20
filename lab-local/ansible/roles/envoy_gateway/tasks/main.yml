@@ -1,0 +1,68 @@
+---
+- name: Télécharger le fichier de définition d'Envoy Gateway
+  ansible.builtin.get_url:
+    url: "{{ envoy_gateway_manifest_url }}"
+    dest: "{{ envoy_gateway_manifest_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+# Pas de garde par kubectl diff : le Job de certificats se supprime 30 s après son exécution,
+# et diff verrait à chaque passage un objet manquant. La garde est la version installée.
+- name: Lire la version d'Envoy Gateway installée
+  ansible.builtin.command:
+    cmd: >-
+      kubectl -n envoy-gateway-system get deployment envoy-gateway
+      -o 'jsonpath={.spec.template.spec.containers[0].image}'
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: envoy_gateway_image
+  changed_when: false
+  failed_when: false
+
+# --server-side : les définitions de Gateway API dépassent la taille permise
+# pour l'annotation qu'utilise kubectl apply ordinaire
+- name: Appliquer le fichier de définition d'Envoy Gateway
+  ansible.builtin.command:
+    cmd: "kubectl apply --server-side --force-conflicts -f {{ envoy_gateway_manifest_path }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: envoy_gateway_image.stdout != "envoyproxy/gateway:" ~ envoy_gateway_version
+
+- name: Attendre que le contrôleur Envoy Gateway soit prêt
+  ansible.builtin.command:
+    cmd: kubectl -n envoy-gateway-system rollout status deployment/envoy-gateway --timeout=300s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false
+
+- name: Déposer la GatewayClass
+  ansible.builtin.copy:
+    src: gatewayclass.yaml
+    dest: "{{ envoy_gateway_class_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Comparer la GatewayClass avec l'état du cluster
+  ansible.builtin.command:
+    cmd: "kubectl diff -f {{ envoy_gateway_class_path }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: envoy_gateway_class_diff
+  changed_when: false
+  failed_when: envoy_gateway_class_diff.rc > 1
+
+- name: Appliquer la GatewayClass
+  ansible.builtin.command:
+    cmd: "kubectl apply -f {{ envoy_gateway_class_path }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: envoy_gateway_class_diff.rc == 1
+
+- name: Attendre que le contrôleur accepte la GatewayClass
+  ansible.builtin.command:
+    cmd: kubectl wait --for=condition=Accepted gatewayclass/eg --timeout=120s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false

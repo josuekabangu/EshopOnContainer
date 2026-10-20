@@ -292,12 +292,14 @@ lab-local/
 │       ├── worker/
 │       ├── local_path/
 │       ├── sealed_secrets/
-│       └── metallb/
+│       ├── metallb/
+│       └── envoy_gateway/
 ├── scripts/
 │   ├── rebuild.ps1
 │   ├── rebuild.sh
 │   └── setup-ssh.sh
 └── tests/
+    ├── gateway-test.yaml
     ├── loadbalancer-test.yaml
     ├── network-test.yaml
     └── storage-test.yaml
@@ -323,6 +325,7 @@ lab-local/
 | [14-local-path.md](../docs/01-lab-local/14-local-path.md) | Fournisseur de volumes, test de persistance |
 | [15-sealed-secrets.md](../docs/01-lab-local/15-sealed-secrets.md) | Contrôleur Sealed Secrets, sauvegarde et restauration de sa clé |
 | [16-metallb.md](../docs/01-lab-local/16-metallb.md) | MetalLB, adresses des `Service` de type `LoadBalancer`, test depuis Windows |
+| [17-envoy-gateway.md](../docs/01-lab-local/17-envoy-gateway.md) | Envoy Gateway, point d'entrée selon Gateway API, routage par nom |
 
 ## 11. En cas de problème
 
