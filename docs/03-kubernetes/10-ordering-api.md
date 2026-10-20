@@ -244,7 +244,7 @@ Résultat vérifié :
 
 ## 8. Étape suivante
 
-Déployer `OrderProcessor`, la tâche de fond qui partage les tables d'`Ordering.API` ([guide 02-docker/10](../02-docker/10-compose-order-processor.md)).
+Déployer `OrderProcessor`, la tâche de fond qui partage les tables d'`Ordering.API` ([guide 02-docker/10](../02-docker/10-compose-order-processor.md)) : [11 — OrderProcessor sur le cluster](11-order-processor.md).
 
 ## 9. Commandes de référence
 

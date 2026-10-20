@@ -106,6 +106,7 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] Catalog.API déployé : deux chaînes de connexion chiffrées, 101 articles, connexion AMQP à RabbitMQ vérifiée.
 * [x] Basket.API déployé : gRPC en HTTP/2 et probes en HTTP/1.1, appel gRPC et mot de passe Redis vérifiés.
 * [x] Ordering.API déployé : tables créées, appel sans jeton valide refusé (`401`).
+* [x] OrderProcessor déployé : tâche de fond sans `Service`, recherche périodique observée dans PostgreSQL.
 * [ ] Autres services d'eShop déployés, avec leurs probes.
 * [ ] Point d'entrée unique et connexion d'un utilisateur.
 
@@ -167,7 +168,8 @@ EshopOnContainer/
 │       ├── 07-identity-api.md
 │       ├── 08-catalog-api.md
 │       ├── 09-basket-api.md
-│       └── 10-ordering-api.md
+│       ├── 10-ordering-api.md
+│       └── 11-order-processor.md
 │
 ├── lab-local/
 │   ├── README.md
@@ -184,6 +186,7 @@ EshopOnContainer/
 │   ├── basket-api/
 │   ├── catalog-api/
 │   ├── identity-api/
+│   ├── order-processor/
 │   ├── ordering-api/
 │   ├── postgres/
 │   ├── rabbitmq/
@@ -255,6 +258,7 @@ Déploiement sur Kubernetes :
 | [08 — Catalog.API](docs/03-kubernetes/08-catalog-api.md) | Deux chaînes de connexion chiffrées sans saisie, extension `vector`, première connexion AMQP |
 | [09 — Basket.API](docs/03-kubernetes/09-basket-api.md) | gRPC en HTTP/2 et probes en HTTP/1.1, appel gRPC par le `Service`, mot de passe Redis de la chaîne vérifié |
 | [10 — Ordering.API](docs/03-kubernetes/10-ordering-api.md) | Tables du schéma `ordering`, premier contrôle d'accès vérifié : `401` sans jeton valide |
+| [11 — OrderProcessor](docs/03-kubernetes/11-order-processor.md) | Tâche de fond : probes HTTP sans `Service`, une seule copie, travail observé dans `pg_stat_activity` malgré la probe qui le masque |
 
 ## Feuille de route
 
