@@ -210,7 +210,7 @@ La publication d'un événement `GracePeriodConfirmed` demande une commande rée
 
 ## 9. Étape suivante
 
-Déployer `PaymentProcessor`, l'autre tâche de fond, qui simule le paiement des commandes ([guide 02-docker/11](../02-docker/11-compose-payment-processor.md)).
+Déployer `PaymentProcessor`, l'autre tâche de fond, qui simule le paiement des commandes ([guide 02-docker/11](../02-docker/11-compose-payment-processor.md)) : [12 — PaymentProcessor sur le cluster](12-payment-processor.md).
 
 ## 10. Commandes de référence
 
