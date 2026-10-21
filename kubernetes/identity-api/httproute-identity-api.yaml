@@ -1,0 +1,14 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: identity-api
+  namespace: eshop
+spec:
+  parentRefs:
+    - name: eshop
+  hostnames:
+    - identity.eshop.lab
+  rules:
+    - backendRefs:
+        - name: identity-api
+          port: 5223

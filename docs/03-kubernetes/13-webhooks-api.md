@@ -14,7 +14,7 @@ Ce guide le déploie sur le modèle d'`Ordering.API` ([guide 10](10-ordering-api
 
 ## 2. Les choix
 
-Identiques à ceux d'`Ordering.API` : `Deployment`, image `ghcr.io/josuekabangu/webhooks-api:87e28f8`, port `8080`, `Identity__Url: http://identity-api:5223`, probes `/alive` et `/health`, et un `SealedSecret` `webhooks-api-secrets` avec `ConnectionStrings__webhooksdb` et `ConnectionStrings__eventbus`.
+Identiques à ceux d'`Ordering.API` : `Deployment`, image `ghcr.io/josuekabangu/webhooks-api:87e28f8`, port `8080`, `Identity__Url: http://identity-api:5223` (devenu `http://identity.eshop.lab` le 21 octobre 2026, [guide 14](14-point-entree.md)), probes `/alive` et `/health`, et un `SealedSecret` `webhooks-api-secrets` avec `ConnectionStrings__webhooksdb` et `ConnectionStrings__eventbus`.
 
 `Identity__Url` a ici une raison de plus d'être défini : le fichier `appsettings.json` du service contient `http://localhost:5223`, qui désignerait le conteneur lui-même ([guide 02-docker/12](../02-docker/12-compose-webhooks.md), section 3).
 
@@ -191,7 +191,7 @@ L'envoi d'un webhook à une application abonnée demande `WebhookClient`, et l'a
 
 ## 8. Étape suivante
 
-Les services restants, `WebApp` et `WebhookClient`, sont ceux qu'utilise un navigateur. Ils demandent d'abord de choisir le point d'entrée du cluster, et l'adresse d'`Identity.API` commune au navigateur et aux pods ([guide 07](07-identity-api.md), point ouvert 2).
+Les services restants, `WebApp` et `WebhookClient`, sont ceux qu'utilise un navigateur. Ils demandent d'abord de choisir le point d'entrée du cluster, et l'adresse d'`Identity.API` commune au navigateur et aux pods ([guide 07](07-identity-api.md), point ouvert 2) : [14 — Le point d'entrée d'eShop et l'émetteur commun](14-point-entree.md).
 
 ## 9. Commandes de référence
 

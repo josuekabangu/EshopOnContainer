@@ -18,7 +18,7 @@ Ce guide le déploie sur le modèle de `Catalog.API` ([guide 08](08-catalog-api.
 | Type d'objet | `Deployment`, image `ghcr.io/josuekabangu/ordering-api:87e28f8`, avec `ghcr-pull` |
 | Port | `8080`, par défaut, dans le conteneur et dans le `Service` |
 | Chaînes de connexion | `SealedSecret` `ordering-api-secrets` : `ConnectionStrings__orderingdb` et `ConnectionStrings__eventbus` |
-| Adresse d'`Identity.API` | `Identity__Url: http://identity-api:5223`, dans `env` |
+| Adresse d'`Identity.API` | `Identity__Url: http://identity-api:5223`, dans `env` ; `http://identity.eshop.lab` depuis le 21 octobre 2026 ([guide 14](14-point-entree.md), section 6) |
 | Probes | `/alive` pour le démarrage et la vivacité, `/health` pour la disponibilité |
 
 Le `Deployment` ne diffère de celui de `Catalog.API` que par son nom, son image, son secret et la variable `Identity__Url`.

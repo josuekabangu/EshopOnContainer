@@ -1,0 +1,15 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: eshop
+  namespace: eshop
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyService:
+        # Nom fixe : CoreDNS y renverra les noms en .eshop.lab (étape 3b)
+        name: eshop-gateway
+        annotations:
+          # Adresse figée : les noms du fichier hosts de Windows y pointent
+          metallb.io/loadBalancerIPs: 192.168.57.20

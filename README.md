@@ -70,11 +70,12 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] Intégration du Worker au cluster, automatisée avec Ansible.
 * [x] Reconstruction complète du cluster validée à partir de machines neuves.
 * [x] Tests du réseau du cluster : Pod à Pod entre nœuds, Service et DNS.
-* [x] Documentation du laboratoire, en dix-sept guides.
+* [x] Documentation du laboratoire, en dix-huit guides.
 * [x] Fournisseur de volumes `local-path-provisioner`, installé par Ansible, persistance des données vérifiée.
 * [x] Contrôleur Sealed Secrets, installé par Ansible, avec une clé qui survit aux reconstructions.
 * [x] MetalLB, installé par Ansible : adresses `LoadBalancer` sur le réseau privé, joignables depuis Windows.
 * [x] Envoy Gateway, installé par Ansible : point d'entrée selon Gateway API, routage par nom vérifié depuis Windows.
+* [x] CoreDNS configuré par Ansible : les noms de l'application résolus vers le point d'entrée depuis les pods.
 * [x] Inventaire Ansible portable, sans chemin lié à un compte utilisateur.
 * [x] Enchaînement de la reconstruction en une seule commande.
 
@@ -113,8 +114,10 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] OrderProcessor déployé : tâche de fond sans `Service`, recherche périodique observée dans PostgreSQL.
 * [x] PaymentProcessor déployé : un événement a traversé le bus jusqu'à Ordering.API.
 * [x] Webhooks.API déployé : abonnements en place, événement « commande payée » reçu.
-* [ ] WebApp et WebhookClient déployés, derrière un point d'entrée.
-* [ ] Point d'entrée unique et connexion d'un utilisateur.
+* [x] Point d'entrée unique (`192.168.57.20`, noms en `.eshop.lab`) et émetteur des jetons commun au navigateur et aux pods, sans modification du code.
+* [x] WebApp déployée : connexion d'`alice`, panier, commandes menées à `Paid` depuis le navigateur.
+* [x] WebhookClient déployé, avec une adaptation du code pour la connexion en HTTP : notification livrée au paiement d'une commande.
+* [x] Reconstruction complète du laboratoire, avec toute l'application réappliquée d'un coup depuis le dépôt : commande payée et notification livrée sans intervention, grâce à l'attente de RabbitMQ au démarrage.
 
 ### Suite du projet
 
@@ -148,7 +151,8 @@ EshopOnContainer/
 │   │   ├── 14-local-path.md
 │   │   ├── 15-sealed-secrets.md
 │   │   ├── 16-metallb.md
-│   │   └── 17-envoy-gateway.md
+│   │   ├── 17-envoy-gateway.md
+│   │   └── 18-lab-dns.md
 │   ├── 02-docker/
 │   │   ├── 01-catalog-api.md
 │   │   ├── 02-autres-services.md
@@ -179,7 +183,11 @@ EshopOnContainer/
 │       ├── 10-ordering-api.md
 │       ├── 11-order-processor.md
 │       ├── 12-payment-processor.md
-│       └── 13-webhooks-api.md
+│       ├── 13-webhooks-api.md
+│       ├── 14-point-entree.md
+│       ├── 15-webapp.md
+│       ├── 16-webhook-client.md
+│       └── 17-ordre-de-demarrage.md
 │
 ├── lab-local/
 │   ├── README.md
@@ -195,10 +203,13 @@ EshopOnContainer/
 │   ├── sealedsecret-ghcr-pull.yaml
 │   ├── basket-api/
 │   ├── catalog-api/
+│   ├── gateway/
 │   ├── identity-api/
 │   ├── order-processor/
 │   ├── ordering-api/
 │   ├── payment-processor/
+│   ├── webapp/
+│   ├── webhook-client/
 │   ├── webhooks-api/
 │   ├── postgres/
 │   ├── rabbitmq/
@@ -234,6 +245,7 @@ Les guides techniques se lisent dans l'ordre de construction du laboratoire :
 | [15 — Sealed Secrets](docs/01-lab-local/15-sealed-secrets.md) | Contrôleur qui déchiffre les secrets, sauvegarde et restauration de sa clé |
 | [16 — MetalLB](docs/01-lab-local/16-metallb.md) | Adresses des `Service` de type `LoadBalancer` sur le réseau privé |
 | [17 — Envoy Gateway](docs/01-lab-local/17-envoy-gateway.md) | Point d'entrée selon Gateway API, choix face à Ingress, routage par nom |
+| [18 — CoreDNS](docs/01-lab-local/18-lab-dns.md) | Les noms de l'application résolus vers le point d'entrée depuis les pods |
 
 Conteneurisation de l'application :
 
@@ -275,6 +287,10 @@ Déploiement sur Kubernetes :
 | [11 — OrderProcessor](docs/03-kubernetes/11-order-processor.md) | Tâche de fond : probes HTTP sans `Service`, une seule copie, travail observé dans `pg_stat_activity` malgré la probe qui le masque |
 | [12 — PaymentProcessor](docs/03-kubernetes/12-payment-processor.md) | Seconde tâche de fond, liaison à son événement, chaîne de messages vérifiée jusqu'à Ordering.API |
 | [13 — Webhooks.API](docs/03-kubernetes/13-webhooks-api.md) | Abonnements aux événements, événement de test construit pour ne pas toucher au stock |
+| [14 — Le point d'entrée](docs/03-kubernetes/14-point-entree.md) | `Gateway` d'eShop à adresse fixe, noms communs au navigateur et aux pods, émetteur partagé sans modifier le code |
+| [15 — WebApp](docs/03-kubernetes/15-webapp.md) | La boutique de bout en bout depuis le navigateur : connexion, panier, commandes payées |
+| [16 — WebhookClient](docs/03-kubernetes/16-webhook-client.md) | Adaptation des cookies `a6647c9`, image à part, notification livrée dans le cluster |
+| [17 — L'ordre de démarrage](docs/03-kubernetes/17-ordre-de-demarrage.md) | Services abonnés à rien après une reconstruction, faute de `depends_on` ; attente de RabbitMQ par `initContainer` |
 
 ## Feuille de route
 

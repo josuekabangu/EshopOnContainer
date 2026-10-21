@@ -15,6 +15,11 @@ spec:
     spec:
       imagePullSecrets:
         - name: ghcr-pull
+      initContainers:
+        # Équivalent de depends_on : le bus d'événements d'eShop abandonne si RabbitMQ n'est pas prêt
+        - name: wait-for-rabbitmq
+          image: busybox:1.36.1
+          command: ["sh", "-c", "until nc -z -w 2 rabbitmq 5672; do echo 'RabbitMQ pas encore prêt'; sleep 2; done"]
       containers:
         - name: payment-processor
           image: ghcr.io/josuekabangu/payment-processor:87e28f8

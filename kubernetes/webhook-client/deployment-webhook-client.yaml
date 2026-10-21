@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-client
+  namespace: eshop
+spec:
+  # Une seule copie : les clés de protection des données (cookies) sont propres à chaque pod
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webhook-client
+  template:
+    metadata:
+      labels:
+        app: webhook-client
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull
+      containers:
+        - name: webhook-client
+          image: ghcr.io/josuekabangu/webhook-client:a6647c9
+          env:
+            # Adresses publiques, suivies par le navigateur
+            - name: IdentityUrl
+              value: http://identity.eshop.lab
+            - name: CallBackUrl
+              value: http://webhooks.eshop.lab
+            # Adresse à laquelle Webhooks.API livre les notifications : interne au cluster
+            - name: WebhookClientOptions__SelfUrl
+              value: http://webhook-client:8080/
+            - name: services__webhooks-api__http__0
+              value: http://webhooks-api:8080
+            # Connexion en HTTP par un nom autre que localhost (adaptation de WebhookClient)
+            - name: Authentication__AllowInsecureCookies
+              value: "true"
+            # Routes /health et /alive, hors environnement Development (adaptation ae2f77b)
+            - name: HealthChecks__Expose
+              value: "true"
+          ports:
+            - name: http
+              containerPort: 8080
+          startupProbe:
+            httpGet:
+              path: /alive
+              port: http
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /alive
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi

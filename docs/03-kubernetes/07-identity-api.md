@@ -12,6 +12,8 @@ Les objectifs sont de :
 
 **État au 19 octobre 2026 :** `Identity.API` tourne sur `kube-worker`. Il a créé sa base `identitydb` avec ses deux utilisateurs de démonstration, ses routes de santé répondent `Healthy`, et son émetteur est `http://identity-api:5223`, comme avec Compose.
 
+> **Mise à jour du 21 octobre 2026.** `Identity.API` est désormais joint par le point d'entrée, sous le nom `identity.eshop.lab`, par le navigateur comme par les pods : son émetteur est `http://identity.eshop.lab` ([guide 14](14-point-entree.md)). Une route `httproute-identity-api.yaml` a rejoint ses manifestes, et son `Deployment` définit `WebAppClient` et `WebhooksWebClient`. Le point ouvert 2 est réglé.
+
 L'accès depuis un navigateur n'est pas encore traité : il dépend du point d'entrée du cluster, à mettre en place avec `WebApp`.
 
 ## 2. Les choix
@@ -24,7 +26,7 @@ L'accès depuis un navigateur n'est pas encore traité : il dépend du point d'e
 | Port | `5223` dans le conteneur et dans le `Service` | Comme avec Compose : l'adresse interne reste `http://identity-api:5223` |
 | Chaîne de connexion | `SealedSecret` `identity-api-secrets`, clé `ConnectionStrings__identitydb` | Elle contient le mot de passe de PostgreSQL |
 | Probes | `startupProbe` et `livenessProbe` sur `/alive`, `readinessProbe` sur `/health` | `/alive` vérifie que le processus répond ; `/health` vérifie aussi PostgreSQL. Un pod privé de sa base est retiré du `Service`, sans être redémarré |
-| Adresses des clients (`WebAppClient`, `WebhooksWebClient`) | **Non définies pour l'instant** | `Identity.API` les lit dans sa configuration au démarrage, et les garde en mémoire (`AddInMemoryClients`). Elles seront ajoutées avec le point d'entrée, au prix d'un redémarrage |
+| Adresses des clients (`WebAppClient`, `WebhooksWebClient`) | **Non définies pour l'instant** ; définies le 21 octobre 2026 : `http://shop.eshop.lab` et `http://webhooks.eshop.lab` | `Identity.API` les lit dans sa configuration au démarrage, et les garde en mémoire (`AddInMemoryClients`). Elles seront ajoutées avec le point d'entrée, au prix d'un redémarrage |
 
 Les routes `/health` et `/alive` n'existent hors de l'environnement `Development` que grâce à l'adaptation `ae2f77b`, activée par `HealthChecks__Expose` ([guide 02-docker/15](../02-docker/15-controles-de-sante.md)).
 
@@ -292,7 +294,7 @@ En entreprise, ces clés sont rangées dans un stockage partagé, Redis ou une b
 ## 9. Points ouverts
 
 1. **Remplacer la clé de signature publique** par une clé propre au projet, fournie par un `SealedSecret` monté à `/app/tempkey.jwk`. Prioritaire avant toute exposition hors du poste.
-2. **Le point d'entrée et l'adresse publique.** Le navigateur et les pods doivent joindre `Identity.API` par la même adresse, sans quoi l'émetteur des jetons ne correspond pas ([guide 02-docker/13](../02-docker/13-compose-webapp.md), section 3). À trancher avec `WebApp`, qui ajoutera aussi `WebAppClient` à la configuration.
+2. ~~**Le point d'entrée et l'adresse publique.**~~ Réglé le 21 octobre 2026 : Gateway API, noms en `.eshop.lab`, émetteur commun `http://identity.eshop.lab` ([guide 14](14-point-entree.md)). Le texte d'origine suit. Le navigateur et les pods doivent joindre `Identity.API` par la même adresse, sans quoi l'émetteur des jetons ne correspond pas ([guide 02-docker/13](../02-docker/13-compose-webapp.md), section 3). À trancher avec `WebApp`, qui ajoutera aussi `WebAppClient` à la configuration.
 3. **Un compte PostgreSQL propre au service**, plutôt que le compte administrateur partagé.
 4. **Les clés de protection des données** dans un stockage partagé, pour permettre plusieurs copies.
 

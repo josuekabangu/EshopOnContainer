@@ -23,6 +23,8 @@ Ce guide le déploie sur le modèle de `Catalog.API` ([guide 08](08-catalog-api.
 | Chaînes de connexion | `SealedSecret` `basket-api-secrets` : `ConnectionStrings__redis` et `ConnectionStrings__eventbus` | Elles contiennent les mots de passe de Redis et de RabbitMQ |
 | Adresse d'`Identity.API` | `Identity__Url: http://identity-api:5223`, dans `env` | Ce n'est pas un secret. C'est l'émetteur annoncé par `Identity.API` ([guide 07](07-identity-api.md)) : les jetons qu'il signe seront acceptés |
 
+> **Mise à jour du 21 octobre 2026.** `Identity__Url` vaut désormais `http://identity.eshop.lab`, l'émetteur commun au navigateur et aux pods ([guide 14](14-point-entree.md), section 6). Avec l'ancienne valeur, les jetons du navigateur auraient été refusés. L'accès aux paniers avec un utilisateur connecté a été vérifié depuis le navigateur ([guide 15](15-webapp.md)).
+
 `appProtocol: kubernetes.io/h2c` déclare que le port parle HTTP/2 sans chiffrement (`h2c`). Kubernetes ne s'en sert pas lui-même : c'est une indication pour un futur point d'entrée, qui devra joindre le service dans ce protocole.
 
 ## 3. Le secret

@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp
+  namespace: eshop
+spec:
+  # Une seule copie : les clés de protection des données (cookies) sont propres à chaque pod
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull
+      initContainers:
+        # Équivalent de depends_on : le bus d'événements d'eShop abandonne si RabbitMQ n'est pas prêt
+        - name: wait-for-rabbitmq
+          image: busybox:1.36.1
+          command: ["sh", "-c", "until nc -z -w 2 rabbitmq 5672; do echo 'RabbitMQ pas encore prêt'; sleep 2; done"]
+      containers:
+        - name: webapp
+          image: ghcr.io/josuekabangu/webapp:87e28f8
+          envFrom:
+            - secretRef:
+                name: webapp-secrets
+          env:
+            # Adresses publiques, suivies par le navigateur
+            - name: IdentityUrl
+              value: http://identity.eshop.lab
+            - name: CallBackUrl
+              value: http://shop.eshop.lab
+            # Appels internes, par les Service du cluster
+            - name: services__catalog-api__http__0
+              value: http://catalog-api:8080
+            - name: services__basket-api__http__0
+              value: http://basket-api:8080
+            - name: services__ordering-api__http__0
+              value: http://ordering-api:8080
+            # Connexion en HTTP par un nom autre que localhost (adaptation 72ee8fa)
+            - name: Authentication__AllowInsecureCookies
+              value: "true"
+            # Routes /health et /alive, hors environnement Development (adaptation ae2f77b)
+            - name: HealthChecks__Expose
+              value: "true"
+          ports:
+            - name: http
+              containerPort: 8080
+          startupProbe:
+            httpGet:
+              path: /alive
+              port: http
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /alive
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi

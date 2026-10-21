@@ -23,6 +23,12 @@ spec:
             - secretRef:
                 name: identity-api-secrets
           env:
+            # Adresses publiques des clients, par le point d'entrée : lues au démarrage
+            - name: WebAppClient
+              value: http://shop.eshop.lab
+            - name: WebhooksWebClient
+              value: http://webhooks.eshop.lab
+
             - name: ASPNETCORE_HTTP_PORTS
               value: "5223"
             # Routes /health et /alive, hors environnement Development (adaptation ae2f77b)

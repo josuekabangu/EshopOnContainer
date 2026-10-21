@@ -1,0 +1,20 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: eshop
+  namespace: eshop
+spec:
+  gatewayClassName: eg
+  infrastructure:
+    parametersRef:
+      group: gateway.envoyproxy.io
+      kind: EnvoyProxy
+      name: eshop
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: "*.eshop.lab"
+      allowedRoutes:
+        namespaces:
+          from: Same
