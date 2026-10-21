@@ -32,3 +32,4 @@
     - sealed_secrets
     - metallb
     - envoy_gateway
+    - lab_dns

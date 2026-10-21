@@ -293,8 +293,11 @@ lab-local/
 │       ├── local_path/
 │       ├── sealed_secrets/
 │       ├── metallb/
-│       └── envoy_gateway/
+│       ├── envoy_gateway/
+│       └── lab_dns/
 ├── scripts/
+│   ├── add-hosts-entries.ps1
+│   ├── add-hosts-entries.sh
 │   ├── rebuild.ps1
 │   ├── rebuild.sh
 │   └── setup-ssh.sh
@@ -326,6 +329,7 @@ lab-local/
 | [15-sealed-secrets.md](../docs/01-lab-local/15-sealed-secrets.md) | Contrôleur Sealed Secrets, sauvegarde et restauration de sa clé |
 | [16-metallb.md](../docs/01-lab-local/16-metallb.md) | MetalLB, adresses des `Service` de type `LoadBalancer`, test depuis Windows |
 | [17-envoy-gateway.md](../docs/01-lab-local/17-envoy-gateway.md) | Envoy Gateway, point d'entrée selon Gateway API, routage par nom |
+| [18-lab-dns.md](../docs/01-lab-local/18-lab-dns.md) | CoreDNS : les noms de l'application résolus vers le point d'entrée, depuis les pods |
 
 ## 11. En cas de problème
 

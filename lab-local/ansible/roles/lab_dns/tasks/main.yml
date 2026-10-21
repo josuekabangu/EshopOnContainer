@@ -1,0 +1,25 @@
+---
+- name: Déposer la configuration de CoreDNS
+  ansible.builtin.template:
+    src: coredns-configmap.yaml.j2
+    dest: "{{ lab_dns_config_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Comparer la configuration de CoreDNS avec l'état du cluster
+  ansible.builtin.command:
+    cmd: "kubectl diff -f {{ lab_dns_config_path }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: lab_dns_diff
+  changed_when: false
+  failed_when: lab_dns_diff.rc > 1
+
+# Pas de redémarrage : le plugin reload de CoreDNS relit le Corefile de lui-même
+- name: Appliquer la configuration de CoreDNS
+  ansible.builtin.command:
+    cmd: "kubectl apply -f {{ lab_dns_config_path }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: lab_dns_diff.rc == 1

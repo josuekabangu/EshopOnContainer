@@ -32,3 +32,13 @@ envoy_gateway_version: "v1.9.2"
 envoy_gateway_manifest_url: "https://github.com/envoyproxy/gateway/releases/download/{{ envoy_gateway_version }}/install.yaml"
 envoy_gateway_manifest_path: "/etc/kubernetes/envoy-gateway-{{ envoy_gateway_version }}.yaml"
 envoy_gateway_class_path: "/etc/kubernetes/envoy-gateway-class.yaml"
+
+
+# Noms de l'application résolus par CoreDNS vers le point d'entrée, comme le fichier hosts de Windows
+lab_dns_names:
+  - shop.eshop.lab
+  - identity.eshop.lab
+  - webhooks.eshop.lab
+lab_dns_target: "eshop-gateway.envoy-gateway-system.svc.{{ cluster_dns_domain }}"
+lab_dns_config_path: "/etc/kubernetes/coredns-configmap.yaml"
+

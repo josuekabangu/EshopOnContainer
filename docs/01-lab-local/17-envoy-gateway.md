@@ -120,7 +120,7 @@ Résultats vérifiés le 20 octobre 2026, sur le cluster existant :
 | Premier | `ok=55 changed=4 failed=0` | Téléchargement, application du fichier, `GatewayClass` déposée et appliquée |
 | Second | `ok=53 changed=0 failed=0` | La garde par la version a sauté l'application |
 
-Le rôle n'a pas encore été validé par une reconstruction complète.
+Le rôle a ensuite été validé par une reconstruction complète, le 21 octobre 2026 : sur machines neuves, l'application côté serveur et la `GatewayClass` se sont exécutées, et le `Gateway` d'eShop a été programmé ([06-roles.md](06-roles.md), section 8.3).
 
 ## 6. Vérifier qu'un `Gateway` route les requêtes
 
@@ -247,13 +247,13 @@ Supprimer le `Gateway` supprime aussi le proxy et son `Service` : l'adresse `192
 | Un proxy, sur un seul nœud | `externalTrafficPolicy: Local` : si `kube-worker` tombe, le point d'entrée tombe avec lui. Sans conséquence avec un seul nœud de travail |
 | HTTP seulement | Les cookies de connexion d'eShop exigent alors l'adaptation `72ee8fa` ([application/README.md](../../application/README.md)). HTTPS, avec un certificat, reste à mettre en place |
 | Garde par la version | Une modification manuelle des objets d'Envoy Gateway n'est pas corrigée par le rôle |
-| Rôle non validé par une reconstruction | À faire avec le prochain `rebuild.ps1 -Rebuild` |
 
 ## 8. Tableau de validation
 
 | Contrôle | Résultat au 20 octobre 2026 |
 |---|---|
 | Rôle `envoy_gateway`, quatrième play | Ajouté |
+| Reconstruction complète | Réussie le 21 octobre 2026, en 8 min 02 |
 | Second passage du playbook | `changed=0` |
 | `GatewayClass` `eg` | Acceptée |
 | `Gateway` de test | Programmé, `192.168.57.20` |
@@ -262,7 +262,7 @@ Supprimer le `Gateway` supprime aussi le proxy et son `Service` : l'adresse `192
 
 ## 9. Étape suivante
 
-Le laboratoire dispose d'un point d'entrée. Le `Gateway` d'eShop, ses routes et les noms communs au navigateur et aux pods sont décrits dans la série `docs/03-kubernetes`.
+Le laboratoire dispose d'un point d'entrée. Les noms de l'application doivent maintenant être résolus de la même façon par les pods et par le navigateur : [18-lab-dns.md](18-lab-dns.md). Le `Gateway` d'eShop et ses routes sont décrits dans [docs/03-kubernetes/14-point-entree.md](../03-kubernetes/14-point-entree.md).
 
 ## 10. Commandes de référence
 

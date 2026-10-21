@@ -2,7 +2,7 @@
 
 ## 1. Objectif
 
-Les navigateurs doivent atteindre `WebApp` et `Identity.API`, qui tournent dans le cluster. Le projet a choisi un point d'entrée unique, selon Gateway API, décrit dans un prochain guide de la série `docs/03-kubernetes`. Ce point d'entrée est un `Service` de type `LoadBalancer` : il demande une adresse IP joignable depuis l'extérieur du cluster.
+Les navigateurs doivent atteindre `WebApp` et `Identity.API`, qui tournent dans le cluster. Le projet a choisi un point d'entrée unique, selon Gateway API ([docs/03-kubernetes/14-point-entree.md](../03-kubernetes/14-point-entree.md)). Ce point d'entrée est un `Service` de type `LoadBalancer` : il demande une adresse IP joignable depuis l'extérieur du cluster.
 
 Dans le cloud, le fournisseur attribue cette adresse. Un cluster construit par kubeadm n'a personne pour le faire : le `Service` reste indéfiniment avec une adresse `<pending>`. MetalLB comble ce manque, en attribuant des adresses prises sur le réseau du laboratoire.
 
@@ -119,7 +119,7 @@ Résultats vérifiés le 20 octobre 2026, sur le cluster existant :
 | Premier | `ok=50 changed=5 failed=0` | Téléchargement, espace de noms créé, fichier appliqué, configuration déposée et appliquée |
 | Second | `ok=47 changed=0 failed=0` | Les tâches de modification sont sautées |
 
-Le rôle n'a pas encore été validé par une reconstruction complète.
+Le rôle a ensuite été validé par une reconstruction complète, le 21 octobre 2026 : sur machines neuves, ses cinq tâches de modification se sont exécutées, et le `Gateway` d'eShop a reçu son adresse `192.168.57.20` ([06-roles.md](06-roles.md), section 8.3).
 
 ## 5. Vérifier qu'un `Service` reçoit une adresse
 
@@ -254,13 +254,13 @@ kubectl delete -f - < lab-local/tests/loadbalancer-test.yaml
 | Mode L2 : un seul nœud répond pour une adresse | Pas de répartition de charge entre nœuds au niveau du réseau. Si ce nœud tombe, un autre est élu, après quelques secondes |
 | Dix adresses | Suffisant : le projet n'en utilisera qu'une, celle du point d'entrée |
 | L'adresse du client est perdue | Voir section 5 |
-| Le rôle n'a pas été validé par une reconstruction | À faire avec le prochain `rebuild.ps1 -Rebuild` |
 
 ## 7. Tableau de validation
 
 | Contrôle | Résultat au 20 octobre 2026 |
 |---|---|
 | Rôle `metallb`, quatrième play | Ajouté |
+| Reconstruction complète | Réussie le 21 octobre 2026, en 8 min 02 |
 | Second passage du playbook | `changed=0` |
 | Mode de `kube-proxy` | iptables : `strictARP` inutile |
 | Adresse attribuée à un `Service` `LoadBalancer` | `192.168.57.20` |
