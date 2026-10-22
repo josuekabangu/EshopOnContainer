@@ -15,6 +15,10 @@ permissions:
   contents: read
   packages: write
 
+env:
+  # Pas de compte rendu de construction joint à chaque exécution
+  DOCKER_BUILD_RECORD_UPLOAD: false
+
 jobs:
   build:
     name: ${{ matrix.service }}
@@ -76,3 +80,37 @@ jobs:
           # Cache des couches, propre à chaque service
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+  update-values:
+    name: Étiquettes dans helm/values
+    # Seulement si les neuf images ont été publiées
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Écrire la nouvelle étiquette dans les fichiers de valeurs
+        run: |
+          TAG="${GITHUB_SHA::7}"
+          for s in identity-api catalog-api basket-api ordering-api order-processor \
+                   payment-processor webhooks-api webapp webhook-client; do
+            # Seule l'empreinte est remplacée : le retour chariot des fichiers CRLF est conservé
+            sed -i -E "s/^(  tag: )[0-9a-f]+/\1${TAG}/" "helm/values/${s}.yaml"
+          done
+          git diff --stat
+
+      - name: Commiter et pousser
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add helm/values/
+          # Rien à commiter si les étiquettes étaient déjà à jour (relance d'une exécution)
+          if git diff --cached --quiet; then
+            echo "Étiquettes déjà à jour"
+          else
+            git commit -m "CI : images ${GITHUB_SHA::7} dans helm/values"
+            git push
+          fi
