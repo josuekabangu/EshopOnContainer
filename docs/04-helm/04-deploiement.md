@@ -4,7 +4,7 @@
 
 La reprise a prouvé que les charts décrivent les objets existants ([02-reprise.md](02-reprise.md)). Il restait à prouver qu'ils suffisent à **construire** l'application sur un cluster neuf, sans les manifestes de `kubernetes/`, sans `kubectl apply` et sans reprise d'objets.
 
-**État au 22 octobre 2026 :** le script `helm/deploy.sh` déploie les 13 releases en 2 min 54 sur un cluster tout juste reconstruit. Les 12 pods démarrent sans redémarrage, et les 7 files RabbitMQ ont leur consommateur.
+**État au 22 octobre 2026 :** le script `helm/deploy.sh` déploie les 13 releases en 2 min 54 sur un cluster tout juste reconstruit. Les 12 pods démarrent sans redémarrage, les 7 files RabbitMQ ont leur consommateur, et le parcours dans le navigateur fonctionne.
 
 ## 2. Le script : `helm/deploy.sh`
 
@@ -120,8 +120,9 @@ webhook-client-6c8dcc4d8c-4bw6c     1/1     Running   0          6s
 | Ordre de démarrage | PostgreSQL, Redis, RabbitMQ, puis les services un par un |
 | Pods | 12 en `1/1 Running`, aucun redémarrage |
 | Files RabbitMQ | Les 7, avec 1 consommateur chacune |
+| Parcours dans le navigateur | Fonctionne |
 
-Le parcours complet dans le navigateur, connexion et commande, n'a pas été rejoué après cette reconstruction ; il l'avait été la veille sur l'application déployée par `kubectl apply`, et les objets produits par les charts ont été comparés à ceux-ci ([02-reprise.md](02-reprise.md)).
+Le parcours dans le navigateur de Windows a ensuite été rejoué sur cette application déployée par Helm seul, en fenêtre de navigation privée : boutique, connexion d'`alice`, commande. Il fonctionne, comme sur l'application déployée par `kubectl apply` ([docs/03-kubernetes/15-webapp.md](../03-kubernetes/15-webapp.md)).
 
 ## 5. Les limites
 
