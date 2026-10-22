@@ -15,6 +15,10 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: images
+  cancel-in-progress: false
+
 env:
   # Pas de compte rendu de construction joint à chaque exécution
   DOCKER_BUILD_RECORD_UPLOAD: false
@@ -112,5 +116,7 @@ jobs:
             echo "Étiquettes déjà à jour"
           else
             git commit -m "CI : images ${GITHUB_SHA::7} dans helm/values"
+            # main a pu avancer pendant la construction : on se replace au-dessus avant de pousser
+            git pull --rebase origin main
             git push
           fi
