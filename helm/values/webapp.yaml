@@ -1,7 +1,7 @@
 # WebApp (docs/03-kubernetes/15-webapp.md) ; une seule copie : clés de protection des données propres au pod
 image:
   repository: ghcr.io/josuekabangu/webapp
-  tag: 87e28f8
+  tag: b59f061
 
 route:
   enabled: true

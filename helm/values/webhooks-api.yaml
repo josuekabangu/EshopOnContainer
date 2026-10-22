@@ -1,7 +1,7 @@
 # webhooks-api (docs/03-kubernetes)
 image:
   repository: ghcr.io/josuekabangu/webhooks-api
-  tag: 87e28f8
+  tag: b59f061
 
 waitForRabbitMQ: true
 
