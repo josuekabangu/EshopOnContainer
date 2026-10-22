@@ -1,7 +1,7 @@
 # Basket.API (docs/03-kubernetes/09-basket-api.md)
 image:
   repository: ghcr.io/josuekabangu/basket-api
-  tag: b59f061
+  tag: 5abbd6a
 
 # gRPC en HTTP/2 seul sur 8080 ; second port, en HTTP/1.1, réservé aux probes
 portName: grpc

@@ -1,7 +1,7 @@
 # order-processor : tâche de fond, sans Service ; une seule copie (docs/03-kubernetes)
 image:
   repository: ghcr.io/josuekabangu/order-processor
-  tag: b59f061
+  tag: 5abbd6a
 
 service:
   enabled: false

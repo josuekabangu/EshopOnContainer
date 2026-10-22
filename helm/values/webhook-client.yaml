@@ -1,7 +1,7 @@
 # WebhookClient (docs/03-kubernetes/16-webhook-client.md) ; aucun secret
 image:
   repository: ghcr.io/josuekabangu/webhook-client
-  tag: b59f061
+  tag: 5abbd6a
 
 route:
   enabled: true
