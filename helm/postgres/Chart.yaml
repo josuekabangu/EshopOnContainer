@@ -1,0 +1,6 @@
+apiVersion: v2
+name: postgres
+description: PostgreSQL de l'application eShop, avec l'extension pgvector
+type: application
+version: 0.1.0
+appVersion: "15"

@@ -1,0 +1,15 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: eshop
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "eshop-platform.labels" . | nindent 4 }}
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyService:
+        name: {{ .Values.gateway.serviceName }}
+        annotations:
+          metallb.io/loadBalancerIPs: {{ .Values.gateway.address }}

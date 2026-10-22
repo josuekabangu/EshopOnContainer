@@ -1,0 +1,22 @@
+# WebhookClient (docs/03-kubernetes/16-webhook-client.md) ; aucun secret
+image:
+  repository: ghcr.io/josuekabangu/webhook-client
+  tag: a6647c9
+
+route:
+  enabled: true
+  hostname: webhooks.eshop.lab
+
+env:
+  - name: IdentityUrl
+    value: http://identity.eshop.lab
+  - name: CallBackUrl
+    value: http://webhooks.eshop.lab
+  # Adresse à laquelle Webhooks.API livre les notifications : interne au cluster
+  - name: WebhookClientOptions__SelfUrl
+    value: http://webhook-client:8080/
+  - name: services__webhooks-api__http__0
+    value: http://webhooks-api:8080
+  # Connexion en HTTP par un nom autre que localhost (adaptation a6647c9)
+  - name: Authentication__AllowInsecureCookies
+    value: "true"

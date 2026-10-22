@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "eshop-service.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- range . }}
+        - name: {{ . }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.waitForRabbitMQ }}
+      initContainers:
+        # Équivalent de depends_on : le bus d'événements d'eShop abandonne si RabbitMQ n'est pas prêt
+        - name: wait-for-rabbitmq
+          image: busybox:1.36.1
+          command: ["sh", "-c", "until nc -z -w 2 rabbitmq 5672; do echo 'RabbitMQ pas encore prêt'; sleep 2; done"]
+      {{- end }}
+      containers:
+        - name: {{ .Release.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          {{- if .Values.encryptedData }}
+          envFrom:
+            - secretRef:
+                name: {{ .Release.Name }}-secrets
+          {{- end }}
+          env:
+            # Routes /health et /alive, hors environnement Development (adaptation ae2f77b)
+            - name: HealthChecks__Expose
+              value: "true"
+            {{- with .Values.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: {{ .Values.portName }}
+              containerPort: {{ .Values.port }}
+            {{- if .Values.probePort }}
+            - name: health
+              containerPort: {{ .Values.probePort }}
+            {{- end }}
+          {{- $probePort := ternary "health" .Values.portName (gt (int .Values.probePort) 0) }}
+          startupProbe:
+            httpGet:
+              path: /alive
+              port: {{ $probePort }}
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ $probePort }}
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /alive
+              port: {{ $probePort }}
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

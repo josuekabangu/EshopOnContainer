@@ -1,6 +1,12 @@
 # Manifestes Kubernetes
 
-Ce répertoire contient les fichiers qui décrivent ce que le projet déploie sur le cluster du laboratoire.
+> **Depuis le 22 octobre 2026, l'application est déployée par Helm** : `bash helm/deploy.sh`, à partir des charts de `helm/` ([docs/04-helm/04-deploiement.md](../docs/04-helm/04-deploiement.md)). Les manifestes de ce répertoire sont **conservés comme trace pédagogique** de l'étape précédente : chaque objet y a été écrit et vérifié à la main, avant d'être factorisé en chart.
+>
+> **Ne plus les appliquer** à un cluster où l'application est déployée par Helm : leurs objets appartiennent aux releases Helm, et un `kubectl apply` créerait des conflits de propriété ([docs/04-helm/02-reprise.md](../docs/04-helm/02-reprise.md)).
+>
+> Un seul fichier sert encore : `sealed-secrets-cert.pem`, la clé publique avec laquelle `kubeseal` chiffre les secrets.
+
+Ce répertoire contient les fichiers qui décrivaient ce que le projet déploie sur le cluster du laboratoire.
 
 ## Cible
 

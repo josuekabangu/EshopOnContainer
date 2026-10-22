@@ -1,0 +1,17 @@
+image: rabbitmq:4.3.6-management
+
+# Modèle du volume : non modifiable après la création du StatefulSet
+storage:
+  size: 2Gi
+  storageClassName: local-path
+
+# RabbitMQ bloque les publications à 40 % de la mémoire disponible : avec 1 Gio, à environ 400 Mio
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 1Gi
+
+# Valeurs chiffrées par kubeseal pour le secret rabbitmq-credentials
+encryptedData: {}

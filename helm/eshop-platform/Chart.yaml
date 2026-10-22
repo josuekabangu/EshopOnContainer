@@ -1,0 +1,5 @@
+apiVersion: v2
+name: eshop-platform
+description: Ce que partagent les services d'eShop - point d'entrée et accès au registre d'images
+type: application
+version: 0.1.0

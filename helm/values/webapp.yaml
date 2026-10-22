@@ -1,0 +1,28 @@
+# WebApp (docs/03-kubernetes/15-webapp.md) ; une seule copie : clés de protection des données propres au pod
+image:
+  repository: ghcr.io/josuekabangu/webapp
+  tag: 87e28f8
+
+route:
+  enabled: true
+  hostname: shop.eshop.lab
+
+waitForRabbitMQ: true
+
+env:
+  - name: IdentityUrl
+    value: http://identity.eshop.lab
+  - name: CallBackUrl
+    value: http://shop.eshop.lab
+  - name: services__catalog-api__http__0
+    value: http://catalog-api:8080
+  - name: services__basket-api__http__0
+    value: http://basket-api:8080
+  - name: services__ordering-api__http__0
+    value: http://ordering-api:8080
+  # Connexion en HTTP par un nom autre que localhost (adaptation 72ee8fa)
+  - name: Authentication__AllowInsecureCookies
+    value: "true"
+
+encryptedData:
+  ConnectionStrings__eventbus: AgBA7v4/qIEF9KfNm8x8d+IWPyt9H97Rk/jtkXn5L8ZAyCbiyrdaxpCbeavqmFL9Y1xw6tR8uMnZsp1L23z1zXtlkmjYMAHkAGLZfHyIl6faYj8R9WgZbCAt9KAUneR2wFx6imSbvKEBU0sauKvV6tHUX9eAPutnFfMbe341l2rrKrVcHlP9ozkKZW/iAxEff2oT7TKN+dYkX4F8RnvI6zLKgZan9o/fk8PwAoVHgIg4zDsGYGD+TyGQSg8N8MGMDNS8BDZIaogAUIcSSo49hvC5mRS4/Ars2YXAP1uwZidMy1plSAWOmapc8kVvmTcouj1z4fumVZwAECnqOba/gSTFkt/09RxzLihYTMzwnxXhZmDI/edaHjhkLLtERqECTmFlD4KOCwng6wPZp/lbc921aytZB3V5HOmFHBX5F27px7uFgDuin8iSoxJ1mn/NJxGi1n06kzB/9HNfeAHz+aqurtX1G8tpK+w6rQS6HisOxfTi826oCD4SlT7/NqOltni7/h20x+xYhZk4XGfcPYJNxVr6S722gYOZ+yulzcvKMilT588P8SJgUn1+fyT1J7kl9JZhuWA1KddUhn1ZL/Xl3JnFy9JNCa/V2JoimE2hdKXWfeZcTVOmBn+v2ytpzCcojMXAn1sciaIO3fZJ1I4Cc8gc9nQC9po3YfjuHD3XCvARmFgTzRtFFFZjQh5Eex4a5F9vj2nHo8tHpPOcSuGXktkyi2mDc6RrH7H+Zh9JfXtbiGQmeXHkroCGIEzyzzQPsW4zyH5la+tDjA==

@@ -46,7 +46,7 @@ Le projet est organisé autour de trois domaines principaux :
 | Point d'entrée          | Gateway API, Envoy Gateway  | Utilisé |
 | Construction des images | Docker et Docker Compose    | Utilisé |
 | Secrets du cluster      | Sealed Secrets (laboratoire) ; External Secrets et AWS Secrets Manager (EKS) | Utilisé au laboratoire |
-| Déploiement applicatif  | Helm                        | Prévu   |
+| Déploiement applicatif  | Helm 4                      | Utilisé |
 | CI/CD                   | GitHub Actions              | Prévu   |
 | GitOps                  | Argo CD                     | Prévu   |
 | Observabilité           | Prometheus, Grafana et Loki | Prévu   |
@@ -70,12 +70,13 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] Intégration du Worker au cluster, automatisée avec Ansible.
 * [x] Reconstruction complète du cluster validée à partir de machines neuves.
 * [x] Tests du réseau du cluster : Pod à Pod entre nœuds, Service et DNS.
-* [x] Documentation du laboratoire, en dix-huit guides.
+* [x] Documentation du laboratoire, en dix-neuf guides.
 * [x] Fournisseur de volumes `local-path-provisioner`, installé par Ansible, persistance des données vérifiée.
 * [x] Contrôleur Sealed Secrets, installé par Ansible, avec une clé qui survit aux reconstructions.
 * [x] MetalLB, installé par Ansible : adresses `LoadBalancer` sur le réseau privé, joignables depuis Windows.
 * [x] Envoy Gateway, installé par Ansible : point d'entrée selon Gateway API, routage par nom vérifié depuis Windows.
 * [x] CoreDNS configuré par Ansible : les noms de l'application résolus vers le point d'entrée depuis les pods.
+* [x] Poste de contrôle préparé par Ansible : Helm, `kubeseal`, et l'accès au cluster recopié à chaque reconstruction.
 * [x] Inventaire Ansible portable, sans chemin lié à un compte utilisateur.
 * [x] Enchaînement de la reconstruction en une seule commande.
 
@@ -121,8 +122,8 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 
 ### Suite du projet
 
-* [ ] Validation de l’application e-commerce complète.
-* [ ] Déploiement applicatif avec Helm.
+* [x] Validation de l’application e-commerce complète.
+* [x] Déploiement applicatif avec Helm : un chart commun pour les neuf services, un chart par dépendance, 13 releases déployées sur un cluster neuf en moins de trois minutes.
 * [ ] Mise en place de GitHub Actions et d’Argo CD.
 * [ ] Intégration de l’observabilité et des contrôles de sécurité.
 * [ ] Étude du déploiement cloud avec Terraform.
@@ -152,7 +153,8 @@ EshopOnContainer/
 │   │   ├── 15-sealed-secrets.md
 │   │   ├── 16-metallb.md
 │   │   ├── 17-envoy-gateway.md
-│   │   └── 18-lab-dns.md
+│   │   ├── 18-lab-dns.md
+│   │   └── 19-workstation.md
 │   ├── 02-docker/
 │   │   ├── 01-catalog-api.md
 │   │   ├── 02-autres-services.md
@@ -170,24 +172,36 @@ EshopOnContainer/
 │   │   ├── 14-compose-webhook-client.md
 │   │   ├── 15-controles-de-sante.md
 │   │   └── 16-robustesse-compose.md
-│   └── 03-kubernetes/
-│       ├── 01-registre-images.md
-│       ├── 02-stockage.md
-│       ├── 03-postgres.md
-│       ├── 04-secrets.md
-│       ├── 05-redis.md
-│       ├── 06-rabbitmq.md
-│       ├── 07-identity-api.md
-│       ├── 08-catalog-api.md
-│       ├── 09-basket-api.md
-│       ├── 10-ordering-api.md
-│       ├── 11-order-processor.md
-│       ├── 12-payment-processor.md
-│       ├── 13-webhooks-api.md
-│       ├── 14-point-entree.md
-│       ├── 15-webapp.md
-│       ├── 16-webhook-client.md
-│       └── 17-ordre-de-demarrage.md
+│   ├── 03-kubernetes/
+│   │   ├── 01-registre-images.md
+│   │   ├── 02-stockage.md
+│   │   ├── 03-postgres.md
+│   │   ├── 04-secrets.md
+│   │   ├── 05-redis.md
+│   │   ├── 06-rabbitmq.md
+│   │   ├── 07-identity-api.md
+│   │   ├── 08-catalog-api.md
+│   │   ├── 09-basket-api.md
+│   │   ├── 10-ordering-api.md
+│   │   ├── 11-order-processor.md
+│   │   ├── 12-payment-processor.md
+│   │   ├── 13-webhooks-api.md
+│   │   ├── 14-point-entree.md
+│   │   ├── 15-webapp.md
+│   │   ├── 16-webhook-client.md
+│   │   └── 17-ordre-de-demarrage.md
+│   └── 04-helm/
+│       ├── 01-chart-commun.md
+│       ├── 02-reprise.md
+│       ├── 03-dependances-plateforme.md
+│       └── 04-deploiement.md
+│
+├── helm/
+│   ├── deploy.sh
+│   ├── eshop-service/
+│   ├── eshop-platform/
+│   ├── postgres/  redis/  rabbitmq/
+│   └── values/
 │
 ├── lab-local/
 │   ├── README.md
@@ -196,7 +210,7 @@ EshopOnContainer/
 │   ├── scripts/
 │   └── tests/
 │
-├── kubernetes/
+├── kubernetes/                  # manifestes écrits à la main : trace de l'étape avant Helm
 │   ├── README.md
 │   ├── sealed-secrets-cert.pem
 │   ├── namespace-eshop.yaml
@@ -246,6 +260,7 @@ Les guides techniques se lisent dans l'ordre de construction du laboratoire :
 | [16 — MetalLB](docs/01-lab-local/16-metallb.md) | Adresses des `Service` de type `LoadBalancer` sur le réseau privé |
 | [17 — Envoy Gateway](docs/01-lab-local/17-envoy-gateway.md) | Point d'entrée selon Gateway API, choix face à Ingress, routage par nom |
 | [18 — CoreDNS](docs/01-lab-local/18-lab-dns.md) | Les noms de l'application résolus vers le point d'entrée depuis les pods |
+| [19 — Le poste de contrôle](docs/01-lab-local/19-workstation.md) | Helm, `kubeseal` et l'accès au cluster, installés par Ansible |
 
 Conteneurisation de l'application :
 
@@ -273,7 +288,7 @@ Déploiement sur Kubernetes :
 
 | Guide | Sujet |
 | ----- | ----- |
-| [Manifestes Kubernetes](kubernetes/README.md) | Cible du déploiement, règles, contenu du répertoire `kubernetes/` |
+| [Manifestes Kubernetes](kubernetes/README.md) | Manifestes écrits à la main, conservés comme trace de l'étape avant Helm |
 | [01 — Le registre d'images](docs/03-kubernetes/01-registre-images.md) | Images privées sur `ghcr.io`, étiquette du commit, jetons, secret d'accès du cluster |
 | [02 — Le stockage](docs/03-kubernetes/02-stockage.md) | Options de stockage, usage en entreprise, choix du laboratoire et d'AWS |
 | [03 — PostgreSQL](docs/03-kubernetes/03-postgres.md) | `StatefulSet`, probes, conservation des données vérifiée |
@@ -291,6 +306,15 @@ Déploiement sur Kubernetes :
 | [15 — WebApp](docs/03-kubernetes/15-webapp.md) | La boutique de bout en bout depuis le navigateur : connexion, panier, commandes payées |
 | [16 — WebhookClient](docs/03-kubernetes/16-webhook-client.md) | Adaptation des cookies `a6647c9`, image à part, notification livrée dans le cluster |
 | [17 — L'ordre de démarrage](docs/03-kubernetes/17-ordre-de-demarrage.md) | Services abonnés à rien après une reconstruction, faute de `depends_on` ; attente de RabbitMQ par `initContainer` |
+
+Déploiement par Helm :
+
+| Guide | Sujet |
+| ----- | ----- |
+| [01 — Le chart commun](docs/04-helm/01-chart-commun.md) | Un chart pour les neuf services, un fichier de valeurs par service ; noms et sélecteurs conservés |
+| [02 — La reprise](docs/04-helm/02-reprise.md) | Objets créés par `kubectl apply` repris sans coupure ; Helm 4 et l'application côté serveur |
+| [03 — Dépendances et plateforme](docs/04-helm/03-dependances-plateforme.md) | Charts de PostgreSQL, Redis, RabbitMQ et du point d'entrée ; champs non modifiables d'un `StatefulSet` |
+| [04 — Le déploiement](docs/04-helm/04-deploiement.md) | `helm/deploy.sh` : 13 releases sur un cluster neuf, en moins de trois minutes |
 
 ## Feuille de route
 

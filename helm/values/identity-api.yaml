@@ -1,0 +1,22 @@
+# Identity.API (docs/03-kubernetes/07-identity-api.md)
+image:
+  repository: ghcr.io/josuekabangu/identity-api
+  tag: 87e28f8
+
+port: 5223
+
+route:
+  enabled: true
+  hostname: identity.eshop.lab
+
+env:
+  - name: ASPNETCORE_HTTP_PORTS
+    value: "5223"
+  # Adresses publiques des clients, par le point d'entrée : lues au démarrage
+  - name: WebAppClient
+    value: http://shop.eshop.lab
+  - name: WebhooksWebClient
+    value: http://webhooks.eshop.lab
+
+encryptedData:
+  ConnectionStrings__identitydb: AgA5kLbSb3zBRCznE2vjRknF00Sidrz6h0flJE0PIhvAxnQbz+hgr9R+eRuQZ5M/ugUxJk+aT8JlTQDG8VNQ41y1OBBUyyAiy/gK4w1zsWAX3qLfdd3cgovM1S8jA43jnW2SWoLYykgixDSZLloj/E/2eDsAow0XISYqfaW6jD0t82NTgsns3AaFanq4i25ILC4ZDN1vRWu8m565GhZ8MiK1ExgnHfcuXssO6IFmgJu1s2lNwj1PI+S/gTMpKuu8mhvf03TaCjIwLUJ6Uf3GLfb/YTng4LIcPXq86uCB/6c4Sp+oPWp63FCKs7D6X+B6jKFAW1YTxGeoOWfhcQ/ughWG2SZpetsksacusk8YST9tU6TKBIPB/gvfuxQuBTvGL216yFFzto4+fmE3+oTgnHIinDDUvNJTHcKLBYVA6vOje5r7vHETTsh1amv74dh/uMblfDdbNcl93UPYVqdFmwSFnFILo+sCLqZImabpm4UQwf+6Ot90yA4eY3YfBajUzFpgSzL4wGt492StCTLn+0fBdDVpmkf7ht/ZjTAHr72zpBZSXBwqBMTjOV0mYbekCJd+KqmuTlG8casUf+AIv1lH5gUklUyaPpT+c72+OnCt6A3QCNaZwGashSzCJoaRk755r9FfipENpEj1BeKx3kyCjF4NiIh6254cO3JL0ho7xIMY7f+3BheGUjrIIjzKLnzQMeG2YugoELRdJNKEDPJbAVcJ6yD7jf0LFBzCmAWSYeHvlqk/tQyvT9ec9pFrcNGNb3vjsJF2zwl/dJ3QAB3rOYJgWAdtCbJjnikM8Gcf96aCcA4CKu8+Ma7En+O+zw==

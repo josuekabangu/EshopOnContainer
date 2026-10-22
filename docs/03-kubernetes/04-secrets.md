@@ -36,6 +36,8 @@ Les décisions du projet :
 
 ## 3. L'outil `kubeseal`
 
+> **Mise à jour du 22 octobre 2026.** `kubeseal` est désormais installé par le rôle Ansible `workstation`, à la version du contrôleur et avec la même vérification d'empreinte ([01-lab-local/19-workstation.md](../01-lab-local/19-workstation.md)). L'installation manuelle ci-dessous reste valable.
+
 `kubeseal` chiffre un secret sur le poste de contrôle. Il est installé dans WSL2, à la version du contrôleur, en vérifiant l'empreinte du fichier téléchargé :
 
 ```bash

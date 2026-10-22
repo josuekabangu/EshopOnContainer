@@ -1,0 +1,41 @@
+# Valeurs communes aux services d'eShop. Chaque service les complète par helm/values/<service>.yaml.
+
+image:
+  repository: ""   # ghcr.io/josuekabangu/<service>
+  tag: ""          # identifiant court du commit qui a produit l'image
+
+imagePullSecrets:
+  - ghcr-pull
+
+replicas: 1
+
+# Port de l'application, et son nom
+port: 8080
+portName: http
+
+# Port réservé aux probes, si le port principal n'accepte pas HTTP/1.1 (Basket.API) ; 0 = aucun
+probePort: 0
+
+service:
+  enabled: true
+  appProtocol: ""
+
+route:
+  enabled: false
+  hostname: ""
+
+# Attente de RabbitMQ au démarrage (docs/03-kubernetes/17-ordre-de-demarrage.md)
+waitForRabbitMQ: false
+
+# Variables d'environnement propres au service, sous forme de liste name/value
+env: []
+
+# Valeurs chiffrées par kubeseal pour le secret <service>-secrets ; vide = aucun secret
+encryptedData: {}
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    memory: 512Mi

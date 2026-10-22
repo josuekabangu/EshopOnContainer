@@ -1,0 +1,10 @@
+gateway:
+  # Adresse figée : les noms du fichier hosts de Windows y pointent
+  address: 192.168.57.20
+  # Nom fixe du Service du proxy : CoreDNS y renvoie les noms du laboratoire (rôle lab_dns)
+  serviceName: eshop-gateway
+  hostname: "*.eshop.lab"
+
+ghcrPull:
+  # Jeton de lecture du registre, chiffré par kubeseal pour le secret ghcr-pull
+  encryptedData: {}

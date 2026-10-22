@@ -142,7 +142,11 @@ Sans l'`initContainer`, cette même situation aurait laissé quatre services san
 | Un message publié sans file liée est perdu | Le bus d'eShop ne déclare pas les files de ses abonnés à la place de ceux-ci |
 | PostgreSQL n'a pas d'attente équivalente | Les services qui l'utilisent n'ont montré aucune erreur : leurs migrations réessaient. À surveiller |
 
-## 6. Commandes de référence
+## 6. Étape suivante
+
+Les manifestes de cette série sont factorisés en charts Helm : [docs/04-helm/01-chart-commun.md](../04-helm/01-chart-commun.md). L'`initContainer` y devient une valeur, `waitForRabbitMQ`.
+
+## 7. Commandes de référence
 
 ```bash
 kubectl() { ssh -i $HOME/.ssh/vagrant/kube-control vagrant@192.168.57.10 kubectl "$@"; }

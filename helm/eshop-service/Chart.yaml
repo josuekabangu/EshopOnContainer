@@ -1,0 +1,5 @@
+apiVersion: v2
+name: eshop-service
+description: Chart commun aux services d'eShop, un fichier de valeurs par service
+type: application
+version: 0.1.0

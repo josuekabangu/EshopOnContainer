@@ -1,0 +1,19 @@
+{{- if .Values.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "eshop-service.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: {{ .Release.Name }}
+  ports:
+    - name: {{ .Values.portName }}
+      port: {{ .Values.port }}
+      targetPort: {{ .Values.portName }}
+      {{- with .Values.service.appProtocol }}
+      appProtocol: {{ . }}
+      {{- end }}
+{{- end }}

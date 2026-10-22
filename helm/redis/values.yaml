@@ -1,0 +1,17 @@
+image: redis:7.4.11
+
+# Modèle du volume : non modifiable après la création du StatefulSet
+storage:
+  size: 2Gi
+  storageClassName: local-path
+
+# Au-dessus de --maxmemory 1gb : Redis refuse les écritures avant que le noyau ne l'arrête
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 1280Mi
+
+# Valeurs chiffrées par kubeseal pour le secret redis-credentials
+encryptedData: {}
