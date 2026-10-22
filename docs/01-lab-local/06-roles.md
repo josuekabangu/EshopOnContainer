@@ -66,9 +66,9 @@ Un rôle ne contient que les répertoires dont il a besoin :
 
 ---
 
-## 4. Les onze rôles
+## 4. Les douze rôles
 
-Les trois premiers rôles préparent les machines. Les trois suivants construisent le cluster. Les cinq derniers installent ou configurent des composants du cluster : le fournisseur de volumes, ajouté le 16 octobre 2026, le contrôleur Sealed Secrets, ajouté le 18 octobre 2026, puis MetalLB, Envoy Gateway et la configuration de CoreDNS, ajoutés le 20 octobre 2026.
+Les trois premiers rôles préparent les machines. Les trois suivants construisent le cluster. Les cinq suivants installent ou configurent des composants du cluster : le fournisseur de volumes, ajouté le 16 octobre 2026, le contrôleur Sealed Secrets, ajouté le 18 octobre 2026, puis MetalLB, Envoy Gateway et la configuration de CoreDNS, ajoutés le 20 octobre 2026. Le dernier, ajouté le 21 octobre 2026, prépare le poste de contrôle.
 
 | Rôle            | Machines ciblées | Responsabilité                                                          | Document de référence            |
 | --------------- | ---------------- | ----------------------------------------------------------------------- | -------------------------------- |
@@ -83,6 +83,7 @@ Les trois premiers rôles préparent les machines. Les trois suivants construise
 | `metallb` | Control Plane | Installation de MetalLB et de sa réserve d'adresses : les `Service` de type `LoadBalancer` reçoivent une adresse du réseau privé | `16-metallb.md` |
 | `envoy_gateway` | Control Plane | Installation d'Envoy Gateway, de Gateway API et de la `GatewayClass` `eg` : le point d'entrée du cluster | `17-envoy-gateway.md` |
 | `lab_dns` | Control Plane | Configuration de CoreDNS : les noms en `.eshop.lab` renvoient, depuis les pods, vers le point d'entrée | `18-lab-dns.md` |
+| `workstation` | Le poste de contrôle (WSL2) | Installation de Helm et de `kubeseal`, copie du fichier d'accès au cluster à chaque reconstruction | `19-workstation.md` |
 
 Le rôle `calico` cible le Control Plane, car le plugin réseau s'installe en envoyant des ressources à l'API du cluster. C'est ensuite le cluster qui le déploie sur chaque nœud.
 
@@ -95,7 +96,7 @@ Les variables sont réparties selon les machines qui en ont besoin.
 | Fichier                        | Portée          | Contenu                                                                     |
 | ------------------------------ | --------------- | --------------------------------------------------------------------------- |
 | `group_vars/all.yml`           | Tous les nœuds  | Versions de Kubernetes, `containerd` et `crictl`, dépôt APT, adresse du nœud |
-| `group_vars/control_plane.yml` | Control Plane   | Paramètres du cluster (port de l'API, plages des Pods et des Services, domaine DNS), versions et emplacements de Calico, de `local-path-provisioner`, de Sealed Secrets, de MetalLB et d'Envoy Gateway, dossier de sauvegarde de la clé de Sealed Secrets, plage d'adresses de MetalLB, noms du laboratoire résolus par CoreDNS |
+| `group_vars/control_plane.yml` | Control Plane   | Paramètres du cluster (port de l'API, plages des Pods et des Services, domaine DNS), versions et emplacements de Calico, de `local-path-provisioner`, de Sealed Secrets, de MetalLB et d'Envoy Gateway, dossier de sauvegarde de la clé de Sealed Secrets, plage d'adresses de MetalLB, noms du laboratoire résolus par CoreDNS, versions et emplacements des outils du poste de contrôle |
 | `group_vars/workers.yml`       | Workers         | Vide : le Worker ne nécessite aucun paramètre propre                        |
 
 Deux variables sont calculées à partir d'une autre, afin de ne pas écrire deux fois la même information :
@@ -149,6 +150,7 @@ Le fichier `site.yml` ordonne les rôles en quatre plays :
     - metallb
     - envoy_gateway
     - lab_dns
+    - workstation
 ```
 
 ### 6.1 Pourquoi quatre plays ?
@@ -197,6 +199,7 @@ Chaque rôle doit pouvoir être relancé sans effet sur un système déjà confi
 | `calico`        | `kubectl apply`                        | Exécutée seulement si `kubectl diff` signale une différence |
 | `worker`        | Création d'un jeton et `kubeadm join`  | Ignorées si `/etc/kubernetes/kubelet.conf` existe           |
 | `local_path`    | Création de l'espace de noms, `kubectl apply`, `kubectl patch` | Espace de noms créé s'il est absent ; application si `kubectl diff` signale une différence ; annotation posée si elle ne vaut pas `true` |
+| `workstation` | Téléchargements, copies, recopie du fichier d'accès | `get_url` avec empreinte, `unarchive` avec `creates`, `copy` et `fetch` qui ne réécrivent pas un fichier identique |
 | `lab_dns` | `kubectl apply` de la `ConfigMap` de CoreDNS | Application seulement si `kubectl diff` signale une différence ; pas de redémarrage, CoreDNS relit sa configuration |
 | `envoy_gateway` | `kubectl apply --server-side`, puis `kubectl apply` de la `GatewayClass` | Installation seulement si l'image du contrôleur n'est pas celle de la version voulue : un `Job` éphémère rend `kubectl diff` inutilisable (`17-envoy-gateway.md`, section 3) ; `GatewayClass` appliquée si `kubectl diff` signale une différence |
 | `metallb` | Création de l'espace de noms, deux `kubectl apply` | Espace de noms créé s'il est absent ; installation et configuration appliquées chacune si `kubectl diff` signale une différence |
@@ -310,6 +313,13 @@ Depuis l'ajout du rôle `metallb`, le 20 octobre 2026, une exécution sur un clu
 | Reconstruction à partir de machines neuves | `ok=73 changed=48 failed=0 skipped=3`, en 8 min 02 | `ok=28 changed=22 failed=0` |
 | Exécution sur le cluster ainsi construit | `ok=55 changed=0 skipped=19` | `ok=23 changed=0 skipped=3` |
 
+Depuis l'ajout du rôle `workstation` :
+
+| Situation | `kube-control` | `kube-worker` |
+|---|---|---|
+| Reconstruction, le 22 octobre 2026 | `ok=80 changed=49 failed=0 skipped=4`, en 17 min 46 | `ok=28 changed=22 failed=0` |
+| Exécution sur un cluster déjà construit, le 21 octobre 2026 | `ok=62 changed=0 skipped=20` | `ok=23 changed=0 skipped=3` |
+
 Deux reconstructions successives donnant le même résultat confirment que la construction est reproductible. Les tests fonctionnels du réseau, décrits dans `12-worker.md` (section 7), ont été rejoués avec succès sur ce second cluster.
 
 ---
@@ -356,6 +366,7 @@ Deux reconstructions successives donnant le même résultat confirment que la co
 | `16-metallb.md`                  | Rôle `metallb`                              |
 | `17-envoy-gateway.md`            | Rôle `envoy_gateway`                        |
 | `18-lab-dns.md`                  | Rôle `lab_dns`                              |
+| `19-workstation.md`              | Rôle `workstation`                          |
 
 ---
 

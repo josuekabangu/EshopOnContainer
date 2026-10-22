@@ -294,7 +294,8 @@ lab-local/
 │       ├── sealed_secrets/
 │       ├── metallb/
 │       ├── envoy_gateway/
-│       └── lab_dns/
+│       ├── lab_dns/
+│       └── workstation/
 ├── scripts/
 │   ├── add-hosts-entries.ps1
 │   ├── add-hosts-entries.sh
@@ -330,6 +331,7 @@ lab-local/
 | [16-metallb.md](../docs/01-lab-local/16-metallb.md) | MetalLB, adresses des `Service` de type `LoadBalancer`, test depuis Windows |
 | [17-envoy-gateway.md](../docs/01-lab-local/17-envoy-gateway.md) | Envoy Gateway, point d'entrée selon Gateway API, routage par nom |
 | [18-lab-dns.md](../docs/01-lab-local/18-lab-dns.md) | CoreDNS : les noms de l'application résolus vers le point d'entrée, depuis les pods |
+| [19-workstation.md](../docs/01-lab-local/19-workstation.md) | Helm, `kubeseal` et l'accès au cluster sur le poste de contrôle |
 
 ## 11. En cas de problème
 

@@ -1,0 +1,76 @@
+---
+# Toutes les tâches agissent sur le poste de contrôle (WSL2), sauf la lecture du fichier d'accès
+- name: Créer les dossiers des outils sur le poste de contrôle
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ workstation_bin_dir }}"
+    - "{{ workstation_tmp_dir }}"
+  delegate_to: localhost
+  become: false
+
+- name: Télécharger Helm, empreinte vérifiée
+  ansible.builtin.get_url:
+    url: "{{ helm_archive_url }}"
+    dest: "{{ workstation_tmp_dir }}/helm-{{ helm_version }}.tar.gz"
+    checksum: "sha256:{{ helm_archive_url }}.sha256sum"
+    mode: '0644'
+  delegate_to: localhost
+  become: false
+
+- name: Télécharger kubeseal, empreinte vérifiée
+  ansible.builtin.get_url:
+    url: "{{ kubeseal_archive_url }}"
+    dest: "{{ workstation_tmp_dir }}/kubeseal-{{ sealed_secrets_version }}.tar.gz"
+    checksum: "sha256:{{ kubeseal_checksums_url }}"
+    mode: '0644'
+  delegate_to: localhost
+  become: false
+
+- name: Extraire Helm et kubeseal
+  ansible.builtin.unarchive:
+    src: "{{ item.archive }}"
+    dest: "{{ workstation_tmp_dir }}"
+    include: ["{{ item.member }}"]
+    creates: "{{ workstation_tmp_dir }}/{{ item.member }}"
+  loop:
+    - { archive: "{{ workstation_tmp_dir }}/helm-{{ helm_version }}.tar.gz", member: linux-amd64/helm }
+    - { archive: "{{ workstation_tmp_dir }}/kubeseal-{{ sealed_secrets_version }}.tar.gz", member: kubeseal }
+  delegate_to: localhost
+  become: false
+
+- name: Installer Helm et kubeseal
+  ansible.builtin.copy:
+    src: "{{ workstation_tmp_dir }}/{{ item.member }}"
+    dest: "{{ workstation_bin_dir }}/{{ item.name }}"
+    mode: '0755'
+  loop:
+    - { member: linux-amd64/helm, name: helm }
+    - { member: kubeseal, name: kubeseal }
+  delegate_to: localhost
+  become: false
+
+- name: Créer le dossier de configuration de kubectl sur le poste de contrôle
+  ansible.builtin.file:
+    path: "{{ workstation_kubeconfig | dirname }}"
+    state: directory
+    mode: '0700'
+  delegate_to: localhost
+  become: false
+
+# Le fichier d'accès donne les droits d'administrateur sur le cluster : jamais affiché, droits 0600
+- name: Recopier le fichier d'accès au cluster sur le poste de contrôle
+  ansible.builtin.fetch:
+    src: /etc/kubernetes/admin.conf
+    dest: "{{ workstation_kubeconfig }}"
+    flat: true
+  no_log: true
+
+- name: Restreindre les droits du fichier d'accès
+  ansible.builtin.file:
+    path: "{{ workstation_kubeconfig }}"
+    mode: '0600'
+  delegate_to: localhost
+  become: false

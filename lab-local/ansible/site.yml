@@ -33,3 +33,4 @@
     - metallb
     - envoy_gateway
     - lab_dns
+    - workstation

@@ -364,7 +364,7 @@ Le projet utilise un playbook principal :
 site.yml
 ```
 
-Il orchestre onze rôles, répartis en quatre plays :
+Il orchestre douze rôles, répartis en quatre plays :
 
 ```text
 site.yml
@@ -376,7 +376,8 @@ site.yml
    +---- worker                             (Workers)
    |
    +---- local_path, sealed_secrets,        (Control Plane, après la jonction des Workers)
-         metallb, envoy_gateway, lab_dns
+         metallb, envoy_gateway, lab_dns,
+         workstation                        (le poste de contrôle)
 ```
 
 L'objectif est d'éviter un playbook monolithique contenant toutes les opérations. Le contenu du playbook est détaillé dans `06-roles.md`.
@@ -396,7 +397,7 @@ roles/
 └── kubernetes/
 ```
 
-Trois autres rôles construisent ensuite le cluster : `control_plane`, `calico` et `worker`. Un septième, `local_path`, installe le fournisseur de volumes, un huitième, `sealed_secrets`, le contrôleur qui déchiffre les secrets du dépôt, un neuvième, `metallb`, les adresses des `Service` de type `LoadBalancer`, un dixième, `envoy_gateway`, le point d'entrée du cluster, et un onzième, `lab_dns`, les noms de l'application dans CoreDNS. Les onze rôles sont présentés dans `06-roles.md`.
+Trois autres rôles construisent ensuite le cluster : `control_plane`, `calico` et `worker`. Un septième, `local_path`, installe le fournisseur de volumes, un huitième, `sealed_secrets`, le contrôleur qui déchiffre les secrets du dépôt, un neuvième, `metallb`, les adresses des `Service` de type `LoadBalancer`, un dixième, `envoy_gateway`, le point d'entrée du cluster, un onzième, `lab_dns`, les noms de l'application dans CoreDNS, et un douzième, `workstation`, les outils du poste de contrôle et l'accès au cluster. Les douze rôles sont présentés dans `06-roles.md`.
 
 ### `common`
 

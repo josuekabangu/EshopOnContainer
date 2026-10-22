@@ -42,3 +42,13 @@ lab_dns_names:
 lab_dns_target: "eshop-gateway.envoy-gateway-system.svc.{{ cluster_dns_domain }}"
 lab_dns_config_path: "/etc/kubernetes/coredns-configmap.yaml"
 
+
+# Outils du poste de contrôle (WSL2), installés dans ~/.local/bin
+workstation_bin_dir: "{{ lookup('env', 'HOME') }}/.local/bin"
+workstation_tmp_dir: "{{ lookup('env', 'HOME') }}/.cache/eshoponcontainer"
+helm_version: "v4.3.1"
+helm_archive_url: "https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz"
+kubeseal_archive_url: "https://github.com/bitnami/sealed-secrets/releases/download/{{ sealed_secrets_version }}/kubeseal-{{ sealed_secrets_version | regex_replace('^v', '') }}-linux-amd64.tar.gz"
+kubeseal_checksums_url: "https://github.com/bitnami/sealed-secrets/releases/download/{{ sealed_secrets_version }}/sealed-secrets_{{ sealed_secrets_version | regex_replace('^v', '') }}_checksums.txt"
+# Accès administrateur au cluster, recopié à chaque passage : il change à chaque reconstruction
+workstation_kubeconfig: "{{ lookup('env', 'HOME') }}/.kube/config"
