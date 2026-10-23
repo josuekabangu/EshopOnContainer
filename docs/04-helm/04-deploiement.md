@@ -129,7 +129,7 @@ Le parcours dans le navigateur de Windows a ensuite été rejoué sur cette appl
 | Limite | Conséquence |
 |---|---|
 | Le déploiement reste lancé à la main | L'étape suivante, Argo CD, le confiera à un outil qui synchronise le cluster avec le dépôt |
-| Les étiquettes d'image sont dans les fichiers de valeurs | Publier une nouvelle image demande de modifier le fichier du service ; la chaîne d'intégration continue le fera |
+| ~~Les étiquettes d'image sont dans les fichiers de valeurs~~ | Réglé le 22 octobre 2026 : GitHub Actions écrit l'étiquette des images qu'il publie dans les neuf fichiers de valeurs ([docs/05-ci/02-etiquettes-helm.md](../05-ci/02-etiquettes-helm.md)) |
 | Les manifestes de `kubernetes/` sont conservés | Comme trace de l'étape précédente. Ils ne doivent plus être appliqués : leurs objets appartiennent à Helm |
 
 ## 6. Commandes de référence

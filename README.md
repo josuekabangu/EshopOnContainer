@@ -47,7 +47,7 @@ Le projet est organisé autour de trois domaines principaux :
 | Construction des images | Docker et Docker Compose    | Utilisé |
 | Secrets du cluster      | Sealed Secrets (laboratoire) ; External Secrets et AWS Secrets Manager (EKS) | Utilisé au laboratoire |
 | Déploiement applicatif  | Helm 4                      | Utilisé |
-| CI/CD                   | GitHub Actions              | Prévu   |
+| CI/CD                   | GitHub Actions              | En cours : images construites et publiées, sans tests |
 | GitOps                  | Argo CD                     | Prévu   |
 | Observabilité           | Prometheus, Grafana et Loki | Prévu   |
 | Sécurité                | Trivy et SonarQube          | Prévu   |
@@ -124,7 +124,9 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 
 * [x] Validation de l’application e-commerce complète.
 * [x] Déploiement applicatif avec Helm : un chart commun pour les neuf services, un chart par dépendance, 13 releases déployées sur un cluster neuf en moins de trois minutes.
-* [ ] Mise en place de GitHub Actions et d’Argo CD.
+* [x] GitHub Actions : les neuf images construites et publiées à chaque push, leur étiquette écrite dans `helm/values/` ; images de la CI déployées et vérifiées dans le navigateur.
+* [ ] Tests et analyse des images dans GitHub Actions.
+* [ ] Mise en place d’Argo CD.
 * [ ] Intégration de l’observabilité et des contrôles de sécurité.
 * [ ] Étude du déploiement cloud avec Terraform.
 
@@ -132,6 +134,10 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 
 ```text
 EshopOnContainer/
+├── .github/
+│   └── workflows/
+│       └── images.yml           # construction et publication des images
+│
 ├── application/
 │   ├── README.md
 │   └── eShop/
@@ -190,11 +196,14 @@ EshopOnContainer/
 │   │   ├── 15-webapp.md
 │   │   ├── 16-webhook-client.md
 │   │   └── 17-ordre-de-demarrage.md
-│   └── 04-helm/
-│       ├── 01-chart-commun.md
-│       ├── 02-reprise.md
-│       ├── 03-dependances-plateforme.md
-│       └── 04-deploiement.md
+│   ├── 04-helm/
+│   │   ├── 01-chart-commun.md
+│   │   ├── 02-reprise.md
+│   │   ├── 03-dependances-plateforme.md
+│   │   └── 04-deploiement.md
+│   └── 05-ci/
+│       ├── 01-construction-images.md
+│       └── 02-etiquettes-helm.md
 │
 ├── helm/
 │   ├── deploy.sh
@@ -315,6 +324,13 @@ Déploiement par Helm :
 | [02 — La reprise](docs/04-helm/02-reprise.md) | Objets créés par `kubectl apply` repris sans coupure ; Helm 4 et l'application côté serveur |
 | [03 — Dépendances et plateforme](docs/04-helm/03-dependances-plateforme.md) | Charts de PostgreSQL, Redis, RabbitMQ et du point d'entrée ; champs non modifiables d'un `StatefulSet` |
 | [04 — Le déploiement](docs/04-helm/04-deploiement.md) | `helm/deploy.sh` : 13 releases sur un cluster neuf, en moins de trois minutes |
+
+Intégration continue :
+
+| Guide | Sujet |
+| ----- | ----- |
+| [01 — La construction des images](docs/05-ci/01-construction-images.md) | Un workflow, neuf images publiées sur `ghcr.io` sans jeton personnel ; le droit de publier sur des paquets créés à la main |
+| [02 — Les étiquettes dans `helm/values/`](docs/05-ci/02-etiquettes-helm.md) | Commit du robot après publication, sans boucle ; images de la CI déployées et vérifiées |
 
 ## Feuille de route
 

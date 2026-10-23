@@ -269,9 +269,9 @@ L’espace de noms et le secret sont conservés pour le déploiement.
 ## 7. Points ouverts
 
 1. **Les jetons expirent.** À l’expiration du jeton de lecture, les nœuds ne pourront plus télécharger de nouvelle image. Il faudra chiffrer à nouveau le secret `ghcr-pull` avec un nouveau jeton.
-2. **La publication est manuelle.** Elle sera reprise par GitHub Actions, qui disposera de son propre jeton.
+2. ~~**La publication est manuelle.**~~ Réglé le 22 octobre 2026 : GitHub Actions construit et publie les neuf images à chaque push, avec le jeton de l'exécution ([docs/05-ci/01-construction-images.md](../05-ci/01-construction-images.md)).
 3. ~~**Une reconstruction du cluster supprime l’espace de noms et le secret.**~~ Réglé le 18 octobre 2026 : les deux sont décrits par des fichiers du dépôt et se réappliquent sans saisie ([guide 04](04-secrets.md)).
-4. **Les images ne sont pas reliées au dépôt dans l’interface de GitHub.** Une étiquette `org.opencontainers.image.source` ajoutée aux Dockerfiles le ferait.
+4. ~~**Les images ne sont pas reliées au dépôt dans l’interface de GitHub.**~~ Réglé le 22 octobre 2026, pour les images publiées par GitHub Actions : le workflow leur ajoute l'étiquette `org.opencontainers.image.source`. Les paquets ont aussi dû autoriser le dépôt à y publier ([docs/05-ci/01-construction-images.md](../05-ci/01-construction-images.md#4-le-droit-de-publier-sur-des-paquets-déjà-existants)).
 
 ## 8. Tableau de validation
 
