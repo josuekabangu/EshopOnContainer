@@ -52,3 +52,10 @@ kubeseal_archive_url: "https://github.com/bitnami/sealed-secrets/releases/downlo
 kubeseal_checksums_url: "https://github.com/bitnami/sealed-secrets/releases/download/{{ sealed_secrets_version }}/sealed-secrets_{{ sealed_secrets_version | regex_replace('^v', '') }}_checksums.txt"
 # Accès administrateur au cluster, recopié à chaque passage : il change à chaque reconstruction
 workstation_kubeconfig: "{{ lookup('env', 'HOME') }}/.kube/config"
+
+argocd_version: "v3.5.6"
+argocd_manifest_url: "https://raw.githubusercontent.com/argoproj/argo-cd/{{ argocd_version }}/manifests/install.yaml"
+argocd_manifest_path: "/etc/kubernetes/argocd-{{ argocd_version }}.yaml"
+argocd_namespace: "argocd"
+# Adresse de l'interface d'Argo CD, prise dans la plage de MetalLB ; 192.168.57.20 est celle d'eShop
+argocd_server_address: "192.168.57.21"

@@ -1,0 +1,101 @@
+---
+- name: Télécharger le fichier de définition d'Argo CD
+  ansible.builtin.get_url:
+    url: "{{ argocd_manifest_url }}"
+    dest: "{{ argocd_manifest_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+# Les objets du fichier n'ont pas d'espace de noms : il est donné à kubectl apply, et doit exister
+- name: Vérifier si l'espace de noms d'Argo CD existe
+  ansible.builtin.command:
+    cmd: "kubectl get namespace {{ argocd_namespace }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: argocd_ns
+  changed_when: false
+  failed_when: false
+
+- name: Créer l'espace de noms d'Argo CD
+  ansible.builtin.command:
+    cmd: "kubectl create namespace {{ argocd_namespace }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: argocd_ns.rc != 0
+
+# Garde par la version installée, comme Envoy Gateway : pas de kubectl diff
+# sur un fichier appliqué côté serveur
+- name: Lire la version d'Argo CD installée
+  ansible.builtin.command:
+    cmd: >-
+      kubectl -n {{ argocd_namespace }} get deployment argocd-server
+      -o 'jsonpath={.spec.template.spec.containers[0].image}'
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: argocd_image
+  changed_when: false
+  failed_when: false
+
+# --server-side : la définition des ApplicationSet dépasse la taille permise
+# pour l'annotation de kubectl apply ordinaire
+- name: Appliquer le fichier de définition d'Argo CD
+  ansible.builtin.command:
+    cmd: "kubectl apply -n {{ argocd_namespace }} --server-side --force-conflicts -f {{ argocd_manifest_path }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: argocd_image.stdout != "quay.io/argoproj/argocd:" ~ argocd_version
+
+- name: Attendre que les composants d'Argo CD soient prêts
+  ansible.builtin.command:
+    cmd: "kubectl -n {{ argocd_namespace }} rollout status {{ item }} --timeout=300s"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  loop:
+    - statefulset/argocd-application-controller
+    - deployment/argocd-applicationset-controller
+    - deployment/argocd-dex-server
+    - deployment/argocd-notifications-controller
+    - deployment/argocd-redis
+    - deployment/argocd-repo-server
+    - deployment/argocd-server
+  changed_when: false
+
+# Le fichier officiel ne fixe pas le type du Service : le modifier ici ne crée pas de conflit
+# avec une future mise à jour d'Argo CD
+- name: Lire le type et l'adresse demandée du Service argocd-server
+  ansible.builtin.command:
+    cmd: >-
+      kubectl -n {{ argocd_namespace }} get service argocd-server
+      -o 'jsonpath={.spec.type} {.metadata.annotations.metallb\.io/loadBalancerIPs}'
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: argocd_server_svc
+  changed_when: false
+
+- name: Exposer argocd-server à une adresse fixe de MetalLB
+  ansible.builtin.command:
+    cmd: "kubectl -n {{ argocd_namespace }} patch service argocd-server --type merge -p '{{ argocd_server_patch | to_json }}'"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  vars:
+    argocd_server_patch:
+      metadata:
+        annotations:
+          metallb.io/loadBalancerIPs: "{{ argocd_server_address }}"
+      spec:
+        type: LoadBalancer
+  when: argocd_server_svc.stdout != "LoadBalancer " ~ argocd_server_address
+
+- name: Attendre que MetalLB attribue l'adresse à argocd-server
+  ansible.builtin.command:
+    cmd: >-
+      kubectl -n {{ argocd_namespace }} get service argocd-server
+      -o 'jsonpath={.status.loadBalancer.ingress[0].ip}'
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: argocd_server_ip
+  until: argocd_server_ip.stdout == argocd_server_address
+  retries: 12
+  delay: 5
+  changed_when: false

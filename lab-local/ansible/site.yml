@@ -33,4 +33,5 @@
     - metallb
     - envoy_gateway
     - lab_dns
+    - argocd
     - workstation

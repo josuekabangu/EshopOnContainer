@@ -1,0 +1,52 @@
+# Les 13 releases d'eShop, déclarées à Argo CD : une Application par release Helm.
+# Le nom de l'Application est celui de la release : les charts nomment leurs objets avec .Release.Name.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: eshop
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - list:
+        elements:
+          - {release: eshop-platform, chart: eshop-platform}
+          - {release: postgres, chart: postgres}
+          - {release: redis, chart: redis}
+          - {release: rabbitmq, chart: rabbitmq}
+          - {release: identity-api, chart: eshop-service}
+          - {release: catalog-api, chart: eshop-service}
+          - {release: basket-api, chart: eshop-service}
+          - {release: ordering-api, chart: eshop-service}
+          - {release: order-processor, chart: eshop-service}
+          - {release: payment-processor, chart: eshop-service}
+          - {release: webhooks-api, chart: eshop-service}
+          - {release: webapp, chart: eshop-service}
+          - {release: webhook-client, chart: eshop-service}
+  # Supprimer l'ApplicationSet ne supprime pas les objets déployés (PostgreSQL et ses données compris)
+  syncPolicy:
+    preserveResourcesOnDeletion: true
+  template:
+    metadata:
+      name: '{{.release}}'
+      labels:
+        app.kubernetes.io/part-of: eshop
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/josuekabangu/EshopOnContainer.git
+        targetRevision: main
+        path: 'helm/{{.chart}}'
+        helm:
+          releaseName: '{{.release}}'
+          # Chemin relatif au chart : les fichiers de valeurs sont dans helm/values/
+          valueFiles:
+            - '../values/{{.release}}.yaml'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: eshop
+      # Pas de synchronisation automatique : l'écart est examiné avant la première synchronisation
+      syncPolicy:
+        syncOptions:
+          - ServerSideApply=true
