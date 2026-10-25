@@ -71,9 +71,13 @@ spec:
             failureThreshold: 6
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-  # Non modifiable : reproduit à l'identique, sans étiquette
+  # Non modifiable : reproduit à l'identique, sans étiquette.
+  # apiVersion et kind sont ajoutés par Kubernetes à l'enregistrement ; les écrire évite
+  # un écart permanent avec Argo CD
   volumeClaimTemplates:
-    - metadata:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
         name: data
       spec:
         accessModes: ["ReadWriteOnce"]
