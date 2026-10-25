@@ -6,13 +6,24 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "eshop-service.labels" . | nindent 4 }}
+# Les valeurs par défaut du schéma de Gateway API sont écrites : Kubernetes les ajoute
+# à l'enregistrement, et Argo CD verrait sinon un écart permanent
 spec:
   parentRefs:
-    - name: eshop
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: eshop
   hostnames:
     - {{ required "route.hostname est obligatoire quand route.enabled vaut true" .Values.route.hostname }}
   rules:
-    - backendRefs:
-        - name: {{ .Release.Name }}
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: {{ .Release.Name }}
           port: {{ .Values.port }}
+          weight: 1
 {{- end }}
