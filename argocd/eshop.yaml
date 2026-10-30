@@ -46,7 +46,13 @@ spec:
       destination:
         server: https://kubernetes.default.svc
         namespace: eshop
-      # Pas de synchronisation automatique : l'écart est examiné avant la première synchronisation
+      # Synchronisation automatique, une fois la reprise vérifiée :
+      # le cluster suit main, une modification manuelle est annulée, un objet retiré du dépôt est supprimé
       syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
         syncOptions:
           - ServerSideApply=true
+          # Sur un cluster neuf, l'espace de noms eshop n'existe pas encore (deploy.sh le créait)
+          - CreateNamespace=true

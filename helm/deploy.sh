@@ -6,6 +6,16 @@
 # Usage, depuis n'importe où dans le dépôt :
 #   bash helm/deploy.sh
 set -euo pipefail
+
+# Historique depuis le 25 octobre 2026 : le déploiement est confié à Argo CD (argocd/eshop.yaml).
+# Lancé sur un cluster géré par Argo CD, ce script entrerait en concurrence avec lui.
+# Conservé comme trace de l'étape Helm (docs/04-helm/04-deploiement.md).
+if [ "${ESHOP_HELM_DEPLOY:-}" != "1" ]; then
+  echo "Déploiement confié à Argo CD : ce script est conservé comme trace." >&2
+  echo "Pour l'utiliser malgré tout, sur un cluster sans Argo CD : ESHOP_HELM_DEPLOY=1 bash helm/deploy.sh" >&2
+  exit 1
+fi
+
 cd "$(git rev-parse --show-toplevel)"
 
 NS=eshop
