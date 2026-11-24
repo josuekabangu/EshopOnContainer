@@ -20,7 +20,7 @@ Les dépendances, PostgreSQL, Redis et RabbitMQ, ont chacune leur chart, trop di
 
 ```text
 helm/
-├── deploy.sh                 # déploie les 13 releases (guide 04)
+├── deploy.sh                 # déployait les 13 releases (guide 04) ; trace depuis Argo CD
 ├── eshop-service/            # chart commun des neuf services
 ├── eshop-platform/           # point d'entrée et accès au registre
 ├── postgres/ redis/ rabbitmq/
@@ -103,7 +103,7 @@ resources:
 |---|---|
 | `encryptedData` non vide | Un `SealedSecret` `<service>-secrets`, et `envFrom` dans le conteneur |
 | `service.enabled` | Un `Service` ; `false` pour les tâches de fond, que personne n'appelle |
-| `route.enabled`, `route.hostname` | Une `HTTPRoute` vers le `Gateway` `eshop` ; le nom d'hôte est alors obligatoire (`required`) |
+| `route.enabled`, `route.hostname` | Une `HTTPRoute` vers le `Gateway` `eshop` ; le nom d'hôte est alors obligatoire (`required`). Depuis le 25 octobre 2026, le modèle écrit aussi les valeurs par défaut de Gateway API, sans quoi Argo CD voyait un écart permanent ([docs/06-gitops/02-applicationset.md](../06-gitops/02-applicationset.md), section 5) |
 | `waitForRabbitMQ` | L'`initContainer` `wait-for-rabbitmq` |
 | `probePort` | Un second port, `health`, que visent alors les trois probes |
 

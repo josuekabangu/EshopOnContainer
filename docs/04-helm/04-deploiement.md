@@ -6,6 +6,8 @@ La reprise a prouvé que les charts décrivent les objets existants ([02-reprise
 
 **État au 22 octobre 2026 :** le script `helm/deploy.sh` déploie les 13 releases en 2 min 54 sur un cluster tout juste reconstruit. Les 12 pods démarrent sans redémarrage, les 7 files RabbitMQ ont leur consommateur, et le parcours dans le navigateur fonctionne.
 
+**Historique depuis le 30 octobre 2026 :** le déploiement est confié à Argo CD ([docs/06-gitops/](../06-gitops/02-applicationset.md)), et l'historique des releases de Helm a été supprimé. `helm/deploy.sh` est conservé comme trace de cette étape : il refuse de s'exécuter, sauf avec `ESHOP_HELM_DEPLOY=1` sur un cluster sans Argo CD ([docs/06-gitops/03-synchronisation-automatique.md](../06-gitops/03-synchronisation-automatique.md), section 3). Ce guide décrit l'état du 22 octobre.
+
 ## 2. Le script : `helm/deploy.sh`
 
 ```bash
@@ -128,11 +130,13 @@ Le parcours dans le navigateur de Windows a ensuite été rejoué sur cette appl
 
 | Limite | Conséquence |
 |---|---|
-| Le déploiement reste lancé à la main | L'étape suivante, Argo CD, le confiera à un outil qui synchronise le cluster avec le dépôt |
+| ~~Le déploiement reste lancé à la main~~ | Réglé le 30 octobre 2026 : Argo CD synchronise le cluster avec le dépôt ([docs/06-gitops/03-synchronisation-automatique.md](../06-gitops/03-synchronisation-automatique.md)) |
 | ~~Les étiquettes d'image sont dans les fichiers de valeurs~~ | Réglé le 22 octobre 2026 : GitHub Actions écrit l'étiquette des images qu'il publie dans les neuf fichiers de valeurs ([docs/05-ci/02-etiquettes-helm.md](../05-ci/02-etiquettes-helm.md)) |
 | Les manifestes de `kubernetes/` sont conservés | Comme trace de l'étape précédente. Ils ne doivent plus être appliqués : leurs objets appartiennent à Helm |
 
 ## 6. Commandes de référence
+
+Valables jusqu'au 30 octobre 2026. Depuis, Helm ne gère plus de release : `helm list`, `helm history` et `helm rollback` ne voient rien, et un retour en arrière passe par `git revert`. Seule la dernière commande, `helm template | kubectl diff`, reste utile.
 
 ```bash
 # Tout déployer, ou mettre à jour

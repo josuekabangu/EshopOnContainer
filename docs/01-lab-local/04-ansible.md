@@ -364,7 +364,7 @@ Le projet utilise un playbook principal :
 site.yml
 ```
 
-Il orchestre douze rôles, répartis en quatre plays :
+Il orchestre treize rôles, répartis en quatre plays :
 
 ```text
 site.yml
@@ -377,6 +377,7 @@ site.yml
    |
    +---- local_path, sealed_secrets,        (Control Plane, après la jonction des Workers)
          metallb, envoy_gateway, lab_dns,
+         argocd,
          workstation                        (le poste de contrôle)
 ```
 
@@ -397,7 +398,7 @@ roles/
 └── kubernetes/
 ```
 
-Trois autres rôles construisent ensuite le cluster : `control_plane`, `calico` et `worker`. Un septième, `local_path`, installe le fournisseur de volumes, un huitième, `sealed_secrets`, le contrôleur qui déchiffre les secrets du dépôt, un neuvième, `metallb`, les adresses des `Service` de type `LoadBalancer`, un dixième, `envoy_gateway`, le point d'entrée du cluster, un onzième, `lab_dns`, les noms de l'application dans CoreDNS, et un douzième, `workstation`, les outils du poste de contrôle et l'accès au cluster. Les douze rôles sont présentés dans `06-roles.md`.
+Trois autres rôles construisent ensuite le cluster : `control_plane`, `calico` et `worker`. Un septième, `local_path`, installe le fournisseur de volumes, un huitième, `sealed_secrets`, le contrôleur qui déchiffre les secrets du dépôt, un neuvième, `metallb`, les adresses des `Service` de type `LoadBalancer`, un dixième, `envoy_gateway`, le point d'entrée du cluster, un onzième, `lab_dns`, les noms de l'application dans CoreDNS, un douzième, `argocd`, l'outil GitOps qui déploie l'application depuis GitHub, et un treizième, `workstation`, les outils du poste de contrôle et l'accès au cluster. Les treize rôles sont présentés dans `06-roles.md`.
 
 ### `common`
 

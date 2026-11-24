@@ -66,9 +66,9 @@ Un rôle ne contient que les répertoires dont il a besoin :
 
 ---
 
-## 4. Les douze rôles
+## 4. Les treize rôles
 
-Les trois premiers rôles préparent les machines. Les trois suivants construisent le cluster. Les cinq suivants installent ou configurent des composants du cluster : le fournisseur de volumes, ajouté le 16 octobre 2026, le contrôleur Sealed Secrets, ajouté le 18 octobre 2026, puis MetalLB, Envoy Gateway et la configuration de CoreDNS, ajoutés le 20 octobre 2026. Le dernier, ajouté le 21 octobre 2026, prépare le poste de contrôle.
+Les trois premiers rôles préparent les machines. Les trois suivants construisent le cluster. Les six suivants installent ou configurent des composants du cluster : le fournisseur de volumes, ajouté le 16 octobre 2026, le contrôleur Sealed Secrets, ajouté le 18 octobre 2026, puis MetalLB, Envoy Gateway et la configuration de CoreDNS, ajoutés le 20 octobre 2026, et Argo CD, ajouté le 23 octobre 2026. Le dernier, ajouté le 21 octobre 2026, prépare le poste de contrôle.
 
 | Rôle            | Machines ciblées | Responsabilité                                                          | Document de référence            |
 | --------------- | ---------------- | ----------------------------------------------------------------------- | -------------------------------- |
@@ -83,6 +83,7 @@ Les trois premiers rôles préparent les machines. Les trois suivants construise
 | `metallb` | Control Plane | Installation de MetalLB et de sa réserve d'adresses : les `Service` de type `LoadBalancer` reçoivent une adresse du réseau privé | `16-metallb.md` |
 | `envoy_gateway` | Control Plane | Installation d'Envoy Gateway, de Gateway API et de la `GatewayClass` `eg` : le point d'entrée du cluster | `17-envoy-gateway.md` |
 | `lab_dns` | Control Plane | Configuration de CoreDNS : les noms en `.eshop.lab` renvoient, depuis les pods, vers le point d'entrée | `18-lab-dns.md` |
+| `argocd` | Control Plane | Installation d'Argo CD, interface à l'adresse `192.168.57.21`, puis application de l'`ApplicationSet` d'eShop : Argo CD déploie l'application depuis GitHub | `../06-gitops/01-installation.md`, `../06-gitops/04-amorcage.md` |
 | `workstation` | Le poste de contrôle (WSL2) | Installation de Helm et de `kubeseal`, copie du fichier d'accès au cluster à chaque reconstruction | `19-workstation.md` |
 
 Le rôle `calico` cible le Control Plane, car le plugin réseau s'installe en envoyant des ressources à l'API du cluster. C'est ensuite le cluster qui le déploie sur chaque nœud.
@@ -150,6 +151,7 @@ Le fichier `site.yml` ordonne les rôles en quatre plays :
     - metallb
     - envoy_gateway
     - lab_dns
+    - argocd
     - workstation
 ```
 
@@ -203,6 +205,7 @@ Chaque rôle doit pouvoir être relancé sans effet sur un système déjà confi
 | `lab_dns` | `kubectl apply` de la `ConfigMap` de CoreDNS | Application seulement si `kubectl diff` signale une différence ; pas de redémarrage, CoreDNS relit sa configuration |
 | `envoy_gateway` | `kubectl apply --server-side`, puis `kubectl apply` de la `GatewayClass` | Installation seulement si l'image du contrôleur n'est pas celle de la version voulue : un `Job` éphémère rend `kubectl diff` inutilisable (`17-envoy-gateway.md`, section 3) ; `GatewayClass` appliquée si `kubectl diff` signale une différence |
 | `metallb` | Création de l'espace de noms, deux `kubectl apply` | Espace de noms créé s'il est absent ; installation et configuration appliquées chacune si `kubectl diff` signale une différence |
+| `argocd` | Création de l'espace de noms, `kubectl apply --server-side`, `kubectl patch` du `Service`, `kubectl apply` de l'`ApplicationSet` | Espace de noms créé s'il est absent ; installation seulement si l'image d'`argocd-server` n'est pas celle de la version voulue ; `Service` modifié s'il n'est pas déjà `LoadBalancer` à la bonne adresse ; `ApplicationSet` appliqué si `kubectl diff` signale une différence |
 | `sealed_secrets` | Restauration et sauvegarde de la clé, `kubectl apply` | Restauration seulement si une sauvegarde existe et que le cluster n'a aucune clé active ; sauvegarde seulement si elle n'existe pas ; application si `kubectl diff` signale une différence |
 
 ---
@@ -320,6 +323,14 @@ Depuis l'ajout du rôle `workstation` :
 | Reconstruction, le 22 octobre 2026 | `ok=80 changed=49 failed=0 skipped=4`, en 17 min 46 | `ok=28 changed=22 failed=0` |
 | Exécution sur un cluster déjà construit, le 21 octobre 2026 | `ok=62 changed=0 skipped=20` | `ok=23 changed=0 skipped=3` |
 
+Depuis l'ajout du rôle `argocd` :
+
+| Situation | `kube-control` | `kube-worker` |
+|---|---|---|
+| Exécution sur un cluster déjà construit, installation seule, le 23 octobre 2026 | Premier passage `ok=68 changed=3` ; second passage `ok=66 changed=0` | `ok=23 changed=0 skipped=3` |
+| Reconstruction avec le rôle complet (exposition et amorçage), le 24 novembre 2026 | `ok=92 changed=55 failed=0 skipped=4`, en 9 min 49 | `ok=28 changed=22 failed=0` |
+| Exécution sur le cluster ainsi construit | Non relevé | Non relevé |
+
 Deux reconstructions successives donnant le même résultat confirment que la construction est reproductible. Les tests fonctionnels du réseau, décrits dans `12-worker.md` (section 7), ont été rejoués avec succès sur ce second cluster.
 
 ---
@@ -367,6 +378,7 @@ Deux reconstructions successives donnant le même résultat confirment que la co
 | `17-envoy-gateway.md`            | Rôle `envoy_gateway`                        |
 | `18-lab-dns.md`                  | Rôle `lab_dns`                              |
 | `19-workstation.md`              | Rôle `workstation`                          |
+| `../06-gitops/01-installation.md`, `../06-gitops/04-amorcage.md` | Rôle `argocd` |
 
 ---
 

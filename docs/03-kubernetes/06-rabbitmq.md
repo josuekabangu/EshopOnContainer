@@ -175,6 +175,8 @@ Les outils `rabbitmq-diagnostics` démarrent une machine Erlang à chaque appel,
 
 Ces commandes n'utilisent pas le mot de passe : elles s'adressent au nœud par un canal interne, protégé par un jeton, le cookie Erlang, que RabbitMQ crée au premier démarrage dans son volume.
 
+Note du 24 novembre 2026 : ces sondes s'exécutent en `root`, alors que le serveur tourne sous `rabbitmq`. Au premier démarrage, une sonde peut créer le cookie avant le serveur, qui ne peut alors plus le lire et redémarre une fois. Constaté lors d'un déploiement par Argo CD ; le chart `rabbitmq` fait désormais tourner tout le pod sous l'utilisateur `rabbitmq` ([docs/06-gitops/04-amorcage.md](../06-gitops/04-amorcage.md), section 4). Le manifeste de ce guide, conservé comme trace, n'a pas cette correction.
+
 ## 6. Appliquer et vérifier le nœud
 
 ```bash

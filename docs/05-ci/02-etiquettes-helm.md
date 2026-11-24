@@ -138,7 +138,7 @@ Les quatre releases sans changement passent aussi en révision 2 : `helm upgrade
 
 | Limite | Conséquence |
 |---|---|
-| Le déploiement reste lancé à la main | Le cluster tourne en `b59f061` alors que le dépôt désigne `5abbd6a`. Argo CD, à l'étape suivante, rapprochera le cluster du dépôt sans intervention |
+| ~~Le déploiement reste lancé à la main~~ | ~~Le cluster tourne en `b59f061` alors que le dépôt désigne `5abbd6a`.~~ Réglé : depuis le 30 octobre 2026, Argo CD applique chaque commit du robot sans intervention ; boucle complète vérifiée le 2 novembre 2026 ([docs/06-gitops/03-synchronisation-automatique.md](../06-gitops/03-synchronisation-automatique.md)) |
 | Commit direct sur `main`, sans relecture | Acceptable pour un dépôt à une personne. En équipe, une demande de fusion |
 | Le `git pull --rebase` n'a pas encore servi | Aucun push n'est survenu pendant une construction : le cas qu'il traite n'a pas été provoqué |
 | Le nom des neuf services est écrit deux fois dans le workflow | Dans la matrice et dans la boucle du job `update-values`. Un service ajouté doit l'être aux deux endroits |

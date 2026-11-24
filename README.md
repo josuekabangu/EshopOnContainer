@@ -48,7 +48,7 @@ Le projet est organisé autour de trois domaines principaux :
 | Secrets du cluster      | Sealed Secrets (laboratoire) ; External Secrets et AWS Secrets Manager (EKS) | Utilisé au laboratoire |
 | Déploiement applicatif  | Helm 4                      | Utilisé |
 | CI/CD                   | GitHub Actions              | En cours : images construites et publiées, sans tests |
-| GitOps                  | Argo CD                     | Prévu   |
+| GitOps                  | Argo CD                     | Utilisé |
 | Observabilité           | Prometheus, Grafana et Loki | Prévu   |
 | Sécurité                | Trivy et SonarQube          | Prévu   |
 | Infrastructure as Code  | Terraform                   | Prévu   |
@@ -77,6 +77,7 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] Envoy Gateway, installé par Ansible : point d'entrée selon Gateway API, routage par nom vérifié depuis Windows.
 * [x] CoreDNS configuré par Ansible : les noms de l'application résolus vers le point d'entrée depuis les pods.
 * [x] Poste de contrôle préparé par Ansible : Helm, `kubeseal`, et l'accès au cluster recopié à chaque reconstruction.
+* [x] Argo CD installé par Ansible, interface à une adresse fixe, application déclarée à chaque reconstruction.
 * [x] Inventaire Ansible portable, sans chemin lié à un compte utilisateur.
 * [x] Enchaînement de la reconstruction en une seule commande.
 
@@ -125,8 +126,8 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] Validation de l’application e-commerce complète.
 * [x] Déploiement applicatif avec Helm : un chart commun pour les neuf services, un chart par dépendance, 13 releases déployées sur un cluster neuf en moins de trois minutes.
 * [x] GitHub Actions : les neuf images construites et publiées à chaque push, leur étiquette écrite dans `helm/values/` ; images de la CI déployées et vérifiées dans le navigateur.
+* [x] Argo CD : les 13 releases reprises à Helm sans coupure, synchronisation automatique ; un commit sur `main` arrive jusqu'au cluster sans intervention, et un cluster reconstruit se remplit seul depuis GitHub.
 * [ ] Tests et analyse des images dans GitHub Actions.
-* [ ] Mise en place d’Argo CD.
 * [ ] Intégration de l’observabilité et des contrôles de sécurité.
 * [ ] Étude du déploiement cloud avec Terraform.
 
@@ -201,12 +202,20 @@ EshopOnContainer/
 │   │   ├── 02-reprise.md
 │   │   ├── 03-dependances-plateforme.md
 │   │   └── 04-deploiement.md
-│   └── 05-ci/
-│       ├── 01-construction-images.md
-│       └── 02-etiquettes-helm.md
+│   ├── 05-ci/
+│   │   ├── 01-construction-images.md
+│   │   └── 02-etiquettes-helm.md
+│   └── 06-gitops/
+│       ├── 01-installation.md
+│       ├── 02-applicationset.md
+│       ├── 03-synchronisation-automatique.md
+│       └── 04-amorcage.md
+│
+├── argocd/
+│   └── eshop.yaml               # les 13 releases déclarées à Argo CD
 │
 ├── helm/
-│   ├── deploy.sh
+│   ├── deploy.sh                # trace de l'étape Helm : le déploiement est confié à Argo CD
 │   ├── eshop-service/
 │   ├── eshop-platform/
 │   ├── postgres/  redis/  rabbitmq/
@@ -323,7 +332,7 @@ Déploiement par Helm :
 | [01 — Le chart commun](docs/04-helm/01-chart-commun.md) | Un chart pour les neuf services, un fichier de valeurs par service ; noms et sélecteurs conservés |
 | [02 — La reprise](docs/04-helm/02-reprise.md) | Objets créés par `kubectl apply` repris sans coupure ; Helm 4 et l'application côté serveur |
 | [03 — Dépendances et plateforme](docs/04-helm/03-dependances-plateforme.md) | Charts de PostgreSQL, Redis, RabbitMQ et du point d'entrée ; champs non modifiables d'un `StatefulSet` |
-| [04 — Le déploiement](docs/04-helm/04-deploiement.md) | `helm/deploy.sh` : 13 releases sur un cluster neuf, en moins de trois minutes |
+| [04 — Le déploiement](docs/04-helm/04-deploiement.md) | `helm/deploy.sh` : 13 releases sur un cluster neuf, en moins de trois minutes ; conservé comme trace depuis Argo CD |
 
 Intégration continue :
 
@@ -332,13 +341,22 @@ Intégration continue :
 | [01 — La construction des images](docs/05-ci/01-construction-images.md) | Un workflow, neuf images publiées sur `ghcr.io` sans jeton personnel ; le droit de publier sur des paquets créés à la main |
 | [02 — Les étiquettes dans `helm/values/`](docs/05-ci/02-etiquettes-helm.md) | Commit du robot après publication, sans boucle ; images de la CI déployées et vérifiées |
 
+GitOps :
+
+| Guide | Sujet |
+| ----- | ----- |
+| [01 — L'installation d'Argo CD](docs/06-gitops/01-installation.md) | Rôle Ansible, interface en HTTPS à une adresse fixe de MetalLB, mot de passe jamais affiché |
+| [02 — L'`ApplicationSet`](docs/06-gitops/02-applicationset.md) | Les 13 releases déclarées par un seul objet ; reprise des objets de Helm ; deux écarts permanents dus aux valeurs par défaut de Kubernetes |
+| [03 — La synchronisation automatique](docs/06-gitops/03-synchronisation-automatique.md) | `selfHeal` et `prune`, Helm retiré de la boucle, boucle complète du commit au cluster |
+| [04 — L'amorçage](docs/06-gitops/04-amorcage.md) | Un cluster reconstruit qui se remplit seul ; course entre sonde et serveur sur le cookie de RabbitMQ |
+
 ## Feuille de route
 
 1. **Fondations :** construire un laboratoire Kubernetes local reproductible. Étape réalisée.
 2. **Application :** intégrer et valider l’application e-commerce.
 3. **Déploiement :** conteneuriser les services et préparer les charts Helm.
 4. **Automatisation :** construire la chaîne CI/CD avec GitHub Actions.
-5. **GitOps :** automatiser la synchronisation des déploiements avec Argo CD.
+5. **GitOps :** automatiser la synchronisation des déploiements avec Argo CD. Étape réalisée le 24 novembre 2026.
 6. **Exploitation :** ajouter l’observabilité, les contrôles de sécurité et les procédures de maintenance.
 7. **Cloud :** étudier l’industrialisation de l’infrastructure avec Terraform, sur AWS. Le cluster y sera un cluster **EKS**, géré par AWS, avec le stockage EBS CSI : c’est l’usage courant en entreprise. Décision du 16 octobre 2026. Conséquence : Ansible ne sert qu’à construire le laboratoire local, et reste donc dans `lab-local/ansible/`.
 

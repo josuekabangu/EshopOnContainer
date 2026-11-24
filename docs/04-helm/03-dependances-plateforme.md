@@ -15,7 +15,7 @@ Les charts Bitnami, longtemps la référence pour ces composants, ne sont plus l
 | Règle | Raison |
 |---|---|
 | Les noms sont écrits en dur : `postgres`, `postgres-credentials`… | Tous les services les désignent par ces noms, dans leurs chaînes de connexion chiffrées. Un nom tiré de la release les casserait au moindre écart |
-| `volumeClaimTemplates` reproduit à l'identique, sans étiquette | Champ non modifiable d'un `StatefulSet`. Une différence ferait échouer la mise à jour |
+| `volumeClaimTemplates` reproduit à l'identique, sans étiquette | Champ non modifiable d'un `StatefulSet`. Une différence ferait échouer la mise à jour. Depuis le 25 octobre 2026, il porte aussi `apiVersion: v1` et `kind: PersistentVolumeClaim`, ajoutés par Kubernetes à l'enregistrement : sans eux, Argo CD voyait un écart permanent ([docs/06-gitops/02-applicationset.md](../06-gitops/02-applicationset.md), section 5) |
 | `selector` et `serviceName` inchangés | Non modifiables, eux aussi |
 | Les étiquettes du chart sur les objets seulement | Comme pour `eshop-service` |
 | La taille et la classe du volume en valeurs, avec un avertissement | Les changer demande de supprimer le `StatefulSet` ; ses données restent, grâce à `whenDeleted: Retain` |
@@ -63,9 +63,13 @@ Le modèle reprend le manifeste du [guide 03-kubernetes/03](../03-kubernetes/03-
 ```yaml
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-  # Non modifiable : reproduit à l'identique, sans étiquette
+  # Non modifiable : reproduit à l'identique, sans étiquette.
+  # apiVersion et kind sont ajoutés par Kubernetes à l'enregistrement ; les écrire évite
+  # un écart permanent avec Argo CD
   volumeClaimTemplates:
-    - metadata:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
         name: data
       spec:
         accessModes: ["ReadWriteOnce"]
@@ -113,7 +117,7 @@ Le `grep` final ne doit rien trouver : vérifié.
 | Chart | Particularités |
 |---|---|
 | `redis` | Les arguments de `redis-server`, dont `$(REDIS_PASSWORD)`, écrit tel quel : Helm ne remplace que les `{{ }}`, Kubernetes remplace la variable au démarrage. Deux variables issues du secret. Plafond de mémoire de 1280 Mio |
-| `rabbitmq` | Deux ports nommés, `amqp` et `management` ; probes par `rabbitmq-diagnostics` ; plafond de 1 Gio |
+| `rabbitmq` | Deux ports nommés, `amqp` et `management` ; probes par `rabbitmq-diagnostics` ; plafond de 1 Gio. Depuis le 24 novembre 2026, tout le pod tourne sous l'utilisateur `rabbitmq` (`runAsUser: 999`), après une course entre sonde et serveur sur le cookie Erlang ([docs/06-gitops/04-amorcage.md](../06-gitops/04-amorcage.md), section 4) |
 
 ## 6. La plateforme : `eshop-platform`
 
@@ -121,7 +125,7 @@ Le `grep` final ne doit rien trouver : vérifié.
 |---|---|---|
 | `Gateway` et `EnvoyProxy` `eshop` | Oui | Le point d'entrée, commun aux services ([docs/03-kubernetes/14-point-entree.md](../03-kubernetes/14-point-entree.md)) |
 | `SealedSecret` `ghcr-pull` | Oui | Le jeton de lecture du registre, commun aux services |
-| L'espace de noms `eshop` | **Non** | Une release vit dans un espace de noms, qui doit exister avant elle. Il est créé par `helm ... --create-namespace`, à l'installation du premier chart ; Argo CD fera de même avec son option `CreateNamespace` |
+| L'espace de noms `eshop` | **Non** | Une release vit dans un espace de noms, qui doit exister avant elle. Il est créé par `helm ... --create-namespace`, à l'installation du premier chart. Argo CD le crée de même, avec son option `CreateNamespace=true`, vérifié sur un cluster neuf le 24 novembre 2026 ([docs/06-gitops/04-amorcage.md](../06-gitops/04-amorcage.md)) |
 
 Ses valeurs :
 

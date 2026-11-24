@@ -295,6 +295,7 @@ lab-local/
 │       ├── metallb/
 │       ├── envoy_gateway/
 │       ├── lab_dns/
+│       ├── argocd/
 │       └── workstation/
 ├── scripts/
 │   ├── add-hosts-entries.ps1
@@ -332,6 +333,8 @@ lab-local/
 | [17-envoy-gateway.md](../docs/01-lab-local/17-envoy-gateway.md) | Envoy Gateway, point d'entrée selon Gateway API, routage par nom |
 | [18-lab-dns.md](../docs/01-lab-local/18-lab-dns.md) | CoreDNS : les noms de l'application résolus vers le point d'entrée, depuis les pods |
 | [19-workstation.md](../docs/01-lab-local/19-workstation.md) | Helm, `kubeseal` et l'accès au cluster sur le poste de contrôle |
+| [06-gitops/01-installation.md](../docs/06-gitops/01-installation.md) | Rôle `argocd` : Argo CD et son interface en `https://192.168.57.21` |
+| [06-gitops/04-amorcage.md](../docs/06-gitops/04-amorcage.md) | Rôle `argocd` : l'application déployée par Argo CD à chaque reconstruction |
 
 ## 11. En cas de problème
 

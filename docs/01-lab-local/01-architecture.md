@@ -181,6 +181,8 @@ Les adresses sont attribuées statiquement :
 | `kube-control`          | `192.168.57.10/24` |
 | `kube-worker`           | `192.168.57.11/24` |
 | Adresses attribuées par MetalLB aux `Service` `LoadBalancer` | `192.168.57.20` à `192.168.57.29` |
+| dont le point d'entrée d'eShop | `192.168.57.20` |
+| dont l'interface d'Argo CD | `192.168.57.21` |
 
 Ce réseau est utilisé pour l'administration depuis WSL2 et pour les communications entre les nœuds du cluster.
 
@@ -282,6 +284,7 @@ Le poste de contrôle est WSL2.
 * [x] Envoy Gateway installé par Ansible, avec la `GatewayClass` `eg` : un `Gateway` reçoit une adresse de MetalLB et route selon le nom demandé, validé le 20 octobre 2026 sur le cluster existant (`17-envoy-gateway.md`).
 * [x] CoreDNS configuré par Ansible : les pods résolvent les noms en `.eshop.lab` vers le point d'entrée, comme Windows par son fichier `hosts`, validé le 20 octobre 2026 (`18-lab-dns.md`).
 * [x] Poste de contrôle préparé par Ansible : Helm et `kubeseal` installés dans WSL2, fichier d'accès au cluster recopié à chaque reconstruction, validé le 22 octobre 2026 (`19-workstation.md`).
+* [x] Argo CD installé par Ansible, interface en `https://192.168.57.21`, et l'`ApplicationSet` d'eShop appliqué : un cluster reconstruit se remplit seul depuis GitHub, validé par une reconstruction le 24 novembre 2026 (`../06-gitops/01-installation.md`, `../06-gitops/04-amorcage.md`).
 
 Le laboratoire a d'abord été construit à la main le 8 octobre 2026, puis automatisé le 9 octobre 2026. Les éléments cochés ont été vérifiés le 9 octobre 2026 sur le cluster reconstruit par Ansible, dont le résultat est présenté dans `06-roles.md` (section 8.3).
 
@@ -312,6 +315,7 @@ La validation du cluster comprend trois tests fonctionnels du réseau (Pod à Po
 | `17-envoy-gateway.md`            | Point d'entrée, Gateway API                 |
 | `18-lab-dns.md`                  | Noms du laboratoire dans CoreDNS            |
 | `19-workstation.md`              | Outils du poste de contrôle, accès au cluster |
+| `../06-gitops/01-installation.md` | Rôle `argocd` : installation d'Argo CD, accès à son interface |
 
 ---
 

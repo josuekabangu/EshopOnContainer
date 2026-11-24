@@ -138,7 +138,7 @@ Sans l'`initContainer`, cette même situation aurait laissé quatre services san
 
 | Limite | Conséquence |
 |---|---|
-| L'attente ne vaut qu'au démarrage | Si RabbitMQ redémarre plus tard, la connexion d'eShop se rétablit-elle ? Non vérifié. Le bus utilise une connexion à reprise automatique (`AutorecoveringConnection`, dans la pile d'erreurs), mais ce cas n'a pas été testé |
+| ~~L'attente ne vaut qu'au démarrage~~ | ~~Si RabbitMQ redémarre plus tard, la connexion d'eShop se rétablit-elle ? Non vérifié.~~ Vérifié le 24 novembre 2026 : après un redémarrage de RabbitMQ par Argo CD, les 7 files ont retrouvé leur consommateur sans qu'aucun service soit relancé. La connexion à reprise automatique (`AutorecoveringConnection`) fonctionne ([docs/06-gitops/04-amorcage.md](../06-gitops/04-amorcage.md), section 4) |
 | Un message publié sans file liée est perdu | Le bus d'eShop ne déclare pas les files de ses abonnés à la place de ceux-ci |
 | PostgreSQL n'a pas d'attente équivalente | Les services qui l'utilisent n'ont montré aucune erreur : leurs migrations réessaient. À surveiller |
 
