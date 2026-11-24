@@ -19,6 +19,11 @@ spec:
       labels:
         app: rabbitmq
     spec:
+      # Serveur et sondes sous l'utilisateur de l'image : la sonde de démarrage, en root,
+      # avait créé .erlang.cookie avant le serveur, qui ne pouvait plus le lire (24 novembre 2026)
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
       containers:
         - name: rabbitmq
           image: {{ .Values.image }}
