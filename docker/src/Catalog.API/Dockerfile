@@ -1,5 +1,6 @@
 # Étape 1 : restauration et publication
 # Image de Catalog.API, construite par GitHub Actions (.github/workflows/images.yml)
+# Second test de la boucle : mesure de la durée du push au dernier service prêt
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src 
 
