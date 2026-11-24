@@ -1,7 +1,7 @@
 # payment-processor : tâche de fond, sans Service ; une seule copie (docs/03-kubernetes)
 image:
   repository: ghcr.io/josuekabangu/payment-processor
-  tag: f9bbdda
+  tag: 0f0c6cc
 
 service:
   enabled: false
