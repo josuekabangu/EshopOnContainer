@@ -99,3 +99,29 @@
   retries: 12
   delay: 5
   changed_when: false
+
+# Amorçage : une fois l'ApplicationSet en place, Argo CD déploie eShop depuis GitHub.
+# Le fichier vient du dépôt (argocd/eshop.yaml), pas du rôle : une seule source
+- name: Déposer l'ApplicationSet d'eShop
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../argocd/eshop.yaml"
+    dest: "{{ argocd_applicationset_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Comparer l'ApplicationSet d'eShop avec l'état du cluster
+  ansible.builtin.command:
+    cmd: "kubectl diff -f {{ argocd_applicationset_path }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: argocd_applicationset_diff
+  changed_when: false
+  failed_when: argocd_applicationset_diff.rc > 1
+
+- name: Appliquer l'ApplicationSet d'eShop
+  ansible.builtin.command:
+    cmd: "kubectl apply -f {{ argocd_applicationset_path }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: argocd_applicationset_diff.rc == 1

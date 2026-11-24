@@ -59,3 +59,4 @@ argocd_manifest_path: "/etc/kubernetes/argocd-{{ argocd_version }}.yaml"
 argocd_namespace: "argocd"
 # Adresse de l'interface d'Argo CD, prise dans la plage de MetalLB ; 192.168.57.20 est celle d'eShop
 argocd_server_address: "192.168.57.21"
+argocd_applicationset_path: "/etc/kubernetes/argocd-eshop.yaml"
