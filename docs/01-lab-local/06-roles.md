@@ -329,7 +329,7 @@ Depuis l'ajout du rôle `argocd` :
 |---|---|---|
 | Exécution sur un cluster déjà construit, installation seule, le 23 octobre 2026 | Premier passage `ok=68 changed=3` ; second passage `ok=66 changed=0` | `ok=23 changed=0 skipped=3` |
 | Reconstruction avec le rôle complet (exposition et amorçage), le 24 novembre 2026 | `ok=92 changed=55 failed=0 skipped=4`, en 9 min 49 | `ok=28 changed=22 failed=0` |
-| Exécution sur le cluster ainsi construit | Non relevé | Non relevé |
+| Exécution sur le cluster ainsi construit, le 24 novembre 2026 | `ok=70 changed=0 skipped=24` | `ok=23 changed=0 skipped=3` |
 
 Deux reconstructions successives donnant le même résultat confirment que la construction est reproductible. Les tests fonctionnels du réseau, décrits dans `12-worker.md` (section 7), ont été rejoués avec succès sur ce second cluster.
 

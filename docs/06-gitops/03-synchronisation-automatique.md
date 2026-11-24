@@ -145,12 +145,41 @@ kubectl -n eshop get pods
 
 Argo CD suit le commit du robot, `1b1a927`, et non celui du développeur : c'est lui qui contient les nouvelles étiquettes. Les trois dépendances n'ont pas bougé : leurs charts et leurs valeurs n'avaient pas changé.
 
-La durée exacte entre le push et le dernier service prêt n'a pas été mesurée : les captures et les commandes n'ont pas été prises au même moment. Elle se mesure par les horodatages d'Argo CD et des pods, comme au [guide 04](04-amorcage.md).
+La durée exacte n'a pas été mesurée ce jour-là : les captures et les commandes n'ont pas été prises au même moment.
+
+### La durée, mesurée le 24 novembre 2026
+
+Le même test, rejoué avec l'heure du push notée en UTC, comme les horodatages d'Argo CD :
+
+```bash
+date -u +%H:%M:%S; git push
+```
+
+Puis, une fois les 13 applications `Synced Healthy` :
+
+```bash
+git pull
+TZ=UTC git log -2 --format='%h %cd %an' --date=format-local:'%H:%M:%S'
+kubectl -n argocd get applications -o custom-columns=NAME:.metadata.name,DEBUT:.status.operationState.startedAt,FIN:.status.operationState.finishedAt
+kubectl -n eshop get pods -o custom-columns='NAME:.metadata.name,CREE:.metadata.creationTimestamp,PRET:.status.conditions[?(@.type=="Ready")].lastTransitionTime'
+```
+
+`TZ=UTC` fait afficher à `git log` l'heure UTC ; sans lui, il affiche l'heure locale, UTC+1 en novembre.
+
+| Étape | Heure (UTC) | Depuis le push |
+|---|---|---|
+| Push du commit `0f0c6cc` | 14:06:44 | 0 |
+| Commit du robot `7cafe55` : fin de la CI | 14:08:56 | 2 min 12 |
+| Première synchronisation par Argo CD (`webapp`) | 14:09:27 | 2 min 43 |
+| Dernière synchronisation (`payment-processor`) | 14:11:32 | 4 min 48 |
+| Dernier service prêt | 14:11:37 | **4 min 53** |
+
+Chaque service est prêt 5 à 11 s après la création de son pod. Ce qui allonge la boucle est l'étalement des synchronisations : 2 min 05 entre la première et la dernière. Argo CD vérifie chaque application à son propre rythme, avec un décalage aléatoire, et non les 13 au même instant. Les quatre applications sans changement, `eshop-platform` et les trois dépendances, n'ont pas été synchronisées.
 ## 6. Les limites
 
 | Limite | Conséquence |
 |---|---|
-| Pas de webhook de GitHub vers Argo CD | Jusqu'à 3 minutes entre le commit du robot et la synchronisation. Le laboratoire n'étant pas joignable depuis Internet, c'est le seul mode possible ici |
+| Pas de webhook de GitHub vers Argo CD | Jusqu'à 3 minutes entre le commit du robot et la synchronisation de chaque application, et des services synchronisés l'un après l'autre : 2 min 05 d'étalement le 24 novembre 2026. Le laboratoire n'étant pas joignable depuis Internet, c'est le seul mode possible ici |
 | Le robot écrit directement sur `main` | Aucune relecture entre la CI et le cluster : une image qui compile part en production. Les tests et l'analyse des images dans la CI restent à ajouter ([docs/05-ci/01-construction-images.md](../05-ci/01-construction-images.md), section 6) |
 | Les neuf services sont redéployés à chaque construction | Même si un seul a changé : les neuf images sont reconstruites, donc les neuf étiquettes changent |
 | `prune` n'a pas été mis à l'épreuve | Aucun objet n'a encore été retiré d'un chart |

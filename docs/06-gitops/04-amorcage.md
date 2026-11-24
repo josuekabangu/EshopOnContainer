@@ -6,7 +6,7 @@ Jusqu'ici, l'`ApplicationSet` `eshop` n'existait dans le cluster que parce qu'il
 
 Ce guide fait appliquer l'`ApplicationSet` par le rôle Ansible `argocd`. Puis il en apporte la preuve par une reconstruction complète, sans aucune commande de déploiement.
 
-**État au 24 novembre 2026 :** une reconstruction produit, en 9 min 49, un cluster sur lequel Argo CD déploie seul les 13 applications. Le dernier service est prêt 1 min 30 après la première synchronisation. Le parcours dans le navigateur fonctionne : création d'un compte, commande payée, notification reçue par WebhookClient.
+**État au 24 novembre 2026 :** une reconstruction produit, en 9 min 49, un cluster sur lequel Argo CD déploie seul les 13 applications. Le dernier service est prêt 1 min 30 après la première synchronisation. Le parcours dans le navigateur fonctionne : création d'un compte, commande payée, notification reçue par WebhookClient. Une seconde reconstruction, le même jour, a donné le même résultat, avec RabbitMQ corrigé et démarré sans redémarrage.
 
 ## 2. Les tâches d'amorçage
 
@@ -84,7 +84,7 @@ Juste après, sur `kube-control`, la comparaison faite par le rôle :
 sudo KUBECONFIG=/etc/kubernetes/admin.conf kubectl diff -f /etc/kubernetes/argocd-eshop.yaml
 ```
 
-La sortie est vide, code 0 : au passage suivant du playbook, `Appliquer…` serait ignoré. Ce passage suivant n'a pas encore été lancé ; ses compteurs restent à relever.
+La sortie est vide, code 0 : au passage suivant du playbook, `Appliquer…` est ignoré. Vérifié le même jour, sur ce cluster : `kube-control` `ok=70 changed=0 skipped=24`, `kube-worker` `ok=23 changed=0 skipped=3`.
 
 ### Le déploiement par Argo CD
 
@@ -208,7 +208,26 @@ Après le push, Argo CD a redémarré `rabbitmq-0` de lui-même. Résultats vér
 
 Le dernier point répond à une question restée ouverte depuis le 21 octobre ([docs/03-kubernetes/17-ordre-de-demarrage.md](../03-kubernetes/17-ordre-de-demarrage.md), section 5) : **après un redémarrage de RabbitMQ, les services se reconnectent et se réabonnent seuls.** Un consommateur n'est pas conservé par RabbitMQ : chacun des 7 a été recréé par son service.
 
-La preuve que la course a disparu au premier démarrage reste à faire : elle ne se rejoue que sur un volume vide, donc à la prochaine reconstruction. Il faudra y vérifier `rabbitmq-0` sans redémarrage.
+### Validation sur un volume neuf
+
+La course ne se rejoue qu'au premier démarrage, sur un volume vide : une seconde reconstruction a donc été lancée le même jour, l'après-midi. Résultats :
+
+| Contrôle | Résultat |
+|---|---|
+| Récapitulatif d'Ansible | Identique au premier : `ok=92 changed=55` et `ok=28 changed=22`, en 9 min 45 |
+| Applications | Les 13 `Synced Healthy`, sans aucune commande |
+| Pods | Les 12 `Running`, 0 redémarrage, `rabbitmq-0` compris |
+| Cookie, sur `kube-control` | `-r-------- 1 999 999` : propriétaire **et groupe** `rabbitmq` |
+
+| Contrôle | Avant la correction | Après la correction |
+|---|---|---|
+| Redémarrages de `rabbitmq-0` au premier démarrage | 1 | 0 |
+| Utilisateur des sondes | `root` | `rabbitmq` (999) |
+| Groupe du cookie | `0` : créé par `root` | `999` : créé par `rabbitmq` |
+
+Une course est aléatoire : une seule reconstruction sans redémarrage ne suffirait pas à prouver sa disparition. Le groupe du cookie, si : sous `runAsUser: 999` et `runAsGroup: 999`, aucun processus du pod ne peut plus créer un fichier appartenant à `root`.
+
+La commande du cookie a été lancée sur `kube-control` même. Passée par la fonction `kubectl` de WSL, `sh -c 'id; ls -ln …'` perd ses guillemets dans SSH : `id` s'exécute dans le conteneur, mais `ls` sur la VM, où le fichier n'existe pas. Le résultat est un faux « No such file or directory ». Depuis WSL, un script passe par l'entrée standard (`kubectl exec -i … -- sh <<'SH'`), comme au [docs/03-kubernetes/17-ordre-de-demarrage.md](../03-kubernetes/17-ordre-de-demarrage.md).
 
 **Leçon :** une sonde `exec` s'exécute sous l'utilisateur du conteneur, pas forcément sous celui du processus qu'elle surveille. Quand l'image démarre en `root` puis change d'utilisateur, la sonde reste en `root`, et ce qu'elle écrit appartient à `root`.
 
@@ -216,7 +235,6 @@ La preuve que la course a disparu au premier démarrage reste à faire : elle ne
 
 | Limite | Conséquence |
 |---|---|
-| Le second passage du playbook n'a pas été relevé | La garde est démontrée par le `kubectl diff` vide, pas encore par un récapitulatif `changed=0` |
 | L'`ApplicationSet` est appliqué par Ansible, pas géré par Argo CD | Une modification d'`argocd/eshop.yaml` demande de relancer le playbook, ou `kubectl apply`. En entreprise, une application « racine » gérée par Argo CD lui-même porte souvent cette déclaration |
 | PostgreSQL n'a pas d'attente équivalente à celle de RabbitMQ | Aucun service n'a redémarré, mais rien ne le garantit ([docs/03-kubernetes/17-ordre-de-demarrage.md](../03-kubernetes/17-ordre-de-demarrage.md), section 5) |
 | Les clés d'hôte SSH changent à chaque reconstruction | `rebuild.ps1` renouvelle les empreintes dans WSL2, pas dans le `known_hosts` de Windows : un accès SSH depuis PowerShell signale un changement de clé après chaque reconstruction |
