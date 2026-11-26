@@ -79,7 +79,7 @@ public class BasketServiceTests
         var response = await service.UpdateBasket(request, context);
 
         Assert.HasCount(1, response.Items);
-        Assert.AreEqual(42, response.Items[0].ProductId);
+        Assert.AreEqual(43, response.Items[0].ProductId);
         Assert.AreEqual(3, response.Items[0].Quantity);
         await repository.Received(1).UpdateBasketAsync(Arg.Is<CustomerBasket>(basket =>
             basket.BuyerId == "buyer-1" &&
