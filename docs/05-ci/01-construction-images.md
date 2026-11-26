@@ -135,7 +135,7 @@ docker buildx imagetools inspect ghcr.io/josuekabangu/catalog-api:9065a63 \
 
 | Limite | Conséquence |
 |---|---|
-| Aucun test n'est lancé avant la construction | Une image qui compile est publiée, même si le code est faux. Les tests d'eShop et une analyse des images (Trivy) viendront s'ajouter avant la publication |
+| ~~Aucun test n'est lancé avant la construction~~ | ~~Une image qui compile est publiée, même si le code est faux.~~ Réglé le 26 novembre 2026 : les tests unitaires passent avant toute construction ([guide 03](03-tests.md)). L'analyse des images (Trivy) reste à ajouter |
 | Les charts ne sont pas validés par la CI | Une erreur dans `helm/` n'est découverte qu'au déploiement. Un contrôle `helm lint` et `helm template` reste à ajouter |
 | Les neuf images sont reconstruites à chaque fois | Même si un seul service a changé. Le cache rend ce coût faible (32 s) ; construire seulement les services modifiés compliquerait le workflow pour un gain réduit |
 | Le compte rendu de construction désactivé | Non vérifié : les captures disponibles montrent encore l'ancienne exécution, d'avant le réglage |

@@ -30,6 +30,16 @@ Le commit du robot ne relance pas le workflow, pour deux raisons indépendantes 
 
 Les fichiers de `helm/values/` ont des fins de ligne CRLF. L'expression ne remplace que l'empreinte, `[0-9a-f]+`, et laisse le retour chariot en place : chaque fichier ne change que d'une ligne, sans devenir mixte.
 
+> **Note du 26 novembre 2026.** `git ls-files --eol helm/values/` montre des fins de ligne **LF** pour les neuf fichiers, dans le dépôt comme dans la copie de travail. L'affirmation ci-dessus est donc fausse aujourd'hui ; son origine n'a pas été recherchée. L'expression fonctionne dans les deux cas.
+
+### Les guillemets
+
+> **Ajouté le 26 novembre 2026.** L'étiquette est désormais écrite **entre guillemets**, `tag: "963c953"`. Sans guillemets, l'empreinte `3045452`, toute en chiffres, avait été lue comme un nombre et déployée en `3.045452e+06` ([guide 03, section 5](03-tests.md#5-leçon--létiquette-3045452-lue-comme-un-nombre)). Le code ci-dessous montre la ligne d'origine ; la ligne actuelle est :
+>
+> ```bash
+> sed -i -E "s/^(  tag: )\"?[0-9a-f]+\"?/\1\"${TAG}\"/" "helm/values/${s}.yaml"
+> ```
+
 ## 3. Le job
 
 ```yaml
@@ -139,6 +149,7 @@ Les quatre releases sans changement passent aussi en révision 2 : `helm upgrade
 | Limite | Conséquence |
 |---|---|
 | ~~Le déploiement reste lancé à la main~~ | ~~Le cluster tourne en `b59f061` alors que le dépôt désigne `5abbd6a`.~~ Réglé : depuis le 30 octobre 2026, Argo CD applique chaque commit du robot sans intervention ; boucle complète vérifiée le 2 novembre 2026 ([docs/06-gitops/03-synchronisation-automatique.md](../06-gitops/03-synchronisation-automatique.md)) |
+| ~~L'étiquette écrite sans guillemets~~ | ~~Une empreinte toute en chiffres devient un nombre.~~ Réglé le 26 novembre 2026, après une panne réelle ([guide 03](03-tests.md#5-leçon--létiquette-3045452-lue-comme-un-nombre)) |
 | Commit direct sur `main`, sans relecture | Acceptable pour un dépôt à une personne. En équipe, une demande de fusion |
 | Le `git pull --rebase` n'a pas encore servi | Aucun push n'est survenu pendant une construction : le cas qu'il traite n'a pas été provoqué |
 | Le nom des neuf services est écrit deux fois dans le workflow | Dans la matrice et dans la boucle du job `update-values`. Un service ajouté doit l'être aux deux endroits |

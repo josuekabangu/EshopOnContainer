@@ -141,6 +141,16 @@ resources:
 
 `HealthChecks__Expose`, commun à tous les services, est écrit une fois dans le chart. Les variables propres à chacun suivent, depuis son fichier de valeurs.
 
+> **Ajouté le 26 novembre 2026.** Juste après `containers:`, le modèle refuse une étiquette qui n'est pas du texte :
+>
+> ```yaml
+> {{- if not (kindIs "string" .Values.image.tag) }}
+> {{- fail "image.tag doit être une chaîne : mettre l'étiquette entre guillemets" }}
+> {{- end }}
+> ```
+>
+> Une empreinte toute en chiffres, écrite sans guillemets, avait été lue comme un nombre et déployée en `3.045452e+06`. Les étiquettes des fichiers de valeurs sont désormais entre guillemets ([docs/05-ci/03-tests.md](../05-ci/03-tests.md#5-leçon--létiquette-3045452-lue-comme-un-nombre)).
+
 Le `Service` désigne son port cible par son nom (`targetPort: http`), et non plus par son numéro : c'est l'une des différences relevées lors de la reprise ([02-reprise.md](02-reprise.md)).
 
 ## 5. Les fichiers de valeurs
