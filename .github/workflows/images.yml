@@ -24,8 +24,38 @@ env:
   DOCKER_BUILD_RECORD_UPLOAD: false
 
 jobs:
+  test:
+    name: Tests unitaires
+    runs-on: ubuntu-latest
+    # Lecture seule : ce job ne publie rien
+    permissions:
+      contents: read
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      # Le SDK demandé par global.json d'eShop
+      - name: Installer le SDK .NET
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73  # v6.1.0
+        with:
+          global-json-file: application/eShop/global.json
+
+      # ClientApp.UnitTests est exclu : il demande l'outillage MAUI de l'application mobile
+      - name: Lancer les tests unitaires
+        working-directory: application/eShop
+        run: |
+          status=0
+          for p in Basket.UnitTests Ordering.UnitTests Application.UnitTests eShop.AppHost.UnitTests; do
+            echo "::group::$p"
+            dotnet test --project "tests/$p/$p.csproj" || status=1
+            echo "::endgroup::"
+          done
+          exit $status
+
   build:
     name: ${{ matrix.service }}
+    # Aucune image n'est construite si un test échoue
+    needs: test
     runs-on: ubuntu-latest
     strategy:
       # Un service en échec n'arrête pas les autres
