@@ -133,7 +133,7 @@ jobs:
           run_trivy
           echo "::endgroup::"
           # Blocage : seulement CRITICAL et HIGH, et seulement si un correctif existe
-          run_trivy --skip-db-update --severity CRITICAL,HIGH --ignore-unfixed --exit-code 1
+          run_trivy --skip-db-update --severity MEDIUM,HIGH,CRITICAL --exit-code 1
 
   update-values:
     name: Étiquettes dans helm/values
