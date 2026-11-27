@@ -1,7 +1,7 @@
 # ordering-api (docs/03-kubernetes)
 image:
   repository: ghcr.io/josuekabangu/ordering-api
-  tag: "963c953"
+  tag: "db86720"
 
 waitForRabbitMQ: true
 
