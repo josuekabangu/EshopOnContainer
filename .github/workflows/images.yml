@@ -156,6 +156,29 @@ jobs:
           done
           git diff --stat
 
+      # Helm épinglé : même version qu'en local, archive vérifiée par sa somme SHA-256
+      - name: Installer Helm
+        env:
+          HELM_VERSION: v4.3.1
+          HELM_SHA256: 0403a88ae20913d11b10a2467b50087721fea7581736da6b9d3992f5357fe54b
+        run: |
+          cd "$RUNNER_TEMP"
+          curl -fsSLo helm.tgz "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
+          echo "${HELM_SHA256}  helm.tgz" | sha256sum -c -
+          tar -xzf helm.tgz linux-amd64/helm
+          echo "$RUNNER_TEMP/linux-amd64" >> "$GITHUB_PATH"
+
+      # Rendu des neuf services avec les étiquettes qui viennent d'être écrites, comme Argo CD le fera.
+      # Un échec arrête le job avant le commit : Argo CD ne voit jamais des valeurs qui ne se rendent pas
+      - name: Vérifier le rendu des charts
+        run: |
+          helm version --short
+          for s in identity-api catalog-api basket-api ordering-api order-processor \
+                   payment-processor webhooks-api webapp webhook-client; do
+            echo "== $s"
+            helm template "$s" helm/eshop-service -f "helm/values/${s}.yaml" -n eshop > /dev/null
+          done
+
       - name: Commiter et pousser
         run: |
           git config user.name "github-actions[bot]"
