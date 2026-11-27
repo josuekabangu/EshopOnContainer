@@ -1,7 +1,7 @@
 # Catalog.API (docs/03-kubernetes/08-catalog-api.md)
 image:
   repository: ghcr.io/josuekabangu/catalog-api
-  tag: "db86720"
+  tag: "1b0ad73"
 
 waitForRabbitMQ: true
 
