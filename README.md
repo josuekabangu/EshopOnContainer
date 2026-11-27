@@ -47,7 +47,7 @@ Le projet est organisé autour de trois domaines principaux :
 | Construction des images | Docker et Docker Compose    | Utilisé |
 | Secrets du cluster      | Sealed Secrets (laboratoire) ; External Secrets et AWS Secrets Manager (EKS) | Utilisé au laboratoire |
 | Déploiement applicatif  | Helm 4                      | Utilisé |
-| CI/CD                   | GitHub Actions              | En cours : tests unitaires, puis images construites et publiées ; sans analyse des images |
+| CI/CD                   | GitHub Actions              | Utilisé : tests unitaires, images construites, publiées et analysées par Trivy |
 | GitOps                  | Argo CD                     | Utilisé |
 | Observabilité           | Prometheus, Grafana et Loki | Prévu   |
 | Sécurité                | Trivy et SonarQube          | Prévu   |
@@ -128,7 +128,7 @@ Le premier objectif était de construire un laboratoire Kubernetes local reprodu
 * [x] GitHub Actions : les neuf images construites et publiées à chaque push, leur étiquette écrite dans `helm/values/` ; images de la CI déployées et vérifiées dans le navigateur.
 * [x] Argo CD : les 13 releases reprises à Helm sans coupure, synchronisation automatique ; un commit sur `main` arrive jusqu'au cluster sans intervention, et un cluster reconstruit se remplit seul depuis GitHub.
 * [x] Tests unitaires dans GitHub Actions : un test en échec bloque la construction des images et donc le déploiement (vérifié le 26 novembre 2026).
-* [ ] Analyse des images dans GitHub Actions.
+* [x] Analyse des images par Trivy dans GitHub Actions : une faille `CRITICAL` ou `HIGH` corrigeable bloque le déploiement (blocage vérifié le 27 novembre 2026).
 * [ ] Intégration de l’observabilité et des contrôles de sécurité.
 * [ ] Étude du déploiement cloud avec Terraform.
 
@@ -206,7 +206,8 @@ EshopOnContainer/
 │   ├── 05-ci/
 │   │   ├── 01-construction-images.md
 │   │   ├── 02-etiquettes-helm.md
-│   │   └── 03-tests.md
+│   │   ├── 03-tests.md
+│   │   └── 04-analyse-images.md
 │   └── 06-gitops/
 │       ├── 01-installation.md
 │       ├── 02-applicationset.md
@@ -343,6 +344,7 @@ Intégration continue :
 | [01 — La construction des images](docs/05-ci/01-construction-images.md) | Un workflow, neuf images publiées sur `ghcr.io` sans jeton personnel ; le droit de publier sur des paquets créés à la main |
 | [02 — Les étiquettes dans `helm/values/`](docs/05-ci/02-etiquettes-helm.md) | Commit du robot après publication, sans boucle ; images de la CI déployées et vérifiées |
 | [03 — Les tests unitaires](docs/05-ci/03-tests.md) | Tests avant toute construction, blocage prouvé par un test cassé ; leçon de l'étiquette `3045452` lue comme un nombre |
+| [04 — L'analyse des images](docs/05-ci/04-analyse-images.md) | Trivy sur les 9 images : rapport complet, blocage sur les failles graves corrigeables, preuve par une règle durcie |
 
 GitOps :
 

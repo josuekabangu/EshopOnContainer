@@ -135,9 +135,9 @@ docker buildx imagetools inspect ghcr.io/josuekabangu/catalog-api:9065a63 \
 
 | Limite | Conséquence |
 |---|---|
-| ~~Aucun test n'est lancé avant la construction~~ | ~~Une image qui compile est publiée, même si le code est faux.~~ Réglé le 26 novembre 2026 : les tests unitaires passent avant toute construction ([guide 03](03-tests.md)). L'analyse des images (Trivy) reste à ajouter |
+| ~~Aucun test n'est lancé avant la construction~~ | ~~Une image qui compile est publiée, même si le code est faux.~~ Réglé le 26 novembre 2026 : les tests unitaires passent avant toute construction ([guide 03](03-tests.md)). Le 27 novembre, chaque image est aussi analysée par Trivy ([guide 04](04-analyse-images.md)) |
 | Les charts ne sont pas validés par la CI | Une erreur dans `helm/` n'est découverte qu'au déploiement. Un contrôle `helm lint` et `helm template` reste à ajouter |
 | Les neuf images sont reconstruites à chaque fois | Même si un seul service a changé. Le cache rend ce coût faible (32 s) ; construire seulement les services modifiés compliquerait le workflow pour un gain réduit |
-| Le compte rendu de construction désactivé | Non vérifié : les captures disponibles montrent encore l'ancienne exécution, d'avant le réglage |
+| ~~Le compte rendu de construction désactivé~~ | ~~Non vérifié : les captures disponibles montrent encore l'ancienne exécution, d'avant le réglage.~~ Vérifié le 27 novembre 2026 : la page de l'exécution n°9 affiche « Artifacts : – ». Le tableau « Docker Build summary » reste affiché dans la page : c'est un résumé écrit, pas un fichier joint |
 
 La publication manuelle décrite dans [01-registre-images.md](../03-kubernetes/01-registre-images.md) reste possible, par exemple si GitHub Actions est indisponible. Le jeton personnel `write:packages` n'est plus nécessaire au fonctionnement courant.

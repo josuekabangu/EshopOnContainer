@@ -207,4 +207,4 @@ Sur un cluster déjà en service, la mise à jour aurait laissé les anciens pod
 | Pas de tests fonctionnels | Les échanges avec PostgreSQL, RabbitMQ et les autres services ne sont testés que par le parcours dans le navigateur, à la main |
 | Le job de tests précède les constructions | Environ 1 min 10 de plus à chaque exécution. Les lancer en parallèle publierait des images avant de connaître le résultat des tests |
 | Le garde-fou ne couvre que `eshop-service` | Les charts `postgres`, `redis` et `rabbitmq` n'en ont pas besoin aujourd'hui : leur valeur `image` est le nom complet (`redis:7.4.11`), toujours du texte. Une étiquette seule comme `7.4` serait, elle, lue comme un nombre |
-| Pas d'analyse des images | Une vulnérabilité connue dans une image n'est pas détectée. Trivy est l'étape suivante |
+| ~~Pas d'analyse des images~~ | ~~Une vulnérabilité connue dans une image n'est pas détectée.~~ Réglé le 27 novembre 2026 : Trivy analyse chaque image ([guide 04](04-analyse-images.md)) |
