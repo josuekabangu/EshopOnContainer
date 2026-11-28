@@ -207,7 +207,8 @@ EshopOnContainer/
 │   │   ├── 01-construction-images.md
 │   │   ├── 02-etiquettes-helm.md
 │   │   ├── 03-tests.md
-│   │   └── 04-analyse-images.md
+│   │   ├── 04-analyse-images.md
+│   │   └── 05-validation-charts.md
 │   └── 06-gitops/
 │       ├── 01-installation.md
 │       ├── 02-applicationset.md
@@ -345,6 +346,7 @@ Intégration continue :
 | [02 — Les étiquettes dans `helm/values/`](docs/05-ci/02-etiquettes-helm.md) | Commit du robot après publication, sans boucle ; images de la CI déployées et vérifiées |
 | [03 — Les tests unitaires](docs/05-ci/03-tests.md) | Tests avant toute construction, blocage prouvé par un test cassé ; leçon de l'étiquette `3045452` lue comme un nombre |
 | [04 — L'analyse des images](docs/05-ci/04-analyse-images.md) | Trivy sur les 9 images : rapport complet, blocage sur les failles graves corrigeables, preuve par une règle durcie |
+| [05 — La validation des charts](docs/05-ci/05-validation-charts.md) | Base locale des 13 releases ; rendu Helm des valeurs du robot avant son commit, blocage prouvé en simulant l'étiquette `3045452` |
 
 GitOps :
 
