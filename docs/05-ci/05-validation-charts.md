@@ -182,7 +182,7 @@ Puis en CI, exécution n°13 du 28 novembre 2026 :
 | Cluster | Argo CD n'a rien reçu de nouveau : il reste sur `741902f`, les images en `:9e33b3a` |
 | Durée totale | 2 min 8 |
 
-La simulation a été annulée dans le commit `c5705d5` ; `git diff 9e33b3a -- .github/workflows/images.yml` ne montre plus aucune différence. L'exécution n°14 qui a suivi est verte en 2 min 19 : les 9 rendus passent et le robot commite `c618b35` avec l'étiquette `c5705d5`.
+La simulation a été annulée dans le commit `c5705d5` ; `git diff 9e33b3a -- .github/workflows/images.yml` ne montre plus aucune différence. L'exécution n°14 qui a suivi est verte en 2 min 19 : les 9 rendus passent et le robot commite `c618b35` avec l'étiquette `c5705d5`. Le cluster l'a suivi : les 9 images en `:c5705d5`.
 
 **Leçon :** un garde-fou dans un modèle ne protège que si quelque chose le déclenche avant le cluster. Le 26 novembre, il n'existait pas ; aujourd'hui, il existe et il est exécuté entre la modification automatique et le déploiement automatique.
 

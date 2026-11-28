@@ -1,0 +1,75 @@
+# Valide les charts Helm comme Argo CD les rend : lint, rendu des releases, schémas Kubernetes.
+# Les commits du robot (helm/values/) ne déclenchent pas ce workflow : ils sont vérifiés dans images.yml
+name: Charts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - helm/**
+      - argocd/**
+      - .github/workflows/charts.yml
+  pull_request:
+    paths:
+      - helm/**
+      - argocd/**
+      - .github/workflows/charts.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Lint, rendu et schémas
+    runs-on: ubuntu-latest
+    env:
+      HELM_VERSION: v4.3.1
+      HELM_SHA256: 0403a88ae20913d11b10a2467b50087721fea7581736da6b9d3992f5357fe54b
+      KUBECONFORM_VERSION: v0.8.0
+      KUBECONFORM_SHA256: 9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883
+      # Version du cluster, relevée avec kubectl version le 28 novembre 2026
+      KUBERNETES_VERSION: 1.36.5
+      # Schémas des CRD (SealedSecret, Gateway, HTTPRoute, EnvoyProxy) : catalogue épinglé sur un commit
+      CRD_SCHEMAS: https://raw.githubusercontent.com/datreeio/CRDs-catalog/b50f3fbc45169a14b6d2d3f767b32fd96ef4a3fa/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      # Outils épinglés, archives vérifiées par leur somme SHA-256
+      - name: Installer Helm et kubeconform
+        run: |
+          cd "$RUNNER_TEMP"
+          curl -fsSLo helm.tgz "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
+          echo "${HELM_SHA256}  helm.tgz" | sha256sum -c -
+          tar -xzf helm.tgz linux-amd64/helm
+          curl -fsSLo kubeconform.tgz "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz"
+          echo "${KUBECONFORM_SHA256}  kubeconform.tgz" | sha256sum -c -
+          tar -xzf kubeconform.tgz -C linux-amd64 kubeconform
+          echo "$RUNNER_TEMP/linux-amd64" >> "$GITHUB_PATH"
+
+      # La liste des releases vient de l'ApplicationSet : une release ajoutée à Argo CD est contrôlée d'office
+      - name: Lire les releases dans argocd/eshop.yaml
+        run: |
+          sed -nE 's/^ *- \{release: ([a-z0-9-]+), chart: ([a-z0-9-]+)\}.*/\1 \2/p' \
+            argocd/eshop.yaml > "$RUNNER_TEMP/releases.txt"
+          cat "$RUNNER_TEMP/releases.txt"
+          n=$(wc -l < "$RUNNER_TEMP/releases.txt")
+          echo "$n releases"
+          # Une liste vide ferait un contrôle vert sans rien vérifier
+          [ "$n" -gt 0 ] || { echo "::error::Aucune release lue dans argocd/eshop.yaml"; exit 1; }
+
+      - name: Lint et rendu
+        run: |
+          mkdir -p "$RUNNER_TEMP/rendu"
+          while read -r release chart; do
+            echo "== $release ($chart)"
+            helm lint "helm/$chart" -f "helm/values/$release.yaml" --quiet
+            helm template "$release" "helm/$chart" -f "helm/values/$release.yaml" -n eshop \
+              > "$RUNNER_TEMP/rendu/$release.yaml"
+          done < "$RUNNER_TEMP/releases.txt"
+
+      - name: Valider les objets (kubeconform)
+        run: |
+          kubeconform -strict -summary -kubernetes-version "$KUBERNETES_VERSION" \
+            -schema-location default -schema-location "$CRD_SCHEMAS" "$RUNNER_TEMP/rendu"
