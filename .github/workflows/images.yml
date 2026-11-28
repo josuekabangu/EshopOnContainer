@@ -152,7 +152,7 @@ jobs:
           for s in identity-api catalog-api basket-api ordering-api order-processor \
                    payment-processor webhooks-api webapp webhook-client; do
             # Seule l'empreinte est remplacée : le retour chariot des fichiers CRLF est conservé
-            sed -i -E "s/^(  tag: )\"?[0-9a-f]+\"?/\1\"${TAG}\"/" "helm/values/${s}.yaml"
+            sed -i -E "s/^(  tag: )\"?[0-9a-f]+\"?/\11234567/" "helm/values/${s}.yaml"
           done
           git diff --stat
 
