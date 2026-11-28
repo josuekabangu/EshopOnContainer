@@ -1,7 +1,7 @@
 # Identity.API (docs/03-kubernetes/07-identity-api.md)
 image:
   repository: ghcr.io/josuekabangu/identity-api
-  tag: "9e33b3a"
+  tag: "c5705d5"
 
 port: 5223
 
